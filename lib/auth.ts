@@ -104,3 +104,5 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
   },
 });
+
+export const runtime = "nodejs";
