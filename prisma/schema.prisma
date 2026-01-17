@@ -1,0 +1,123 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// NextAuth.js required models
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// Application models
+model User {
+  id             String        @id @default(cuid())
+  name           String?
+  email          String?       @unique
+  emailVerified  DateTime?
+  image          String?
+  password       String?
+  organizationId String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  accounts       Account[]
+  sessions       Session[]
+  bills          Bill[]
+
+  @@index([organizationId])
+  @@index([email])
+}
+
+model Organization {
+  id        String     @id @default(cuid())
+  name      String
+  joinCode  String?    @unique
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  users     User[]
+  billTypes BillType[]
+  bills     Bill[]
+
+  @@index([name])
+  @@index([joinCode])
+}
+
+model BillType {
+  id             String       @id @default(cuid())
+  name           String
+  description    String?
+  color          String?
+  icon           String?
+  organizationId String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  bills          Bill[]
+
+  @@unique([organizationId, name])
+  @@index([organizationId])
+}
+
+model Bill {
+  id             String       @id @default(cuid())
+  label          String
+  amount         Decimal      @db.Decimal(10, 2)
+  paymentDate    DateTime
+  dueDate        DateTime?
+  billTypeId     String
+  organizationId String
+  userId         String
+  notes          String?      @db.Text
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  billType       BillType     @relation(fields: [billTypeId], references: [id], onDelete: Restrict)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, paymentDate])
+  @@index([billTypeId])
+  @@index([userId])
+  @@index([paymentDate])
+}
