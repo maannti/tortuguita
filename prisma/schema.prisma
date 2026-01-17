@@ -58,10 +58,11 @@ model User {
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
-  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
-  accounts       Account[]
-  sessions       Session[]
-  bills          Bill[]
+  organization      Organization?    @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  accounts          Account[]
+  sessions          Session[]
+  bills             Bill[]
+  billAssignments   BillAssignment[]
 
   @@index([organizationId])
   @@index([email])
@@ -112,12 +113,29 @@ model Bill {
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
-  billType       BillType     @relation(fields: [billTypeId], references: [id], onDelete: Restrict)
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  user           User         @relation(fields: [userId], references: [id], onDelete: Restrict)
+  billType       BillType         @relation(fields: [billTypeId], references: [id], onDelete: Restrict)
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User             @relation(fields: [userId], references: [id], onDelete: Restrict)
+  assignments    BillAssignment[]
 
   @@index([organizationId, paymentDate])
   @@index([billTypeId])
   @@index([userId])
   @@index([paymentDate])
+}
+
+model BillAssignment {
+  id         String   @id @default(cuid())
+  billId     String
+  userId     String
+  percentage Decimal  @db.Decimal(5, 2)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  bill Bill @relation(fields: [billId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([billId, userId])
+  @@index([billId])
+  @@index([userId])
 }

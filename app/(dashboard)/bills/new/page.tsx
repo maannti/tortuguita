@@ -9,24 +9,44 @@ export default async function NewBillPage() {
     return <div>Unauthorized</div>
   }
 
-  const categories = await prisma.billType.findMany({
-    where: {
-      organizationId: session.user.organizationId,
-    },
-    select: {
-      id: true,
-      name: true,
-      color: true,
-      icon: true,
-    },
-    orderBy: {
-      name: "asc",
-    },
-  })
+  const [categories, members] = await Promise.all([
+    prisma.billType.findMany({
+      where: {
+        organizationId: session.user.organizationId,
+      },
+      select: {
+        id: true,
+        name: true,
+        color: true,
+        icon: true,
+      },
+      orderBy: {
+        name: "asc",
+      },
+    }),
+    prisma.user.findMany({
+      where: {
+        organizationId: session.user.organizationId,
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+      },
+      orderBy: {
+        name: "asc",
+      },
+    }),
+  ])
 
   return (
     <div className="max-w-2xl">
-      <BillForm mode="create" categories={categories} />
+      <BillForm
+        mode="create"
+        categories={categories}
+        members={members}
+        currentUserId={session.user.id}
+      />
     </div>
   )
 }

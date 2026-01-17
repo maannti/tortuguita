@@ -34,6 +34,17 @@ export async function GET(
             email: true,
           },
         },
+        assignments: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
+          },
+        },
       },
     })
 
@@ -101,11 +112,40 @@ export async function PATCH(
       )
     }
 
+    // Verify all assigned users belong to organization
+    if (data.assignments && data.assignments.length > 0) {
+      const userIds = data.assignments.map((a) => a.userId)
+      const users = await prisma.user.findMany({
+        where: {
+          id: { in: userIds },
+          organizationId: session.user.organizationId,
+        },
+      })
+
+      if (users.length !== userIds.length) {
+        return NextResponse.json(
+          { error: "Invalid user assignments" },
+          { status: 400 }
+        )
+      }
+    }
+
     const updated = await prisma.bill.update({
       where: { id },
       data: {
-        ...data,
+        label: data.label,
+        amount: data.amount,
+        paymentDate: data.paymentDate,
         dueDate: data.dueDate || null,
+        billTypeId: data.billTypeId,
+        notes: data.notes,
+        assignments: {
+          deleteMany: {},
+          create: data.assignments?.map((assignment) => ({
+            userId: assignment.userId,
+            percentage: assignment.percentage,
+          })),
+        },
       },
       include: {
         billType: true,
@@ -114,6 +154,17 @@ export async function PATCH(
             id: true,
             name: true,
             email: true,
+          },
+        },
+        assignments: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
           },
         },
       },

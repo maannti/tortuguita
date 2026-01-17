@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { startOfMonth, endOfMonth, subMonths, format } from "date-fns"
 import { CategoryBreakdownChart } from "@/components/dashboard/category-breakdown-chart"
 import { MonthlyTrendChart } from "@/components/dashboard/monthly-trend-chart"
+import { UserDistributionChart } from "@/components/dashboard/user-distribution-chart"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ArrowUpIcon, ArrowDownIcon } from "lucide-react"
@@ -122,6 +123,86 @@ export default async function DashboardPage() {
   const totalSpent = monthlyData.reduce((sum, month) => sum + month.amount, 0)
   const averageMonthly = totalSpent / monthlyData.length
 
+  // User distribution (bills with assignments)
+  const billsWithAssignments = await prisma.bill.findMany({
+    where: {
+      organizationId: session.user.organizationId,
+      paymentDate: {
+        gte: currentMonthStart,
+        lte: currentMonthEnd,
+      },
+    },
+    include: {
+      assignments: {
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      },
+    },
+  })
+
+  // Calculate user distribution
+  const userTotals = new Map<string, { name: string; total: number }>()
+  let unassignedTotal = 0
+
+  for (const bill of billsWithAssignments) {
+    const billAmount = Number(bill.amount)
+
+    if (bill.assignments.length === 0) {
+      // Bill has no assignments - count as unassigned
+      unassignedTotal += billAmount
+    } else {
+      // Calculate each user's share based on percentage
+      for (const assignment of bill.assignments) {
+        const userShare = (billAmount * Number(assignment.percentage)) / 100
+        const userId = assignment.user.id
+        const userName = assignment.user.name || "Unknown"
+
+        if (userTotals.has(userId)) {
+          userTotals.get(userId)!.total += userShare
+        } else {
+          userTotals.set(userId, { name: userName, total: userShare })
+        }
+      }
+    }
+  }
+
+  // Generate colors for users
+  const userColors = [
+    "#3b82f6", // blue
+    "#8b5cf6", // purple
+    "#ec4899", // pink
+    "#f59e0b", // amber
+    "#10b981", // green
+    "#06b6d4", // cyan
+    "#f97316", // orange
+    "#14b8a6", // teal
+    "#a855f7", // violet
+    "#84cc16", // lime
+  ]
+
+  const userDistributionData = Array.from(userTotals.entries()).map(
+    ([userId, data], index) => ({
+      name: data.name,
+      value: data.total,
+      color: userColors[index % userColors.length],
+    })
+  )
+
+  // Add unassigned bills if any
+  if (unassignedTotal > 0) {
+    userDistributionData.push({
+      name: "Unassigned",
+      value: unassignedTotal,
+      color: "#6b7280", // gray
+    })
+  }
+
   // Recent bills
   const recentBills: BillWithRelations[] = await prisma.bill.findMany({
     where: {
@@ -234,7 +315,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Charts */}
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle>Spending by Category</CardTitle>
@@ -256,6 +337,21 @@ export default async function DashboardPage() {
           </CardHeader>
           <CardContent>
             <MonthlyTrendChart data={monthlyData} />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>User Distribution</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {userDistributionData.length > 0 ? (
+              <UserDistributionChart data={userDistributionData} />
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                No assigned bills this month
+              </p>
+            )}
           </CardContent>
         </Card>
       </div>

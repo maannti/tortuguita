@@ -55,6 +55,17 @@ export async function GET(request: NextRequest) {
             email: true,
           },
         },
+        assignments: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
+          },
+        },
       },
       orderBy: {
         paymentDate: "desc",
@@ -100,12 +111,40 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Verify all assigned users belong to organization
+    if (data.assignments && data.assignments.length > 0) {
+      const userIds = data.assignments.map((a) => a.userId)
+      const users = await prisma.user.findMany({
+        where: {
+          id: { in: userIds },
+          organizationId: session.user.organizationId,
+        },
+      })
+
+      if (users.length !== userIds.length) {
+        return NextResponse.json(
+          { error: "Invalid user assignments" },
+          { status: 400 }
+        )
+      }
+    }
+
     const bill = await prisma.bill.create({
       data: {
-        ...data,
+        label: data.label,
+        amount: data.amount,
+        paymentDate: data.paymentDate,
         dueDate: data.dueDate || null,
+        billTypeId: data.billTypeId,
+        notes: data.notes,
         organizationId: session.user.organizationId,
         userId: session.user.id,
+        assignments: {
+          create: data.assignments?.map((assignment) => ({
+            userId: assignment.userId,
+            percentage: assignment.percentage,
+          })),
+        },
       },
       include: {
         billType: true,
@@ -114,6 +153,17 @@ export async function POST(request: NextRequest) {
             id: true,
             name: true,
             email: true,
+          },
+        },
+        assignments: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
           },
         },
       },

@@ -3,9 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import { format } from "date-fns";
-import { CalendarIcon } from "lucide-react";
+import { useForm, useFieldArray } from "react-hook-form";
 import { billSchema, type BillFormData } from "@/lib/validations/bill";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,14 +23,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
+import { Slider } from "@/components/ui/slider";
+import { X, Plus } from "lucide-react";
 
 interface BillFormProps {
   initialData?: BillFormData & { id: string };
@@ -42,15 +35,21 @@ interface BillFormProps {
     color: string | null;
     icon: string | null;
   }>;
+  members: Array<{
+    id: string;
+    name: string | null;
+    email: string | null;
+  }>;
+  currentUserId: string;
   mode: "create" | "edit";
 }
 
-export function BillForm({ initialData, categories, mode }: BillFormProps) {
+export function BillForm({ initialData, categories, members, currentUserId, mode }: BillFormProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const form = useForm({
+  const form = useForm<BillFormData>({
     resolver: zodResolver(billSchema),
     defaultValues: initialData || {
       label: "",
@@ -59,8 +58,20 @@ export function BillForm({ initialData, categories, mode }: BillFormProps) {
       dueDate: null,
       billTypeId: "",
       notes: "",
+      assignments: mode === "create" ? [{ userId: currentUserId, percentage: 100 }] : [],
     },
   });
+
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "assignments",
+  });
+
+  const assignments = form.watch("assignments");
+  const totalPercentage = assignments?.reduce(
+    (sum, assignment) => sum + (Number(assignment.percentage) || 0),
+    0
+  ) || 0;
 
   async function onSubmit(data: BillFormData) {
     setIsLoading(true);
@@ -138,8 +149,11 @@ export function BillForm({ initialData, categories, mode }: BillFormProps) {
                       step="0.01"
                       placeholder="0.00"
                       disabled={isLoading}
-                      value={(field.value ?? "") as string}
-                      onChange={(e) => field.onChange(Number(e.target.value))}
+                      value={field.value === 0 || field.value === undefined ? "" : field.value}
+                      onChange={(e) => {
+                        const value = e.target.value === "" ? 0 : Number(e.target.value);
+                        field.onChange(value);
+                      }}
                       onBlur={field.onBlur}
                       name={field.name}
                       ref={field.ref}
@@ -186,38 +200,25 @@ export function BillForm({ initialData, categories, mode }: BillFormProps) {
               control={form.control}
               name="paymentDate"
               render={({ field }) => (
-                <FormItem className="flex flex-col">
+                <FormItem>
                   <FormLabel>Payment Date</FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            "w-full pl-3 text-left font-normal",
-                            !field.value && "text-muted-foreground",
-                          )}
-                          disabled={isLoading}
-                        >
-                          {field.value ? (
-                            format(field.value as Date, "PPP")
-                          ) : (
-                            <span>Pick a date</span>
-                          )}
-                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={field.value as Date}
-                        onSelect={field.onChange}
-                        disabled={isLoading}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
+                  <FormControl>
+                    <Input
+                      type="date"
+                      disabled={isLoading}
+                      value={
+                        field.value instanceof Date
+                          ? field.value.toISOString().split("T")[0]
+                          : ""
+                      }
+                      onChange={(e) => {
+                        const date = e.target.value
+                          ? new Date(e.target.value + "T00:00:00")
+                          : new Date();
+                        field.onChange(date);
+                      }}
+                    />
+                  </FormControl>
                   <FormDescription>When the payment was made</FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -228,38 +229,28 @@ export function BillForm({ initialData, categories, mode }: BillFormProps) {
               control={form.control}
               name="dueDate"
               render={({ field }) => (
-                <FormItem className="flex flex-col">
+                <FormItem>
                   <FormLabel>Due Date (Optional)</FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            "w-full pl-3 text-left font-normal",
-                            !field.value && "text-muted-foreground",
-                          )}
-                          disabled={isLoading}
-                        >
-                          {field.value ? (
-                            format(field.value as string, "PPP")
-                          ) : (
-                            <span>Pick a date</span>
-                          )}
-                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={(field.value || undefined) as Date}
-                        onSelect={field.onChange}
-                        disabled={isLoading}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
+                  <FormControl>
+                    <Input
+                      type="date"
+                      disabled={isLoading}
+                      value={
+                        field.value
+                          ? (field.value instanceof Date
+                              ? field.value
+                              : new Date(field.value)
+                            ).toISOString().split("T")[0]
+                          : ""
+                      }
+                      onChange={(e) => {
+                        const date = e.target.value
+                          ? new Date(e.target.value + "T00:00:00")
+                          : null;
+                        field.onChange(date);
+                      }}
+                    />
+                  </FormControl>
                   <FormDescription>
                     For future payment reminders
                   </FormDescription>
@@ -285,6 +276,132 @@ export function BillForm({ initialData, categories, mode }: BillFormProps) {
                 </FormItem>
               )}
             />
+
+            <div className="space-y-4 border-t pt-4">
+              <div>
+                <h3 className="text-sm font-medium mb-2">
+                  Assign to Members (Optional)
+                </h3>
+                <p className="text-xs text-muted-foreground mb-4">
+                  Split this bill between organization members. Total must equal 100%.
+                </p>
+
+                {fields.map((field, index) => {
+                  const assignedUserIds = assignments
+                    ?.map((a, i) => (i !== index ? a.userId : null))
+                    .filter(Boolean);
+                  const availableMembers = members.filter(
+                    (m) => !assignedUserIds?.includes(m.id)
+                  );
+
+                  return (
+                    <div key={field.id} className="flex gap-3 mb-3 items-start">
+                      <FormField
+                        control={form.control}
+                        name={`assignments.${index}.userId`}
+                        render={({ field }) => (
+                          <FormItem className="w-48">
+                            <Select
+                              onValueChange={field.onChange}
+                              value={field.value}
+                              disabled={isLoading}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select member" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {availableMembers.map((member) => (
+                                  <SelectItem key={member.id} value={member.id}>
+                                    {member.name || member.email}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name={`assignments.${index}.percentage`}
+                        render={({ field }) => (
+                          <FormItem className="flex-1">
+                            <FormControl>
+                              <div className="flex items-center gap-3">
+                                <Slider
+                                  min={0}
+                                  max={100}
+                                  step={0.01}
+                                  value={[field.value || 0]}
+                                  onValueChange={(values) => {
+                                    field.onChange(values[0]);
+                                  }}
+                                  disabled={isLoading}
+                                  className="flex-1"
+                                />
+                                <span className="text-sm font-medium w-14 text-right">
+                                  {(field.value || 0).toFixed(1)}%
+                                </span>
+                              </div>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => remove(index)}
+                        disabled={isLoading}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  );
+                })}
+
+                {fields.length < members.length && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const remaining = Math.max(0, 100 - totalPercentage);
+                      append({ userId: "", percentage: remaining });
+                    }}
+                    disabled={isLoading}
+                    className="mt-2"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Member
+                  </Button>
+                )}
+
+                {fields.length > 0 && (
+                  <div className="mt-3 flex justify-between items-center text-sm">
+                    <span className="text-muted-foreground">Total:</span>
+                    <span
+                      className={
+                        Math.abs(totalPercentage - 100) < 0.01
+                          ? "text-green-600 dark:text-green-400 font-medium"
+                          : "text-destructive font-medium"
+                      }
+                    >
+                      {totalPercentage.toFixed(2)}%
+                    </span>
+                  </div>
+                )}
+
+                {form.formState.errors.assignments?.message && (
+                  <p className="text-sm text-destructive mt-2">
+                    {form.formState.errors.assignments.message}
+                  </p>
+                )}
+              </div>
+            </div>
 
             <div className="flex gap-4">
               <Button type="submit" disabled={isLoading}>
