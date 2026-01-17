@@ -1,13 +1,13 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
-import { format } from "date-fns"
-import { CalendarIcon } from "lucide-react"
-import { billSchema, type BillFormData } from "@/lib/validations/bill"
-import { Button } from "@/components/ui/button"
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { format } from "date-fns";
+import { CalendarIcon } from "lucide-react";
+import { billSchema, type BillFormData } from "@/lib/validations/bill";
+import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
@@ -16,36 +16,41 @@ import {
   FormLabel,
   FormMessage,
   FormDescription,
-} from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { Calendar } from "@/components/ui/calendar"
+} from "@/components/ui/select";
+import { Calendar } from "@/components/ui/calendar";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { cn } from "@/lib/utils"
+} from "@/components/ui/popover";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 interface BillFormProps {
-  initialData?: BillFormData & { id: string }
-  categories: Array<{ id: string; name: string; color: string | null; icon: string | null }>
-  mode: "create" | "edit"
+  initialData?: BillFormData & { id: string };
+  categories: Array<{
+    id: string;
+    name: string;
+    color: string | null;
+    icon: string | null;
+  }>;
+  mode: "create" | "edit";
 }
 
 export function BillForm({ initialData, categories, mode }: BillFormProps) {
-  const router = useRouter()
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const form = useForm<BillFormData>({
+  const form = useForm({
     resolver: zodResolver(billSchema),
     defaultValues: initialData || {
       label: "",
@@ -55,43 +60,44 @@ export function BillForm({ initialData, categories, mode }: BillFormProps) {
       billTypeId: "",
       notes: "",
     },
-  })
+  });
 
   async function onSubmit(data: BillFormData) {
-    setIsLoading(true)
-    setError(null)
+    setIsLoading(true);
+    setError(null);
 
     try {
-      const url = mode === "create"
-        ? "/api/bills"
-        : `/api/bills/${initialData?.id}`
+      const url =
+        mode === "create" ? "/api/bills" : `/api/bills/${initialData?.id}`;
 
       const response = await fetch(url, {
         method: mode === "create" ? "POST" : "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
-      })
+      });
 
-      const result = await response.json()
+      const result = await response.json();
 
       if (!response.ok) {
-        setError(result.error || "Something went wrong")
-        return
+        setError(result.error || "Something went wrong");
+        return;
       }
 
-      router.push("/bills")
-      router.refresh()
+      router.push("/bills");
+      router.refresh();
     } catch (error) {
-      setError("Failed to save bill")
+      setError("Failed to save bill");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
   }
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{mode === "create" ? "Add New Bill" : "Edit Bill"}</CardTitle>
+        <CardTitle>
+          {mode === "create" ? "Add New Bill" : "Edit Bill"}
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -109,7 +115,11 @@ export function BillForm({ initialData, categories, mode }: BillFormProps) {
                 <FormItem>
                   <FormLabel>Description</FormLabel>
                   <FormControl>
-                    <Input placeholder="Electric bill" disabled={isLoading} {...field} />
+                    <Input
+                      placeholder="Electric bill"
+                      disabled={isLoading}
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -128,7 +138,11 @@ export function BillForm({ initialData, categories, mode }: BillFormProps) {
                       step="0.01"
                       placeholder="0.00"
                       disabled={isLoading}
-                      {...field}
+                      value={(field.value ?? "") as string}
+                      onChange={(e) => field.onChange(Number(e.target.value))}
+                      onBlur={field.onBlur}
+                      name={field.name}
+                      ref={field.ref}
                     />
                   </FormControl>
                   <FormMessage />
@@ -142,7 +156,11 @@ export function BillForm({ initialData, categories, mode }: BillFormProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Category</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoading}>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                    disabled={isLoading}
+                  >
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select a category" />
@@ -177,12 +195,12 @@ export function BillForm({ initialData, categories, mode }: BillFormProps) {
                           variant="outline"
                           className={cn(
                             "w-full pl-3 text-left font-normal",
-                            !field.value && "text-muted-foreground"
+                            !field.value && "text-muted-foreground",
                           )}
                           disabled={isLoading}
                         >
                           {field.value ? (
-                            format(field.value, "PPP")
+                            format(field.value as Date, "PPP")
                           ) : (
                             <span>Pick a date</span>
                           )}
@@ -193,16 +211,14 @@ export function BillForm({ initialData, categories, mode }: BillFormProps) {
                     <PopoverContent className="w-auto p-0" align="start">
                       <Calendar
                         mode="single"
-                        selected={field.value}
+                        selected={field.value as Date}
                         onSelect={field.onChange}
                         disabled={isLoading}
                         initialFocus
                       />
                     </PopoverContent>
                   </Popover>
-                  <FormDescription>
-                    When the payment was made
-                  </FormDescription>
+                  <FormDescription>When the payment was made</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -221,12 +237,12 @@ export function BillForm({ initialData, categories, mode }: BillFormProps) {
                           variant="outline"
                           className={cn(
                             "w-full pl-3 text-left font-normal",
-                            !field.value && "text-muted-foreground"
+                            !field.value && "text-muted-foreground",
                           )}
                           disabled={isLoading}
                         >
                           {field.value ? (
-                            format(field.value, "PPP")
+                            format(field.value as string, "PPP")
                           ) : (
                             <span>Pick a date</span>
                           )}
@@ -237,7 +253,7 @@ export function BillForm({ initialData, categories, mode }: BillFormProps) {
                     <PopoverContent className="w-auto p-0" align="start">
                       <Calendar
                         mode="single"
-                        selected={field.value || undefined}
+                        selected={(field.value || undefined) as Date}
                         onSelect={field.onChange}
                         disabled={isLoading}
                         initialFocus
@@ -272,7 +288,11 @@ export function BillForm({ initialData, categories, mode }: BillFormProps) {
 
             <div className="flex gap-4">
               <Button type="submit" disabled={isLoading}>
-                {isLoading ? "Saving..." : mode === "create" ? "Create" : "Update"}
+                {isLoading
+                  ? "Saving..."
+                  : mode === "create"
+                    ? "Create"
+                    : "Update"}
               </Button>
               <Button
                 type="button"
@@ -287,5 +307,5 @@ export function BillForm({ initialData, categories, mode }: BillFormProps) {
         </Form>
       </CardContent>
     </Card>
-  )
+  );
 }

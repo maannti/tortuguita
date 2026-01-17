@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import {
   BarChart,
@@ -8,13 +8,13 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-} from "recharts"
+} from "recharts";
 
 interface MonthlyTrendChartProps {
   data: Array<{
-    month: string
-    amount: number
-  }>
+    month: string;
+    amount: number;
+  }>;
 }
 
 export function MonthlyTrendChart({ data }: MonthlyTrendChartProps) {
@@ -24,9 +24,13 @@ export function MonthlyTrendChart({ data }: MonthlyTrendChartProps) {
         <CartesianGrid strokeDasharray="3 3" />
         <XAxis dataKey="month" />
         <YAxis />
-        <Tooltip formatter={(value: number) => `$${value.toFixed(2)}`} />
+        <Tooltip
+          formatter={(value) =>
+            typeof value === "number" ? `$${value.toFixed(2)}` : value
+          }
+        />
         <Bar dataKey="amount" fill="#3b82f6" />
       </BarChart>
     </ResponsiveContainer>
-  )
+  );
 }

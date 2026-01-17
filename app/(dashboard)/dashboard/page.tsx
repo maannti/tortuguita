@@ -7,6 +7,18 @@ import { MonthlyTrendChart } from "@/components/dashboard/monthly-trend-chart"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ArrowUpIcon, ArrowDownIcon } from "lucide-react"
+import type { Prisma } from "@prisma/client"
+
+type BillWithRelations = Prisma.BillGetPayload<{
+  include: {
+    billType: true
+    user: {
+      select: {
+        name: true
+      }
+    }
+  }
+}>
 
 export default async function DashboardPage() {
   const session = await auth()
@@ -111,7 +123,7 @@ export default async function DashboardPage() {
   const averageMonthly = totalSpent / monthlyData.length
 
   // Recent bills
-  const recentBills = await prisma.bill.findMany({
+  const recentBills: BillWithRelations[] = await prisma.bill.findMany({
     where: {
       organizationId: session.user.organizationId,
     },

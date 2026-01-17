@@ -1,13 +1,20 @@
-"use client"
+"use client";
 
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts"
+import {
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  Legend,
+  Tooltip,
+} from "recharts";
 
 interface CategoryBreakdownChartProps {
   data: Array<{
-    name: string
-    value: number
-    color: string
-  }>
+    name: string;
+    value: number;
+    color: string;
+  }>;
 }
 
 export function CategoryBreakdownChart({ data }: CategoryBreakdownChartProps) {
@@ -19,7 +26,9 @@ export function CategoryBreakdownChart({ data }: CategoryBreakdownChartProps) {
           cx="50%"
           cy="50%"
           labelLine={false}
-          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+          label={({ name, percent }) =>
+            percent ? `${name} ${(percent * 100).toFixed(0)}%` : null
+          }
           outerRadius={80}
           fill="#8884d8"
           dataKey="value"
@@ -28,9 +37,13 @@ export function CategoryBreakdownChart({ data }: CategoryBreakdownChartProps) {
             <Cell key={`cell-${index}`} fill={entry.color} />
           ))}
         </Pie>
-        <Tooltip formatter={(value: number) => `$${value.toFixed(2)}`} />
+        <Tooltip
+          formatter={(value) =>
+            typeof value === "number" ? `$${value.toFixed(2)}` : value
+          }
+        />{" "}
         <Legend />
       </PieChart>
     </ResponsiveContainer>
-  )
+  );
 }

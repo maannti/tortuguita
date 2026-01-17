@@ -17,6 +17,18 @@ import {
 import { CategoryBadge } from "@/components/categories/category-badge"
 import { format } from "date-fns"
 import { DeleteBillButton } from "@/components/bills/delete-bill-button"
+import type { Prisma } from "@prisma/client"
+
+type BillWithRelations = Prisma.BillGetPayload<{
+  include: {
+    billType: true
+    user: {
+      select: {
+        name: true
+      }
+    }
+  }
+}>
 
 export default async function BillsPage() {
   const session = await auth()
@@ -25,7 +37,7 @@ export default async function BillsPage() {
     return <div>Unauthorized</div>
   }
 
-  const bills = await prisma.bill.findMany({
+  const bills: BillWithRelations[] = await prisma.bill.findMany({
     where: {
       organizationId: session.user.organizationId,
     },
