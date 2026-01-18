@@ -244,7 +244,7 @@ export async function POST(request: NextRequest) {
               conversationId: conversation.id,
               role: "assistant",
               content: assistantMessage || "I've completed the requested action.",
-              toolCalls: toolCallsData.length > 0 ? { calls: toolCallsData } : null,
+              toolCalls: toolCallsData.length > 0 ? { calls: toolCallsData } : undefined,
             },
           });
 
