@@ -17,10 +17,10 @@ export const billSchema = z
       .positive("Amount must be positive")
       .multipleOf(0.01, "Amount must have at most 2 decimal places"),
     paymentDate: z.coerce.date(),
-    dueDate: z.coerce.date().optional().nullable(),
+    dueDate: z.coerce.date().nullable().optional(),
     billTypeId: z.string().min(1, "Category is required"),
     notes: z.string().optional(),
-    assignments: z.array(billAssignmentSchema).optional().default([]),
+    assignments: z.array(billAssignmentSchema).default([]),
   })
   .refine(
     (data) => {
