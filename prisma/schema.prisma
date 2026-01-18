@@ -63,6 +63,7 @@ model User {
   sessions          Session[]
   bills             Bill[]
   billAssignments   BillAssignment[]
+  conversations     Conversation[]
 
   @@index([organizationId])
   @@index([email])
@@ -75,9 +76,10 @@ model Organization {
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
 
-  users     User[]
-  billTypes BillType[]
-  bills     Bill[]
+  users         User[]
+  billTypes     BillType[]
+  bills         Bill[]
+  conversations Conversation[]
 
   @@index([name])
   @@index([joinCode])
@@ -138,4 +140,35 @@ model BillAssignment {
   @@unique([billId, userId])
   @@index([billId])
   @@index([userId])
+}
+
+model Conversation {
+  id             String   @id @default(cuid())
+  title          String?
+  userId         String
+  organizationId String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  messages     Message[]
+
+  @@index([userId])
+  @@index([organizationId])
+  @@index([createdAt])
+}
+
+model Message {
+  id             String   @id @default(cuid())
+  conversationId String
+  role           String
+  content        String   @db.Text
+  toolCalls      Json?
+  createdAt      DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@index([createdAt])
 }
