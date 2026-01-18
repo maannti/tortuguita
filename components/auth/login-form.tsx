@@ -50,7 +50,7 @@ export function LoginForm() {
       if (result?.error) {
         setError("Invalid email or password")
       } else {
-        router.push("/dashboard")
+        router.push("/ai")
         router.refresh()
       }
     } catch (error) {
