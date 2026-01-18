@@ -21,7 +21,7 @@ export async function handleToolCall(
       return await getAnalytics(toolInput, organizationId);
 
     case "search_bills":
-      return await searchBills(toolInput, organizationId);
+      return await searchBills(toolInput, userId, organizationId);
 
     case "update_bill":
       return await updateBill(toolInput, organizationId);
@@ -71,7 +71,47 @@ async function createBill(input: any, userId: string, organizationId: string) {
       };
     }
 
-    // 2. Validate and create bill
+    // 2. Resolve userName to userId in assignments
+    let resolvedAssignments: { userId: string; percentage: number }[] = [];
+    if (input.assignments && input.assignments.length > 0) {
+      // Fetch all users in organization
+      const users = await prisma.user.findMany({
+        where: { organizationId },
+        select: { id: true, name: true },
+      });
+
+      // Build map for efficient lookup (case-insensitive)
+      const userMap = new Map<string, string>();
+      users.forEach((u) => {
+        if (u.name) {
+          userMap.set(u.name.toLowerCase(), u.id);
+        }
+      });
+
+      // Resolve each userName to userId
+      for (const assignment of input.assignments) {
+        const userId = userMap.get(assignment.userName.toLowerCase());
+
+        if (!userId) {
+          const availableUsers = users
+            .filter((u) => u.name)
+            .map((u) => u.name)
+            .join(", ");
+
+          return {
+            success: false,
+            error: `User "${assignment.userName}" not found. Available users: ${availableUsers}`,
+          };
+        }
+
+        resolvedAssignments.push({
+          userId,
+          percentage: assignment.percentage,
+        });
+      }
+    }
+
+    // 3. Validate and create bill
     const billData = {
       label: input.label,
       amount: input.amount,
@@ -79,28 +119,10 @@ async function createBill(input: any, userId: string, organizationId: string) {
       billTypeId: billType.id,
       dueDate: input.dueDate ? new Date(input.dueDate) : undefined,
       notes: input.notes,
-      assignments: input.assignments || [],
+      assignments: resolvedAssignments,
     };
 
     const validated = billSchema.parse(billData);
-
-    // 3. Verify assigned users if any
-    if (validated.assignments && validated.assignments.length > 0) {
-      const userIds = validated.assignments.map((a) => a.userId);
-      const users = await prisma.user.findMany({
-        where: {
-          id: { in: userIds },
-          organizationId: organizationId,
-        },
-      });
-
-      if (users.length !== userIds.length) {
-        return {
-          success: false,
-          error: "Some assigned users don't belong to your organization",
-        };
-      }
-    }
 
     // 4. Create bill with assignments
     const bill = await prisma.bill.create({
@@ -356,11 +378,41 @@ async function getAnalytics(input: any, organizationId: string) {
   }
 }
 
-async function searchBills(input: any, organizationId: string) {
+async function searchBills(input: any, userId: string, organizationId: string) {
   try {
     const where: Prisma.BillWhereInput = {
       organizationId,
     };
+
+    // Filter by creator (bills user created/paid)
+    if (input.createdByMe) {
+      where.userId = userId;
+    }
+
+    // Filter by assigned user
+    if (input.assignedToUser) {
+      // Resolve userName to userId
+      const user = await prisma.user.findFirst({
+        where: {
+          organizationId,
+          name: { equals: input.assignedToUser, mode: "insensitive" },
+        },
+      });
+
+      if (!user) {
+        return {
+          success: false,
+          error: `User "${input.assignedToUser}" not found`,
+        };
+      }
+
+      // Add assignment filter
+      where.assignments = {
+        some: {
+          userId: user.id,
+        },
+      };
+    }
 
     // Build filters
     if (input.categoryName) {
@@ -404,6 +456,11 @@ async function searchBills(input: any, organizationId: string) {
       include: {
         billType: true,
         user: { select: { name: true } },
+        assignments: {
+          include: {
+            user: { select: { id: true, name: true } },
+          },
+        },
       },
       orderBy: { paymentDate: "desc" },
       take: input.limit || 10,
@@ -419,6 +476,13 @@ async function searchBills(input: any, organizationId: string) {
         paymentDate: format(b.paymentDate, "MMM d, yyyy"),
         addedBy: b.user.name,
         notes: b.notes,
+        assignments:
+          b.assignments.length > 0
+            ? b.assignments.map((a) => ({
+                user: a.user.name,
+                percentage: Number(a.percentage),
+              }))
+            : undefined, // Only include if there are assignments
       })),
       count: bills.length,
     };
@@ -477,12 +541,78 @@ async function updateBill(input: any, organizationId: string) {
       updateData.billTypeId = billType.id;
     }
 
+    // Handle assignment updates
+    if (input.assignments) {
+      // Resolve userNames to userIds (same logic as createBill)
+      const users = await prisma.user.findMany({
+        where: { organizationId },
+        select: { id: true, name: true },
+      });
+
+      const userMap = new Map<string, string>();
+      users.forEach((u) => {
+        if (u.name) {
+          userMap.set(u.name.toLowerCase(), u.id);
+        }
+      });
+      const resolvedAssignments = [];
+
+      for (const assignment of input.assignments) {
+        const userId = userMap.get(assignment.userName.toLowerCase());
+        if (!userId) {
+          const availableUsers = users
+            .filter((u) => u.name)
+            .map((u) => u.name)
+            .join(", ");
+          return {
+            success: false,
+            error: `User "${assignment.userName}" not found. Available users: ${availableUsers}`,
+          };
+        }
+        resolvedAssignments.push({
+          userId,
+          percentage: assignment.percentage,
+        });
+      }
+
+      // Validate using billSchema
+      const validationData = {
+        label: updateData.label || existingBill.label,
+        amount: updateData.amount || Number(existingBill.amount),
+        paymentDate: updateData.paymentDate || existingBill.paymentDate,
+        billTypeId: updateData.billTypeId || existingBill.billTypeId,
+        dueDate: updateData.dueDate,
+        notes: updateData.notes,
+        assignments: resolvedAssignments,
+      };
+
+      try {
+        billSchema.parse(validationData);
+      } catch (error: any) {
+        return {
+          success: false,
+          error: error.message || "Invalid assignment data",
+        };
+      }
+
+      // Add to update data
+      updateData.assignments = {
+        deleteMany: {},
+        create: resolvedAssignments,
+      };
+    }
+
     // Update the bill
     const updatedBill = await prisma.bill.update({
       where: { id: input.billId },
       data: updateData,
       include: {
         billType: true,
+        assignments: {
+          include: {
+            user: { select: { name: true } },
+          },
+        },
       },
     });
 
@@ -495,6 +625,13 @@ async function updateBill(input: any, organizationId: string) {
         amount: Number(updatedBill.amount),
         category: updatedBill.billType.name,
         paymentDate: format(updatedBill.paymentDate, "yyyy-MM-dd"),
+        assignments:
+          updatedBill.assignments.length > 0
+            ? updatedBill.assignments.map((a) => ({
+                user: a.user.name,
+                percentage: Number(a.percentage),
+              }))
+            : undefined,
       },
     };
   } catch (error: any) {

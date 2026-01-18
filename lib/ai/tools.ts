@@ -38,14 +38,21 @@ export const tools: Tool[] = [
         assignments: {
           type: "array",
           description:
-            "Optional bill splitting among users. Each entry should have userId and percentage (must total 100%)",
+            "Optional bill splitting among users. Specify user names and percentages (must total 100%). Example: [{ userName: 'John', percentage: 50 }, { userName: 'Jane', percentage: 50 }]",
           items: {
             type: "object",
             properties: {
-              userId: { type: "string" },
-              percentage: { type: "number" },
+              userName: {
+                type: "string",
+                description: "Name of the user (use names from the context)",
+              },
+              percentage: {
+                type: "number",
+                description:
+                  "Percentage allocated to this user (0.01-100, max 2 decimals)",
+              },
             },
-            required: ["userId", "percentage"],
+            required: ["userName", "percentage"],
           },
         },
       },
@@ -104,10 +111,18 @@ export const tools: Tool[] = [
   {
     name: "search_bills",
     description:
-      "Search and filter bills. Use this when the user wants to find specific bills or see expenses matching certain criteria.",
+      "Search and filter bills. Use this when the user wants to find specific bills or see expenses matching certain criteria. Can filter by creator, assigned user, category, date range, amount, and search text.",
     input_schema: {
       type: "object",
       properties: {
+        createdByMe: {
+          type: "boolean",
+          description: "Filter to bills created/paid by the current user",
+        },
+        assignedToUser: {
+          type: "string",
+          description: "Filter to bills assigned to a specific user (use user name)",
+        },
         categoryName: {
           type: "string",
           description: "Filter by category name",
@@ -142,7 +157,7 @@ export const tools: Tool[] = [
   {
     name: "update_bill",
     description:
-      "Update/edit an existing bill. Use this when the user wants to modify a bill's details like name, amount, date, or category.",
+      "Update/edit an existing bill. Use this when the user wants to modify a bill's details like name, amount, date, category, or assignments.",
     input_schema: {
       type: "object",
       properties: {
@@ -170,6 +185,26 @@ export const tools: Tool[] = [
         notes: {
           type: "string",
           description: "New notes",
+        },
+        assignments: {
+          type: "array",
+          description:
+            "New assignment split. Same format as create_bill. Replaces all existing assignments.",
+          items: {
+            type: "object",
+            properties: {
+              userName: {
+                type: "string",
+                description: "Name of the user (use names from the context)",
+              },
+              percentage: {
+                type: "number",
+                description:
+                  "Percentage allocated to this user (0.01-100, max 2 decimals)",
+              },
+            },
+            required: ["userName", "percentage"],
+          },
         },
       },
       required: ["billId"],

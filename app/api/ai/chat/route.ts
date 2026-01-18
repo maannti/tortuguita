@@ -285,7 +285,7 @@ Current Context:
 - Available Categories: ${context.categories.map((c: any) => `${c.name}${c.icon ? " " + c.icon : ""}`).join(", ")}
 - Current Month Spending: $${context.currentMonthTotal}
 - Total Bills This Month: ${context.billCount}
-- Users in Organization: ${context.users.map((u: any) => `${u.name} (ID: ${u.id})`).join(", ")}
+- Users in Organization: ${context.users.map((u: any) => u.name).join(", ")}
 
 Guidelines:
 1. Be conversational and helpful
@@ -303,6 +303,15 @@ Guidelines:
     - Present the confirmation message to the user
     - Only call again with confirmed=true after user explicitly confirms
 12. When searching/listing bills, include the bill ID so you can reference it for updates/deletes
+13. When creating bills with assignments, use user names (not IDs) from the Users in Organization list
+14. Assignments must total 100%. If user specifies splitting but doesn't give percentages, suggest equal splits
+15. Examples of bill splitting:
+    - "Split evenly between John and Jane" → 50% each
+    - "I'll pay it all" → 100% to current user
+    - "John owes 70%, I owe 30%" → appropriate percentages
+16. When users ask for "my bills" or "bills I created", use createdByMe=true in search_bills
+17. When users ask for bills assigned to someone, use assignedToUser with the user's name
+18. When showing bills with assignments, display who owes what percentage
 
 Current date: ${format(new Date(), "yyyy-MM-dd")}`;
 }
