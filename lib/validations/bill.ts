@@ -37,5 +37,5 @@ export const billSchema = z
     }
   )
 
-export type BillFormData = z.infer<typeof billSchema>
-export type BillAssignmentData = z.infer<typeof billAssignmentSchema>
+export type BillFormData = z.input<typeof billSchema>
+export type BillAssignmentData = z.input<typeof billAssignmentSchema>

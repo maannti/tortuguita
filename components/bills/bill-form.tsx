@@ -149,7 +149,7 @@ export function BillForm({ initialData, categories, members, currentUserId, mode
                       step="0.01"
                       placeholder="0.00"
                       disabled={isLoading}
-                      value={field.value === 0 || field.value === undefined ? "" : field.value}
+                      value={field.value === 0 || field.value === undefined || field.value === null ? "" : Number(field.value)}
                       onChange={(e) => {
                         const value = e.target.value === "" ? 0 : Number(e.target.value);
                         field.onChange(value);
@@ -236,7 +236,7 @@ export function BillForm({ initialData, categories, members, currentUserId, mode
                       type="date"
                       disabled={isLoading}
                       value={
-                        field.value
+                        field.value && (field.value instanceof Date || typeof field.value === 'string')
                           ? (field.value instanceof Date
                               ? field.value
                               : new Date(field.value)
@@ -334,7 +334,7 @@ export function BillForm({ initialData, categories, members, currentUserId, mode
                                   min={0}
                                   max={100}
                                   step={0.01}
-                                  value={[field.value || 0]}
+                                  value={[Number(field.value) || 0]}
                                   onValueChange={(values) => {
                                     field.onChange(values[0]);
                                   }}
@@ -342,7 +342,7 @@ export function BillForm({ initialData, categories, members, currentUserId, mode
                                   className="flex-1"
                                 />
                                 <span className="text-sm font-medium w-14 text-right">
-                                  {(field.value || 0).toFixed(1)}%
+                                  {(Number(field.value) || 0).toFixed(1)}%
                                 </span>
                               </div>
                             </FormControl>
