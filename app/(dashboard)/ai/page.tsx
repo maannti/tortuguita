@@ -164,11 +164,31 @@ export default function AIPage() {
   };
 
   const handleSelectConversation = async (id: string) => {
-    // Load conversation messages
-    setConversationId(id);
-    setMessages([]); // Clear current messages
-    // TODO: Load messages from this conversation
-    // For now, just switching to the conversation
+    try {
+      // Load conversation messages
+      setConversationId(id);
+      setMessages([]); // Clear current messages
+      setIsLoading(true);
+
+      const response = await fetch(`/api/ai/conversations/${id}`);
+      if (!response.ok) throw new Error("Failed to load conversation");
+
+      const conversation = await response.json();
+
+      // Convert messages to the correct format
+      const loadedMessages: Message[] = conversation.messages.map((msg: any) => ({
+        role: msg.role,
+        content: msg.content,
+        toolCalls: msg.toolCalls,
+        timestamp: new Date(msg.createdAt),
+      }));
+
+      setMessages(loadedMessages);
+    } catch (error) {
+      console.error("Error loading conversation:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleDeleteConversation = (id: string) => {

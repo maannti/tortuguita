@@ -87,7 +87,8 @@ export async function POST(request: NextRequest) {
             tools,
           });
 
-          // Handle text content
+          // First, handle any text content and collect tool_use blocks
+          const toolUseBlocks: any[] = [];
           for (const block of response.content) {
             if (block.type === "text") {
               assistantMessage += block.text;
@@ -97,7 +98,16 @@ export async function POST(request: NextRequest) {
                 )
               );
             } else if (block.type === "tool_use") {
-              // Execute tool
+              toolUseBlocks.push(block);
+            }
+          }
+
+          // If there are tool calls, execute ALL of them and then make ONE follow-up call
+          if (toolUseBlocks.length > 0) {
+            const toolResults: any[] = [];
+
+            // Execute all tools
+            for (const block of toolUseBlocks) {
               controller.enqueue(
                 new TextEncoder().encode(
                   `data: ${JSON.stringify({ type: "tool_start", tool: block.name })}\n\n`
@@ -119,6 +129,12 @@ export async function POST(request: NextRequest) {
                   timestamp: new Date().toISOString(),
                 });
 
+                toolResults.push({
+                  type: "tool_result",
+                  tool_use_id: block.id,
+                  content: JSON.stringify(result),
+                });
+
                 controller.enqueue(
                   new TextEncoder().encode(
                     `data: ${JSON.stringify({
@@ -128,46 +144,6 @@ export async function POST(request: NextRequest) {
                     })}\n\n`
                   )
                 );
-
-                // Always call Claude again with the tool result so it can respond naturally
-                const followUpResponse = await anthropic.messages.create({
-                  model: MODEL,
-                  max_tokens: 4096,
-                  system: buildSystemPrompt(context),
-                  messages: [
-                    ...messageHistory,
-                    {
-                      role: "assistant",
-                      content: response.content,
-                    },
-                    {
-                      role: "user",
-                      content: [
-                        {
-                          type: "tool_result",
-                          tool_use_id: block.id,
-                          content: JSON.stringify(result),
-                        },
-                      ],
-                    },
-                  ],
-                  tools,
-                });
-
-                // Stream follow-up response
-                for (const followBlock of followUpResponse.content) {
-                  if (followBlock.type === "text") {
-                    assistantMessage += followBlock.text;
-                    controller.enqueue(
-                      new TextEncoder().encode(
-                        `data: ${JSON.stringify({
-                          type: "text",
-                          content: followBlock.text,
-                        })}\n\n`
-                      )
-                    );
-                  }
-                }
               } catch (error: any) {
                 const errorResult = {
                   success: false,
@@ -181,6 +157,13 @@ export async function POST(request: NextRequest) {
                   timestamp: new Date().toISOString(),
                 });
 
+                toolResults.push({
+                  type: "tool_result",
+                  tool_use_id: block.id,
+                  content: JSON.stringify(errorResult),
+                  is_error: true,
+                });
+
                 controller.enqueue(
                   new TextEncoder().encode(
                     `data: ${JSON.stringify({
@@ -190,51 +173,53 @@ export async function POST(request: NextRequest) {
                     })}\n\n`
                   )
                 );
+              }
+            }
 
-                // Call Claude with the error so it can respond naturally
-                try {
-                  const followUpResponse = await anthropic.messages.create({
-                    model: MODEL,
-                    max_tokens: 4096,
-                    system: buildSystemPrompt(context),
-                    messages: [
-                      ...messageHistory,
-                      {
-                        role: "assistant",
-                        content: response.content,
-                      },
-                      {
-                        role: "user",
-                        content: [
-                          {
-                            type: "tool_result",
-                            tool_use_id: block.id,
-                            content: JSON.stringify(errorResult),
-                            is_error: true,
-                          },
-                        ],
-                      },
-                    ],
-                    tools,
-                  });
+            // Now make ONE follow-up call with ALL tool results
+            try {
+              const followUpResponse = await anthropic.messages.create({
+                model: MODEL,
+                max_tokens: 4096,
+                system: buildSystemPrompt(context),
+                messages: [
+                  ...messageHistory,
+                  {
+                    role: "assistant",
+                    content: response.content,
+                  },
+                  {
+                    role: "user",
+                    content: toolResults,
+                  },
+                ],
+                tools,
+              });
 
-                  for (const followBlock of followUpResponse.content) {
-                    if (followBlock.type === "text") {
-                      assistantMessage += followBlock.text;
-                      controller.enqueue(
-                        new TextEncoder().encode(
-                          `data: ${JSON.stringify({
-                            type: "text",
-                            content: followBlock.text,
-                          })}\n\n`
-                        )
-                      );
-                    }
-                  }
-                } catch (followUpError) {
-                  console.error("Error in follow-up call:", followUpError);
+              // Stream follow-up response
+              for (const followBlock of followUpResponse.content) {
+                if (followBlock.type === "text") {
+                  assistantMessage += followBlock.text;
+                  controller.enqueue(
+                    new TextEncoder().encode(
+                      `data: ${JSON.stringify({
+                        type: "text",
+                        content: followBlock.text,
+                      })}\n\n`
+                    )
+                  );
                 }
               }
+            } catch (followUpError) {
+              console.error("Error in follow-up call:", followUpError);
+              controller.enqueue(
+                new TextEncoder().encode(
+                  `data: ${JSON.stringify({
+                    type: "error",
+                    error: "Failed to process tool results",
+                  })}\n\n`
+                )
+              );
             }
           }
 

@@ -3,6 +3,7 @@
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { CheckCircleIcon, XCircleIcon, SparklesIcon, UserIcon } from "lucide-react";
+import { MarkdownRenderer } from "./markdown-renderer";
 
 interface ChatMessageProps {
   message: {
@@ -28,7 +29,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
       {/* Message bubble */}
       <div className={cn("max-w-[80%] rounded-lg p-4", isUser ? "bg-primary text-primary-foreground" : "bg-muted")}>
         {/* Message content */}
-        <div className="whitespace-pre-wrap break-words">{message.content}</div>
+        <MarkdownRenderer content={message.content} isUser={isUser} />
 
         {/* Tool calls results */}
         {message.toolCalls?.calls && (
