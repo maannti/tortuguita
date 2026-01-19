@@ -1,13 +1,14 @@
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { startOfMonth, endOfMonth, subMonths, format } from "date-fns"
+import { startOfMonth, endOfMonth, subMonths, format, parse } from "date-fns"
 import { CategoryBreakdownChart } from "@/components/dashboard/category-breakdown-chart"
 import { MonthlyTrendChart } from "@/components/dashboard/monthly-trend-chart"
 import { UserDistributionChart } from "@/components/dashboard/user-distribution-chart"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ArrowUpIcon, ArrowDownIcon } from "lucide-react"
+import { MonthFilter } from "@/components/month-filter"
 import type { Prisma } from "@prisma/client"
 
 type BillWithRelations = Prisma.BillGetPayload<{
@@ -21,18 +22,48 @@ type BillWithRelations = Prisma.BillGetPayload<{
   }
 }>
 
-export default async function DashboardPage() {
+interface PageProps {
+  searchParams: Promise<{ month?: string }>
+}
+
+export default async function DashboardPage({ searchParams }: PageProps) {
   const session = await auth()
 
   if (!session?.user?.organizationId) {
     return <div>Unauthorized</div>
   }
 
+  const params = await searchParams
+  const selectedMonth = params.month
+
+  // Get available months (months with expenses)
+  const monthsWithExpenses = await prisma.bill.findMany({
+    where: {
+      organizationId: session.user.organizationId,
+    },
+    select: {
+      paymentDate: true,
+    },
+    distinct: ["paymentDate"],
+  })
+
+  const availableMonthsSet = new Set<string>()
+  for (const bill of monthsWithExpenses) {
+    availableMonthsSet.add(format(new Date(bill.paymentDate), "yyyy-MM"))
+  }
+  const availableMonths = Array.from(availableMonthsSet).sort().reverse()
+
   const now = new Date()
-  const currentMonthStart = startOfMonth(now)
-  const currentMonthEnd = endOfMonth(now)
-  const lastMonthStart = startOfMonth(subMonths(now, 1))
-  const lastMonthEnd = endOfMonth(subMonths(now, 1))
+
+  // Determine the target month based on filter
+  const targetDate = selectedMonth
+    ? parse(selectedMonth, "yyyy-MM", new Date())
+    : now
+
+  const currentMonthStart = startOfMonth(targetDate)
+  const currentMonthEnd = endOfMonth(targetDate)
+  const lastMonthStart = startOfMonth(subMonths(targetDate, 1))
+  const lastMonthEnd = endOfMonth(subMonths(targetDate, 1))
   const sixMonthsAgo = subMonths(now, 6)
 
   // Total spent this month
@@ -230,8 +261,11 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+          <MonthFilter availableMonths={availableMonths} />
+        </div>
         <p className="text-muted-foreground">
           Your expense tracking overview
         </p>

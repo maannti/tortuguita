@@ -15,6 +15,7 @@ import { useRouter, usePathname } from "next/navigation"
 import { ThemeToggle } from "@/components/theme-toggle"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
+import { Menu } from "lucide-react"
 
 const navItems = [
   { title: "AI Assistant", href: "/ai" },
@@ -45,6 +46,7 @@ export function Header() {
         <div className="flex items-center gap-6">
           <h1 className="text-xl font-bold text-primary">Manti Gastos</h1>
 
+          {/* Desktop navigation */}
           <nav className="hidden md:flex items-center gap-1">
             {navItems.map((item) => {
               const isActive = pathname === item.href || pathname.startsWith(item.href + "/")
@@ -67,6 +69,28 @@ export function Header() {
         </div>
 
         <div className="ml-auto flex items-center gap-2">
+          {/* Mobile hamburger menu */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild className="md:hidden">
+              <Button variant="ghost" size="icon">
+                <Menu className="h-5 w-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              {navItems.map((item) => {
+                const isActive = pathname === item.href || pathname.startsWith(item.href + "/")
+                return (
+                  <DropdownMenuItem
+                    key={item.href}
+                    onClick={() => router.push(item.href)}
+                    className={cn(isActive && "bg-muted")}
+                  >
+                    {item.title}
+                  </DropdownMenuItem>
+                )
+              })}
+            </DropdownMenuContent>
+          </DropdownMenu>
           <ThemeToggle />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

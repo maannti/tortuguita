@@ -15,8 +15,9 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { CategoryBadge } from "@/components/categories/category-badge"
-import { format } from "date-fns"
+import { format, parse, startOfMonth, endOfMonth } from "date-fns"
 import { DeleteBillButton } from "@/components/bills/delete-bill-button"
+import { MonthFilter } from "@/components/month-filter"
 import type { Prisma } from "@prisma/client"
 
 type BillWithRelations = Prisma.BillGetPayload<{
@@ -30,17 +31,52 @@ type BillWithRelations = Prisma.BillGetPayload<{
   }
 }>
 
-export default async function BillsPage() {
+interface PageProps {
+  searchParams: Promise<{ month?: string }>
+}
+
+export default async function BillsPage({ searchParams }: PageProps) {
   const session = await auth()
 
   if (!session?.user?.organizationId) {
     return <div>Unauthorized</div>
   }
 
-  const bills: BillWithRelations[] = await prisma.bill.findMany({
+  const params = await searchParams
+  const selectedMonth = params.month
+
+  // Get available months (months with expenses)
+  const monthsWithExpenses = await prisma.bill.findMany({
     where: {
       organizationId: session.user.organizationId,
     },
+    select: {
+      paymentDate: true,
+    },
+    distinct: ["paymentDate"],
+  })
+
+  const availableMonthsSet = new Set<string>()
+  for (const bill of monthsWithExpenses) {
+    availableMonthsSet.add(format(new Date(bill.paymentDate), "yyyy-MM"))
+  }
+  const availableMonths = Array.from(availableMonthsSet).sort().reverse()
+
+  // Build where clause with optional month filter
+  const whereClause: Prisma.BillWhereInput = {
+    organizationId: session.user.organizationId,
+  }
+
+  if (selectedMonth) {
+    const targetDate = parse(selectedMonth, "yyyy-MM", new Date())
+    whereClause.paymentDate = {
+      gte: startOfMonth(targetDate),
+      lte: endOfMonth(targetDate),
+    }
+  }
+
+  const bills: BillWithRelations[] = await prisma.bill.findMany({
+    where: whereClause,
     include: {
       billType: true,
       user: {
@@ -56,14 +92,15 @@ export default async function BillsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold tracking-tight">Bills</h1>
-          <p className="text-muted-foreground">
-            Track and manage your expenses
-          </p>
+          <MonthFilter availableMonths={availableMonths} />
         </div>
-        <Button asChild>
+        <p className="text-muted-foreground">
+          Track and manage your expenses
+        </p>
+        <Button asChild className="w-full sm:w-auto">
           <Link href="/bills/new">Add Bill</Link>
         </Button>
       </div>
