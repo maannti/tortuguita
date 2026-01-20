@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import type { Language } from "@/lib/i18n";
 
 const languages: { code: Language; name: string; flag: string }[] = [
-  { code: "es", name: "Español", flag: "🇪🇸" },
+  { code: "es", name: "Español", flag: "🇦🇷" },
   { code: "en", name: "English", flag: "🇺🇸" },
 ];
 
