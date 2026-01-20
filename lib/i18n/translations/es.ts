@@ -31,6 +31,7 @@ export const es: Translations = {
     and: "y",
     yes: "Si",
     no: "No",
+    you: "Tu",
   },
 
   // Navigation

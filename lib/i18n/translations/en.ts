@@ -29,6 +29,7 @@ export const en = {
     and: "and",
     yes: "Yes",
     no: "No",
+    you: "You",
   },
 
   // Navigation

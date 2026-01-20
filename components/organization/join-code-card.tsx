@@ -1,61 +1,61 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Copy, RefreshCw } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Copy, RefreshCw } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useTranslations } from "@/components/providers/language-provider";
 
 interface JoinCodeCardProps {
-  organizationId: string
-  initialJoinCode: string | null
+  organizationId: string;
+  initialJoinCode: string | null;
 }
 
 export function JoinCodeCard({ organizationId, initialJoinCode }: JoinCodeCardProps) {
-  const router = useRouter()
-  const [joinCode, setJoinCode] = useState(initialJoinCode)
-  const [isLoading, setIsLoading] = useState(false)
-  const [copied, setCopied] = useState(false)
+  const router = useRouter();
+  const [joinCode, setJoinCode] = useState(initialJoinCode);
+  const [isLoading, setIsLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const t = useTranslations();
 
   async function generateJoinCode() {
-    setIsLoading(true)
+    setIsLoading(true);
 
     try {
       const response = await fetch(`/api/organizations/${organizationId}/join-code`, {
         method: "POST",
-      })
+      });
 
-      const data = await response.json()
+      const data = await response.json();
 
       if (!response.ok) {
-        alert(data.error || "Failed to generate join code")
-        return
+        alert(data.error || "Failed to generate join code");
+        return;
       }
 
-      setJoinCode(data.joinCode)
-      router.refresh()
+      setJoinCode(data.joinCode);
+      router.refresh();
     } catch (error) {
-      alert("Failed to generate join code")
+      alert("Failed to generate join code");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
   }
 
   function copyToClipboard() {
     if (joinCode) {
-      navigator.clipboard.writeText(joinCode)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
+      navigator.clipboard.writeText(joinCode);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
     }
   }
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Invite Members</CardTitle>
-        <CardDescription>
-          Share this code with others to invite them to your organization
-        </CardDescription>
+        <CardTitle>{t.settings.inviteMembers}</CardTitle>
+        <CardDescription>{t.settings.joinCodeDescription}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {joinCode ? (
@@ -68,42 +68,27 @@ export function JoinCodeCard({ organizationId, initialJoinCode }: JoinCodeCardPr
                 variant="outline"
                 size="icon"
                 onClick={copyToClipboard}
-                title={copied ? "Copied!" : "Copy to clipboard"}
+                title={copied ? t.settings.codeCopied : t.settings.copyCode}
               >
                 <Copy className="h-4 w-4" />
               </Button>
             </div>
-            {copied && (
-              <p className="text-sm text-green-600 dark:text-green-400">
-                Copied to clipboard!
-              </p>
-            )}
+            {copied && <p className="text-sm text-green-600 dark:text-green-400">{t.settings.codeCopied}</p>}
             <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">
-                New members can use this code during signup to join your organization.
-              </p>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={generateJoinCode}
-                disabled={isLoading}
-              >
+              <Button variant="outline" size="sm" onClick={generateJoinCode} disabled={isLoading}>
                 <RefreshCw className="h-4 w-4 mr-2" />
-                {isLoading ? "Generating..." : "Regenerate Code"}
+                {isLoading ? t.common.loading : t.settings.regenerateCode}
               </Button>
             </div>
           </>
         ) : (
           <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              You haven't generated a join code yet. Click the button below to create one.
-            </p>
             <Button onClick={generateJoinCode} disabled={isLoading}>
-              {isLoading ? "Generating..." : "Generate Join Code"}
+              {isLoading ? t.common.loading : t.settings.joinCode}
             </Button>
           </div>
         )}
       </CardContent>
     </Card>
-  )
+  );
 }
