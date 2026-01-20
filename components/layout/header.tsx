@@ -44,7 +44,9 @@ export function Header() {
     <header className="border-b bg-card">
       <div className="flex h-16 items-center px-4 md:px-6">
         <div className="flex items-center gap-6">
-          <h1 className="text-xl font-bold text-primary">Manti Gastos</h1>
+          <Link href="/dashboard" className="flex items-center">
+            <img src="/logo.png" alt="tortu.guita" className="h-10 w-auto" />
+          </Link>
 
           {/* Desktop navigation */}
           <nav className="hidden md:flex items-center gap-1">
@@ -76,7 +78,7 @@ export function Header() {
                 <Menu className="h-5 w-5" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuContent align="end" className="w-auto min-w-0">
               {navItems.map((item) => {
                 const isActive = pathname === item.href || pathname.startsWith(item.href + "/")
                 return (

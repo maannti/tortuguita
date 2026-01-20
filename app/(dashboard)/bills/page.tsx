@@ -14,10 +14,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
 import { CategoryBadge } from "@/components/categories/category-badge"
 import { format, parse, startOfMonth, endOfMonth } from "date-fns"
 import { DeleteBillButton } from "@/components/bills/delete-bill-button"
 import { MonthFilter } from "@/components/month-filter"
+import { Info, Pencil } from "lucide-react"
 import type { Prisma } from "@prisma/client"
 
 type BillWithRelations = Prisma.BillGetPayload<{
@@ -26,6 +32,15 @@ type BillWithRelations = Prisma.BillGetPayload<{
     user: {
       select: {
         name: true
+      }
+    }
+    assignments: {
+      include: {
+        user: {
+          select: {
+            name: true
+          }
+        }
       }
     }
   }
@@ -84,6 +99,15 @@ export default async function BillsPage({ searchParams }: PageProps) {
           name: true,
         },
       },
+      assignments: {
+        include: {
+          user: {
+            select: {
+              name: true,
+            },
+          },
+        },
+      },
     },
     orderBy: {
       paymentDate: "desc",
@@ -115,7 +139,85 @@ export default async function BillsPage({ searchParams }: PageProps) {
           </CardContent>
         </Card>
       ) : (
-        <Card>
+        <>
+          {/* Mobile card view */}
+          <div className="space-y-2 md:hidden">
+          {bills.map((bill) => (
+            <Card key={bill.id}>
+              <CardContent className="p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+                      <span>{format(new Date(bill.paymentDate), "MMM d, yyyy")}</span>
+                    </div>
+                    <p className="font-medium truncate">{bill.label}</p>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className="font-semibold whitespace-nowrap">
+                      ${Number(bill.amount).toFixed(2)}
+                    </span>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <Info className="h-4 w-4" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-3" align="end">
+                        <div className="space-y-2">
+                          <div>
+                            <p className="text-xs text-muted-foreground">Category</p>
+                            <CategoryBadge
+                              name={bill.billType.name}
+                              color={bill.billType.color}
+                              icon={bill.billType.icon}
+                            />
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">Added by</p>
+                            <p className="text-sm">{bill.user.name}</p>
+                          </div>
+                          {bill.dueDate && (
+                            <div>
+                              <p className="text-xs text-muted-foreground">Due date</p>
+                              <p className="text-sm">{format(new Date(bill.dueDate), "MMM d, yyyy")}</p>
+                            </div>
+                          )}
+                          {bill.notes && (
+                            <div>
+                              <p className="text-xs text-muted-foreground">Notes</p>
+                              <p className="text-sm">{bill.notes}</p>
+                            </div>
+                          )}
+                          {bill.assignments.length > 0 && (
+                            <div>
+                              <p className="text-xs text-muted-foreground">Assigned to</p>
+                              <div className="text-sm space-y-0.5">
+                                {bill.assignments.map((a) => (
+                                  <p key={a.id}>
+                                    {a.user.name} ({Number(a.percentage)}%)
+                                  </p>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
+                      <Link href={`/bills/${bill.id}/edit`}>
+                        <Pencil className="h-4 w-4" />
+                      </Link>
+                    </Button>
+                    <DeleteBillButton id={bill.id} label={bill.label} iconOnly />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* Desktop table view */}
+        <Card className="hidden md:block">
           <CardContent className="p-0">
             <Table>
               <TableHeader>
@@ -162,6 +264,7 @@ export default async function BillsPage({ searchParams }: PageProps) {
             </Table>
           </CardContent>
         </Card>
+        </>
       )}
     </div>
   )

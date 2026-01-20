@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Manti Gastos - Expense Tracker",
+  title: "tortu.guita - Expense Tracker",
   description: "Track and manage your monthly expenses with ease",
 };
 

@@ -12,13 +12,15 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import { X } from "lucide-react"
 
 interface DeleteBillButtonProps {
   id: string
   label: string
+  iconOnly?: boolean
 }
 
-export function DeleteBillButton({ id, label }: DeleteBillButtonProps) {
+export function DeleteBillButton({ id, label, iconOnly }: DeleteBillButtonProps) {
   const router = useRouter()
   const [isOpen, setIsOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -51,9 +53,15 @@ export function DeleteBillButton({ id, label }: DeleteBillButtonProps) {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="destructive" size="sm">
-          Delete
-        </Button>
+        {iconOnly ? (
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10">
+            <X className="h-4 w-4" />
+          </Button>
+        ) : (
+          <Button variant="destructive" size="sm">
+            Delete
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
