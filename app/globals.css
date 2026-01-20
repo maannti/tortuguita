@@ -101,3 +101,27 @@ body {
   overflow: hidden;
   height: 100%;
 }
+
+/* Turtle thinking animation */
+@keyframes turtle-think {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg) scale(1);
+    filter: drop-shadow(0 0 0 transparent);
+  }
+  25% {
+    transform: translateY(-3px) rotate(-5deg) scale(1.05);
+    filter: drop-shadow(0 2px 4px rgba(122, 139, 107, 0.4));
+  }
+  50% {
+    transform: translateY(0) rotate(0deg) scale(1);
+    filter: drop-shadow(0 0 0 transparent);
+  }
+  75% {
+    transform: translateY(-3px) rotate(5deg) scale(1.05);
+    filter: drop-shadow(0 2px 4px rgba(122, 139, 107, 0.4));
+  }
+}
+
+.animate-turtle-think {
+  animation: turtle-think 1s ease-in-out infinite;
+}

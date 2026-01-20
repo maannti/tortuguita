@@ -3,6 +3,7 @@ import { Nunito, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { SessionProvider } from "@/components/providers/session-provider";
 import { ThemeProvider } from "@/components/providers/theme-provider";
+import { LanguageProvider } from "@/components/providers/language-provider";
 
 const nunito = Nunito({
   variable: "--font-nunito",
@@ -35,7 +36,9 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <SessionProvider>{children}</SessionProvider>
+          <SessionProvider>
+            <LanguageProvider>{children}</LanguageProvider>
+          </SessionProvider>
         </ThemeProvider>
       </body>
     </html>

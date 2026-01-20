@@ -1,40 +1,33 @@
-import { auth } from "@/lib/auth"
-import { prisma } from "@/lib/prisma"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { startOfMonth, endOfMonth, subMonths, format, parse } from "date-fns"
-import { CategoryBreakdownChart } from "@/components/dashboard/category-breakdown-chart"
-import { MonthlyTrendChart } from "@/components/dashboard/monthly-trend-chart"
-import { UserDistributionChart } from "@/components/dashboard/user-distribution-chart"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { ArrowUpIcon, ArrowDownIcon } from "lucide-react"
-import { MonthFilter } from "@/components/month-filter"
-import type { Prisma } from "@prisma/client"
+import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { startOfMonth, endOfMonth, subMonths, format, parse } from "date-fns";
+import { DashboardContent } from "@/components/dashboard/dashboard-content";
+import type { Prisma } from "@prisma/client";
 
 type BillWithRelations = Prisma.BillGetPayload<{
   include: {
-    billType: true
+    billType: true;
     user: {
       select: {
-        name: true
-      }
-    }
-  }
-}>
+        name: true;
+      };
+    };
+  };
+}>;
 
 interface PageProps {
-  searchParams: Promise<{ month?: string }>
+  searchParams: Promise<{ month?: string }>;
 }
 
 export default async function DashboardPage({ searchParams }: PageProps) {
-  const session = await auth()
+  const session = await auth();
 
   if (!session?.user?.organizationId) {
-    return <div>Unauthorized</div>
+    return <div>Unauthorized</div>;
   }
 
-  const params = await searchParams
-  const selectedMonth = params.month
+  const params = await searchParams;
+  const selectedMonth = params.month;
 
   // Get available months (months with expenses)
   const monthsWithExpenses = await prisma.bill.findMany({
@@ -45,26 +38,23 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       paymentDate: true,
     },
     distinct: ["paymentDate"],
-  })
+  });
 
-  const availableMonthsSet = new Set<string>()
+  const availableMonthsSet = new Set<string>();
   for (const bill of monthsWithExpenses) {
-    availableMonthsSet.add(format(new Date(bill.paymentDate), "yyyy-MM"))
+    availableMonthsSet.add(format(new Date(bill.paymentDate), "yyyy-MM"));
   }
-  const availableMonths = Array.from(availableMonthsSet).sort().reverse()
+  const availableMonths = Array.from(availableMonthsSet).sort().reverse();
 
-  const now = new Date()
+  const now = new Date();
 
   // Determine the target month based on filter
-  const targetDate = selectedMonth
-    ? parse(selectedMonth, "yyyy-MM", new Date())
-    : now
+  const targetDate = selectedMonth ? parse(selectedMonth, "yyyy-MM", new Date()) : now;
 
-  const currentMonthStart = startOfMonth(targetDate)
-  const currentMonthEnd = endOfMonth(targetDate)
-  const lastMonthStart = startOfMonth(subMonths(targetDate, 1))
-  const lastMonthEnd = endOfMonth(subMonths(targetDate, 1))
-  const sixMonthsAgo = subMonths(now, 6)
+  const currentMonthStart = startOfMonth(targetDate);
+  const currentMonthEnd = endOfMonth(targetDate);
+  const lastMonthStart = startOfMonth(subMonths(targetDate, 1));
+  const lastMonthEnd = endOfMonth(subMonths(targetDate, 1));
 
   // Total spent this month
   const currentMonthTotal = await prisma.bill.aggregate({
@@ -78,7 +68,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
     _sum: {
       amount: true,
     },
-  })
+  });
 
   // Last month total for comparison
   const lastMonthTotal = await prisma.bill.aggregate({
@@ -92,7 +82,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
     _sum: {
       amount: true,
     },
-  })
+  });
 
   // Category breakdown
   const categoryBreakdown = await prisma.bill.groupBy({
@@ -107,29 +97,29 @@ export default async function DashboardPage({ searchParams }: PageProps) {
     _sum: {
       amount: true,
     },
-  })
+  });
 
   const billTypes = await prisma.billType.findMany({
     where: {
       organizationId: session.user.organizationId,
     },
-  })
+  });
 
   const categoryData = categoryBreakdown.map((item) => {
-    const billType = billTypes.find((bt) => bt.id === item.billTypeId)
+    const billType = billTypes.find((bt) => bt.id === item.billTypeId);
     return {
       name: billType?.name || "Unknown",
       value: Number(item._sum.amount || 0),
       color: billType?.color || "#3b82f6",
-    }
-  })
+    };
+  });
 
   // Monthly trend (last 6 months)
-  const monthlyData = []
+  const monthlyData = [];
   for (let i = 5; i >= 0; i--) {
-    const monthDate = subMonths(now, i)
-    const monthStart = startOfMonth(monthDate)
-    const monthEnd = endOfMonth(monthDate)
+    const monthDate = subMonths(now, i);
+    const monthStart = startOfMonth(monthDate);
+    const monthEnd = endOfMonth(monthDate);
 
     const monthTotal = await prisma.bill.aggregate({
       where: {
@@ -142,17 +132,17 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       _sum: {
         amount: true,
       },
-    })
+    });
 
     monthlyData.push({
       month: format(monthDate, "MMM yyyy"),
       amount: Number(monthTotal._sum.amount || 0),
-    })
+    });
   }
 
   // Average monthly spending
-  const totalSpent = monthlyData.reduce((sum, month) => sum + month.amount, 0)
-  const averageMonthly = totalSpent / monthlyData.length
+  const totalSpent = monthlyData.reduce((sum, month) => sum + month.amount, 0);
+  const averageMonthly = totalSpent / monthlyData.length;
 
   // User distribution (bills with assignments)
   const billsWithAssignments = await prisma.bill.findMany({
@@ -175,29 +165,27 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         },
       },
     },
-  })
+  });
 
   // Calculate user distribution
-  const userTotals = new Map<string, { name: string; total: number }>()
-  let unassignedTotal = 0
+  const userTotals = new Map<string, { name: string; total: number }>();
+  let unassignedTotal = 0;
 
   for (const bill of billsWithAssignments) {
-    const billAmount = Number(bill.amount)
+    const billAmount = Number(bill.amount);
 
     if (bill.assignments.length === 0) {
-      // Bill has no assignments - count as unassigned
-      unassignedTotal += billAmount
+      unassignedTotal += billAmount;
     } else {
-      // Calculate each user's share based on percentage
       for (const assignment of bill.assignments) {
-        const userShare = (billAmount * Number(assignment.percentage)) / 100
-        const userId = assignment.user.id
-        const userName = assignment.user.name || "Unknown"
+        const userShare = (billAmount * Number(assignment.percentage)) / 100;
+        const usrId = assignment.user.id;
+        const userName = assignment.user.name || "Unknown";
 
-        if (userTotals.has(userId)) {
-          userTotals.get(userId)!.total += userShare
+        if (userTotals.has(usrId)) {
+          userTotals.get(usrId)!.total += userShare;
         } else {
-          userTotals.set(userId, { name: userName, total: userShare })
+          userTotals.set(usrId, { name: userName, total: userShare });
         }
       }
     }
@@ -205,33 +193,30 @@ export default async function DashboardPage({ searchParams }: PageProps) {
 
   // Generate colors for users
   const userColors = [
-    "#3b82f6", // blue
-    "#8b5cf6", // purple
-    "#ec4899", // pink
-    "#f59e0b", // amber
-    "#10b981", // green
-    "#06b6d4", // cyan
-    "#f97316", // orange
-    "#14b8a6", // teal
-    "#a855f7", // violet
-    "#84cc16", // lime
-  ]
+    "#3b82f6",
+    "#8b5cf6",
+    "#ec4899",
+    "#f59e0b",
+    "#10b981",
+    "#06b6d4",
+    "#f97316",
+    "#14b8a6",
+    "#a855f7",
+    "#84cc16",
+  ];
 
-  const userDistributionData = Array.from(userTotals.entries()).map(
-    ([userId, data], index) => ({
-      name: data.name,
-      value: data.total,
-      color: userColors[index % userColors.length],
-    })
-  )
+  const userDistributionData = Array.from(userTotals.entries()).map(([, data], index) => ({
+    name: data.name,
+    value: data.total,
+    color: userColors[index % userColors.length],
+  }));
 
-  // Add unassigned bills if any
   if (unassignedTotal > 0) {
     userDistributionData.push({
       name: "Unassigned",
       value: unassignedTotal,
-      color: "#6b7280", // gray
-    })
+      color: "#6b7280",
+    });
   }
 
   // Recent bills
@@ -251,195 +236,36 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       paymentDate: "desc",
     },
     take: 5,
-  })
+  });
 
-  const currentTotal = Number(currentMonthTotal._sum.amount || 0)
-  const lastTotal = Number(lastMonthTotal._sum.amount || 0)
-  const percentageChange = lastTotal > 0
-    ? ((currentTotal - lastTotal) / lastTotal) * 100
-    : 0
+  const currentTotal = Number(currentMonthTotal._sum.amount || 0);
+  const lastTotal = Number(lastMonthTotal._sum.amount || 0);
+  const percentageChange = lastTotal > 0 ? ((currentTotal - lastTotal) / lastTotal) * 100 : 0;
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-          <MonthFilter availableMonths={availableMonths} />
-        </div>
-        <p className="text-muted-foreground">
-          Your expense tracking overview
-        </p>
-      </div>
-
-      {/* KPI Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Total This Month
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">${currentTotal.toFixed(2)}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {format(currentMonthStart, "MMM yyyy")}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              vs Last Month
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-2">
-              {percentageChange > 0 ? (
-                <>
-                  <ArrowUpIcon className="h-4 w-4 text-red-500" />
-                  <div className="text-2xl font-bold text-red-500">
-                    +{percentageChange.toFixed(1)}%
-                  </div>
-                </>
-              ) : percentageChange < 0 ? (
-                <>
-                  <ArrowDownIcon className="h-4 w-4 text-green-500" />
-                  <div className="text-2xl font-bold text-green-500">
-                    {percentageChange.toFixed(1)}%
-                  </div>
-                </>
-              ) : (
-                <div className="text-2xl font-bold">0%</div>
-              )}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Last month: ${lastTotal.toFixed(2)}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              6-Month Average
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">${averageMonthly.toFixed(2)}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Monthly average
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Total Categories
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{categoryBreakdown.length}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Active this month
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Charts */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Spending by Category</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {categoryData.length > 0 ? (
-              <CategoryBreakdownChart data={categoryData} />
-            ) : (
-              <p className="text-sm text-muted-foreground text-center py-8">
-                No expenses this month
-              </p>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Monthly Trend</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <MonthlyTrendChart data={monthlyData} />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>User Distribution</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {userDistributionData.length > 0 ? (
-              <UserDistributionChart data={userDistributionData} />
-            ) : (
-              <p className="text-sm text-muted-foreground text-center py-8">
-                No assigned bills this month
-              </p>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Recent Bills */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Recent Bills</CardTitle>
-          <Button variant="outline" size="sm" asChild>
-            <Link href="/bills">View All</Link>
-          </Button>
-        </CardHeader>
-        <CardContent>
-          {recentBills.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-8">
-              No bills yet
-            </p>
-          ) : (
-            <div className="space-y-4">
-              {recentBills.map((bill) => (
-                <div
-                  key={bill.id}
-                  className="flex items-center justify-between"
-                >
-                  <div className="flex items-center gap-4">
-                    {bill.billType.icon && (
-                      <span className="text-2xl">{bill.billType.icon}</span>
-                    )}
-                    {!bill.billType.icon && bill.billType.color && (
-                      <div
-                        className="h-8 w-8 rounded-full"
-                        style={{ backgroundColor: bill.billType.color }}
-                      />
-                    )}
-                    <div>
-                      <p className="font-medium">{bill.label}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {format(new Date(bill.paymentDate), "MMM d, yyyy")} •{" "}
-                        {bill.billType.name}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-medium">${Number(bill.amount).toFixed(2)}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {bill.user.name}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
-  )
+    <DashboardContent
+      currentTotal={currentTotal}
+      lastTotal={lastTotal}
+      percentageChange={percentageChange}
+      averageMonthly={averageMonthly}
+      categoryCount={categoryBreakdown.length}
+      categoryData={categoryData}
+      monthlyData={monthlyData}
+      userDistributionData={userDistributionData}
+      recentBills={recentBills.map((bill) => ({
+        id: bill.id,
+        label: bill.label,
+        amount: Number(bill.amount),
+        paymentDate: format(new Date(bill.paymentDate), "MMM d, yyyy"),
+        billType: {
+          name: bill.billType.name,
+          color: bill.billType.color,
+          icon: bill.billType.icon,
+        },
+        user: { name: bill.user.name },
+      }))}
+      currentMonthLabel={format(currentMonthStart, "MMM yyyy")}
+      availableMonths={availableMonths}
+    />
+  );
 }

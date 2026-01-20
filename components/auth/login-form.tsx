@@ -1,32 +1,27 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { signIn } from "next-auth/react"
-import { useRouter } from "next/navigation"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
-import * as z from "zod"
-import { Button } from "@/components/ui/button"
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import Link from "next/link"
-
-const formSchema = z.object({
-  email: z.string().email("Invalid email address"),
-  password: z.string().min(1, "Password is required"),
-})
+import { useState } from "react";
+import { signIn } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
+import { Button } from "@/components/ui/button";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import Link from "next/link";
+import { useTranslations } from "@/components/providers/language-provider";
 
 export function LoginForm() {
-  const router = useRouter()
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const t = useTranslations();
+
+  const formSchema = z.object({
+    email: z.string().email(t.validation.invalidEmail),
+    password: z.string().min(1, t.auth.passwordRequired),
+  });
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -34,39 +29,39 @@ export function LoginForm() {
       email: "",
       password: "",
     },
-  })
+  });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    setIsLoading(true)
-    setError(null)
+    setIsLoading(true);
+    setError(null);
 
     try {
       const result = await signIn("credentials", {
         email: values.email,
         password: values.password,
         redirect: false,
-      })
+      });
 
       if (result?.error) {
-        setError("Invalid email or password")
+        setError(t.auth.invalidCredentials);
       } else {
-        router.push("/ai")
-        router.refresh()
+        router.push("/ai");
+        router.refresh();
       }
     } catch (error) {
-      setError("Something went wrong. Please try again.")
+      setError(t.auth.invalidCredentials);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
   }
 
   async function handleGoogleSignIn() {
-    setIsLoading(true)
+    setIsLoading(true);
     try {
-      await signIn("google", { callbackUrl: "/dashboard" })
+      await signIn("google", { callbackUrl: "/dashboard" });
     } catch (error) {
-      setError("Failed to sign in with Google")
-      setIsLoading(false)
+      setError("Failed to sign in with Google");
+      setIsLoading(false);
     }
   }
 
@@ -85,15 +80,9 @@ export function LoginForm() {
             name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Email</FormLabel>
+                <FormLabel>{t.common.email}</FormLabel>
                 <FormControl>
-                  <Input
-                    placeholder="name@example.com"
-                    type="email"
-                    autoComplete="email"
-                    disabled={isLoading}
-                    {...field}
-                  />
+                  <Input placeholder="name@example.com" type="email" autoComplete="email" disabled={isLoading} {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -105,15 +94,9 @@ export function LoginForm() {
             name="password"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Password</FormLabel>
+                <FormLabel>{t.common.password}</FormLabel>
                 <FormControl>
-                  <Input
-                    placeholder="Enter your password"
-                    type="password"
-                    autoComplete="current-password"
-                    disabled={isLoading}
-                    {...field}
-                  />
+                  <Input placeholder="••••••••" type="password" autoComplete="current-password" disabled={isLoading} {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -121,7 +104,7 @@ export function LoginForm() {
           />
 
           <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? "Signing in..." : "Sign in"}
+            {isLoading ? t.auth.signingIn : t.auth.signIn}
           </Button>
         </form>
       </Form>
@@ -131,19 +114,11 @@ export function LoginForm() {
           <span className="w-full border-t" />
         </div>
         <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-white dark:bg-gray-900 px-2 text-muted-foreground">
-            Or continue with
-          </span>
+          <span className="bg-white dark:bg-gray-900 px-2 text-muted-foreground">{t.auth.orContinueWith}</span>
         </div>
       </div>
 
-      <Button
-        variant="outline"
-        type="button"
-        disabled={isLoading}
-        className="w-full"
-        onClick={handleGoogleSignIn}
-      >
+      <Button variant="outline" type="button" disabled={isLoading} className="w-full" onClick={handleGoogleSignIn}>
         <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
           <path
             d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -166,14 +141,11 @@ export function LoginForm() {
       </Button>
 
       <p className="text-center text-sm text-muted-foreground">
-        Don't have an account?{" "}
-        <Link
-          href="/signup"
-          className="underline underline-offset-4 hover:text-primary"
-        >
-          Sign up
+        {t.auth.dontHaveAccount}{" "}
+        <Link href="/signup" className="underline underline-offset-4 hover:text-primary">
+          {t.auth.signUp}
         </Link>
       </p>
     </div>
-  )
+  );
 }

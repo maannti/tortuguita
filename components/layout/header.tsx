@@ -14,10 +14,10 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
 import { useRouter, usePathname } from "next/navigation"
-import { ThemeToggle } from "@/components/theme-toggle"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { LogOut, Sun, Moon } from "lucide-react"
+import { useTranslations } from "@/components/providers/language-provider"
 
 // Animated hamburger/close icon component
 function MenuIcon({ isOpen, className }: { isOpen: boolean; className?: string }) {
@@ -70,12 +70,14 @@ function MenuIcon({ isOpen, className }: { isOpen: boolean; className?: string }
   )
 }
 
-const navItems = [
-  { title: "AI Assistant", href: "/ai" },
-  { title: "Dashboard", href: "/dashboard" },
-  { title: "Bills", href: "/bills" },
-  { title: "Categories", href: "/categories" },
-  { title: "Settings", href: "/settings/organization" },
+type NavKey = "aiAssistant" | "dashboard" | "bills" | "categories" | "settings"
+
+const navItems: { key: NavKey; href: string }[] = [
+  { key: "aiAssistant", href: "/ai" },
+  { key: "dashboard", href: "/dashboard" },
+  { key: "bills", href: "/bills" },
+  { key: "categories", href: "/categories" },
+  { key: "settings", href: "/settings/organization" },
 ]
 
 export function Header() {
@@ -85,6 +87,7 @@ export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const { theme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
+  const t = useTranslations()
 
   useEffect(() => {
     setMounted(true)
@@ -129,7 +132,7 @@ export function Header() {
                         : "text-foreground hover:bg-muted"
                     )}
                   >
-                    {item.title}
+                    {t.nav[item.key]}
                   </Link>
                 )
               })}
@@ -138,8 +141,27 @@ export function Header() {
 
           <div className="ml-auto flex items-center gap-2">
             {/* Desktop only: Theme toggle */}
-            <div className="hidden md:block">
-              <ThemeToggle />
+            <div className="hidden md:block mr-2">
+              <button
+                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                className={cn(
+                  "relative w-12 h-7 rounded-full transition-colors flex items-center",
+                  mounted && theme === "dark" ? "bg-primary" : "bg-muted"
+                )}
+              >
+                <div
+                  className={cn(
+                    "absolute w-5 h-5 bg-white rounded-full shadow-md transition-transform flex items-center justify-center",
+                    mounted && theme === "dark" ? "translate-x-6" : "translate-x-1"
+                  )}
+                >
+                  {mounted && theme === "dark" ? (
+                    <Moon className="h-3 w-3 text-primary" />
+                  ) : (
+                    <Sun className="h-3 w-3 text-amber-500" />
+                  )}
+                </div>
+              </button>
             </div>
 
             {/* Desktop only: User menu */}
@@ -164,14 +186,14 @@ export function Header() {
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => router.push("/settings/profile")}>
-                    Profile
+                    {t.nav.profile}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => router.push("/settings/organization")}>
-                    Organization
+                    {t.nav.organization}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => signOut({ callbackUrl: "/login" })}>
-                    Log out
+                    {t.nav.logOut}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -227,7 +249,7 @@ export function Header() {
                           : "text-muted-foreground hover:text-foreground"
                       )}
                     >
-                      {item.title}
+                      {t.nav[item.key]}
                     </button>
                   </li>
                 )
@@ -277,7 +299,7 @@ export function Header() {
               onClick={() => signOut({ callbackUrl: "/login" })}
             >
               <LogOut className="h-4 w-4" />
-              Log out
+              {t.nav.logOut}
             </Button>
           </div>
         </div>

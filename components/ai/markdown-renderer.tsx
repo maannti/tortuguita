@@ -1,6 +1,6 @@
 "use client";
 
-import ReactMarkdown from "react-markdown";
+import ReactMarkdown, { Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { cn } from "@/lib/utils";
 
@@ -10,6 +10,49 @@ interface MarkdownRendererProps {
 }
 
 export function MarkdownRenderer({ content, isUser = false }: MarkdownRendererProps) {
+  const components: Components = {
+    table: ({ children }) => (
+      <div className="my-4 overflow-x-auto rounded-lg border border-border">
+        <table className="w-full border-collapse text-sm">
+          {children}
+        </table>
+      </div>
+    ),
+    thead: ({ children }) => (
+      <thead className={cn(
+        isUser ? "bg-primary-foreground/10" : "bg-muted dark:bg-muted"
+      )}>
+        {children}
+      </thead>
+    ),
+    tbody: ({ children }) => (
+      <tbody className="divide-y divide-border">
+        {children}
+      </tbody>
+    ),
+    tr: ({ children }) => (
+      <tr className="border-b border-border last:border-b-0">
+        {children}
+      </tr>
+    ),
+    th: ({ children }) => (
+      <th className={cn(
+        "px-4 py-3 text-left font-semibold border-r border-border last:border-r-0",
+        isUser ? "text-primary-foreground" : "text-foreground"
+      )}>
+        {children}
+      </th>
+    ),
+    td: ({ children }) => (
+      <td className={cn(
+        "px-4 py-3 border-r border-border last:border-r-0",
+        isUser ? "text-primary-foreground/90" : "text-foreground"
+      )}>
+        {children}
+      </td>
+    ),
+  };
+
   return (
     <div
       className={cn(
@@ -63,19 +106,6 @@ export function MarkdownRenderer({ content, isUser = false }: MarkdownRendererPr
           : "prose-blockquote:border-muted-foreground/40 prose-blockquote:text-muted-foreground dark:prose-blockquote:text-muted-foreground",
         "prose-blockquote:pl-4 prose-blockquote:italic prose-blockquote:my-4",
         "prose-blockquote:border-l-4 prose-blockquote:py-1",
-        // Tables - better spacing and styling
-        "prose-table:my-4 prose-table:w-full prose-table:border-collapse",
-        isUser
-          ? "prose-th:bg-primary-foreground/10 prose-th:text-primary-foreground"
-          : "prose-th:bg-muted/50 dark:prose-th:bg-muted prose-th:text-foreground",
-        "prose-th:px-3 prose-th:py-2 prose-th:text-left prose-th:font-bold prose-th:border",
-        isUser
-          ? "prose-th:border-primary-foreground/20"
-          : "prose-th:border-border",
-        "prose-td:px-3 prose-td:py-2 prose-td:border",
-        isUser
-          ? "prose-td:border-primary-foreground/20"
-          : "prose-td:border-border",
         // Horizontal rules - more visible
         isUser
           ? "prose-hr:border-primary-foreground/30"
@@ -92,7 +122,9 @@ export function MarkdownRenderer({ content, isUser = false }: MarkdownRendererPr
           : "prose-em:text-foreground"
       )}
     >
-      <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+      <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
+        {content}
+      </ReactMarkdown>
     </div>
   );
 }

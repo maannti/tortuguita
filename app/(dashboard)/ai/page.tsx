@@ -6,7 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ChatMessage } from "@/components/ai/chat-message";
 import { ConversationSidebar } from "@/components/ai/conversation-sidebar";
-import { SendIcon, Loader2Icon } from "lucide-react";
+import { SendIcon } from "lucide-react";
+import { TurtleIcon } from "@/components/ai/turtle-icon";
+import { useTranslations, useLanguage } from "@/components/providers/language-provider";
 import useSWR from "swr";
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
@@ -24,6 +26,8 @@ export default function AIPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const t = useTranslations();
+  const { language } = useLanguage();
 
   const { data: conversations, mutate: refreshConversations } = useSWR("/api/ai/conversations", fetcher);
 
@@ -198,6 +202,26 @@ export default function AIPage() {
     refreshConversations();
   };
 
+  const handleSuggestionClick = (prompt: string) => {
+    if (isLoading) return;
+    setInput(prompt);
+    // Use setTimeout to ensure state is updated before submitting
+    setTimeout(() => {
+      const form = document.querySelector("form");
+      if (form) {
+        form.requestSubmit();
+      }
+    }, 0);
+  };
+
+  // Suggestion prompts based on language
+  const suggestions = {
+    analytics: language === "es" ? "Mostrame mis gastos de este mes por categoria" : "Show me my spending this month by category",
+    createBill: language === "es" ? "Crear un gasto de supermercado por $150 pagado hoy" : "Create a new grocery bill for $150 paid today",
+    showBills: language === "es" ? "Mostrame los gastos del mes pasado" : "Show me bills from last month",
+    createCategory: language === "es" ? "Crear una categoria llamada Restaurantes con icono 🍽️" : "Create a new category called Restaurants with 🍽️ icon",
+  };
+
   return (
     <div className="flex h-[calc(100vh-4rem-2rem)] md:h-[calc(100vh-4rem-3rem)] gap-4">
       {/* Sidebar with conversation history - hidden on mobile */}
@@ -220,22 +244,20 @@ export default function AIPage() {
               <div className="flex flex-col items-center justify-center h-full text-center">
                 <div className="max-w-2xl space-y-6">
                   <div>
-                    <h2 className="text-3xl font-bold mb-2">AI Expense Assistant</h2>
-                    <p className="text-muted-foreground">
-                      Ask me to create bills, view analytics, or search expenses!
-                    </p>
+                    <h2 className="text-3xl font-bold mb-2">{t.ai.title}</h2>
+                    <p className="text-muted-foreground">{t.ai.subtitle}</p>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <Button
                       variant="outline"
                       className="h-auto py-4 px-6 text-left justify-start"
-                      onClick={() => setInput("Show me my spending this month by category")}
+                      onClick={() => handleSuggestionClick(suggestions.analytics)}
                     >
                       <div>
-                        <div className="font-medium">View spending analytics</div>
+                        <div className="font-medium">{t.ai.suggestions.viewAnalytics}</div>
                         <div className="text-xs text-muted-foreground mt-1">
-                          See your expenses broken down by category
+                          {t.ai.suggestions.viewAnalyticsDesc}
                         </div>
                       </div>
                     </Button>
@@ -243,12 +265,12 @@ export default function AIPage() {
                     <Button
                       variant="outline"
                       className="h-auto py-4 px-6 text-left justify-start"
-                      onClick={() => setInput("Create a new grocery bill for $150 paid today")}
+                      onClick={() => handleSuggestionClick(suggestions.createBill)}
                     >
                       <div>
-                        <div className="font-medium">Create a new bill</div>
+                        <div className="font-medium">{t.ai.suggestions.createBill}</div>
                         <div className="text-xs text-muted-foreground mt-1">
-                          Add an expense with natural language
+                          {t.ai.suggestions.createBillDesc}
                         </div>
                       </div>
                     </Button>
@@ -256,12 +278,12 @@ export default function AIPage() {
                     <Button
                       variant="outline"
                       className="h-auto py-4 px-6 text-left justify-start"
-                      onClick={() => setInput("Show me bills from last month")}
+                      onClick={() => handleSuggestionClick(suggestions.showBills)}
                     >
                       <div>
-                        <div className="font-medium">Show recent bills</div>
+                        <div className="font-medium">{t.ai.suggestions.showBills}</div>
                         <div className="text-xs text-muted-foreground mt-1">
-                          Search and filter your expenses
+                          {t.ai.suggestions.showBillsDesc}
                         </div>
                       </div>
                     </Button>
@@ -269,12 +291,12 @@ export default function AIPage() {
                     <Button
                       variant="outline"
                       className="h-auto py-4 px-6 text-left justify-start"
-                      onClick={() => setInput("Create a new category called Restaurants with 🍽️ icon")}
+                      onClick={() => handleSuggestionClick(suggestions.createCategory)}
                     >
                       <div>
-                        <div className="font-medium">Create a category</div>
+                        <div className="font-medium">{t.ai.suggestions.createCategory}</div>
                         <div className="text-xs text-muted-foreground mt-1">
-                          Organize your expenses into categories
+                          {t.ai.suggestions.createCategoryDesc}
                         </div>
                       </div>
                     </Button>
@@ -285,9 +307,11 @@ export default function AIPage() {
               messages.map((msg, idx) => <ChatMessage key={idx} message={msg} />)
             )}
             {isLoading && (
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Loader2Icon className="h-4 w-4 animate-spin" />
-                <span>Thinking...</span>
+              <div className="flex items-center gap-3 text-muted-foreground">
+                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary flex items-center justify-center">
+                  <TurtleIcon className="h-6 w-6" isThinking />
+                </div>
+                <span className="text-sm">{t.ai.thinking}</span>
               </div>
             )}
             <div ref={messagesEndRef} />
@@ -299,7 +323,7 @@ export default function AIPage() {
               <Input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Ask me anything about your expenses..."
+                placeholder={t.ai.placeholder}
                 disabled={isLoading}
                 className="flex-1"
               />

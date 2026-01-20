@@ -1,36 +1,31 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { signIn } from "next-auth/react"
-import { useRouter } from "next/navigation"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
-import * as z from "zod"
-import { Button } from "@/components/ui/button"
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import Link from "next/link"
-
-const formSchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  email: z.string().email("Invalid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
-  organizationName: z.string().optional(),
-  joinCode: z.string().optional(),
-})
+import { useState } from "react";
+import { signIn } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
+import { Button } from "@/components/ui/button";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import Link from "next/link";
+import { useTranslations } from "@/components/providers/language-provider";
 
 export function SignupForm() {
-  const router = useRouter()
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [mode, setMode] = useState<"create" | "join">("create")
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [mode, setMode] = useState<"create" | "join">("create");
+  const t = useTranslations();
+
+  const formSchema = z.object({
+    name: z.string().min(1, t.auth.nameRequired),
+    email: z.string().email(t.validation.invalidEmail),
+    password: z.string().min(6, t.auth.passwordMinLength),
+    organizationName: z.string().optional(),
+    joinCode: z.string().optional(),
+  });
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -41,29 +36,27 @@ export function SignupForm() {
       organizationName: "",
       joinCode: "",
     },
-  })
+  });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    setIsLoading(true)
-    setError(null)
+    setIsLoading(true);
+    setError(null);
 
     try {
-      const payload = mode === "create"
-        ? { ...values, joinCode: undefined }
-        : { ...values, organizationName: undefined }
+      const payload = mode === "create" ? { ...values, joinCode: undefined } : { ...values, organizationName: undefined };
 
       const response = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
-      })
+      });
 
-      const data = await response.json()
+      const data = await response.json();
 
       if (!response.ok) {
-        setError(data.error || "Something went wrong")
-        setIsLoading(false)
-        return
+        setError(data.error || "Something went wrong");
+        setIsLoading(false);
+        return;
       }
 
       // Sign in after successful signup
@@ -71,49 +64,39 @@ export function SignupForm() {
         email: values.email,
         password: values.password,
         redirect: false,
-      })
+      });
 
       if (result?.error) {
-        setError("Account created, but failed to sign in. Please try logging in.")
+        setError("Account created, but failed to sign in. Please try logging in.");
       } else {
-        router.push("/dashboard")
-        router.refresh()
+        router.push("/dashboard");
+        router.refresh();
       }
     } catch (error) {
-      setError("Something went wrong. Please try again.")
+      setError("Something went wrong. Please try again.");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
   }
 
   async function handleGoogleSignIn() {
-    setIsLoading(true)
+    setIsLoading(true);
     try {
-      await signIn("google", { callbackUrl: "/dashboard" })
+      await signIn("google", { callbackUrl: "/dashboard" });
     } catch (error) {
-      setError("Failed to sign in with Google")
-      setIsLoading(false)
+      setError("Failed to sign in with Google");
+      setIsLoading(false);
     }
   }
 
   return (
     <div className="space-y-6">
       <div className="flex gap-2 p-1 bg-muted rounded-lg">
-        <Button
-          type="button"
-          variant={mode === "create" ? "default" : "ghost"}
-          className="flex-1"
-          onClick={() => setMode("create")}
-        >
-          Create Organization
+        <Button type="button" variant={mode === "create" ? "default" : "ghost"} className="flex-1" onClick={() => setMode("create")}>
+          {t.settings.createOrganization}
         </Button>
-        <Button
-          type="button"
-          variant={mode === "join" ? "default" : "ghost"}
-          className="flex-1"
-          onClick={() => setMode("join")}
-        >
-          Join with Code
+        <Button type="button" variant={mode === "join" ? "default" : "ghost"} className="flex-1" onClick={() => setMode("join")}>
+          {t.settings.joinOrganization}
         </Button>
       </div>
 
@@ -130,14 +113,9 @@ export function SignupForm() {
             name="name"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Name</FormLabel>
+                <FormLabel>{t.common.name}</FormLabel>
                 <FormControl>
-                  <Input
-                    placeholder="John Doe"
-                    autoComplete="name"
-                    disabled={isLoading}
-                    {...field}
-                  />
+                  <Input placeholder="John Doe" autoComplete="name" disabled={isLoading} {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -149,15 +127,9 @@ export function SignupForm() {
             name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Email</FormLabel>
+                <FormLabel>{t.common.email}</FormLabel>
                 <FormControl>
-                  <Input
-                    placeholder="name@example.com"
-                    type="email"
-                    autoComplete="email"
-                    disabled={isLoading}
-                    {...field}
-                  />
+                  <Input placeholder="name@example.com" type="email" autoComplete="email" disabled={isLoading} {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -169,15 +141,9 @@ export function SignupForm() {
             name="password"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Password</FormLabel>
+                <FormLabel>{t.common.password}</FormLabel>
                 <FormControl>
-                  <Input
-                    placeholder="At least 6 characters"
-                    type="password"
-                    autoComplete="new-password"
-                    disabled={isLoading}
-                    {...field}
-                  />
+                  <Input placeholder="••••••••" type="password" autoComplete="new-password" disabled={isLoading} {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -190,13 +156,9 @@ export function SignupForm() {
               name="organizationName"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Organization Name</FormLabel>
+                  <FormLabel>{t.settings.organizationName}</FormLabel>
                   <FormControl>
-                    <Input
-                      placeholder="My Home"
-                      disabled={isLoading}
-                      {...field}
-                    />
+                    <Input placeholder="Mi Hogar" disabled={isLoading} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -208,7 +170,7 @@ export function SignupForm() {
               name="joinCode"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Join Code</FormLabel>
+                  <FormLabel>{t.settings.joinCode}</FormLabel>
                   <FormControl>
                     <Input
                       placeholder="XXXXXXXX"
@@ -224,7 +186,7 @@ export function SignupForm() {
           )}
 
           <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? "Creating account..." : "Create account"}
+            {isLoading ? t.auth.signingUp : t.auth.signUp}
           </Button>
         </form>
       </Form>
@@ -234,19 +196,11 @@ export function SignupForm() {
           <span className="w-full border-t" />
         </div>
         <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-white dark:bg-gray-900 px-2 text-muted-foreground">
-            Or continue with
-          </span>
+          <span className="bg-white dark:bg-gray-900 px-2 text-muted-foreground">{t.auth.orContinueWith}</span>
         </div>
       </div>
 
-      <Button
-        variant="outline"
-        type="button"
-        disabled={isLoading}
-        className="w-full"
-        onClick={handleGoogleSignIn}
-      >
+      <Button variant="outline" type="button" disabled={isLoading} className="w-full" onClick={handleGoogleSignIn}>
         <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
           <path
             d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -269,14 +223,11 @@ export function SignupForm() {
       </Button>
 
       <p className="text-center text-sm text-muted-foreground">
-        Already have an account?{" "}
-        <Link
-          href="/login"
-          className="underline underline-offset-4 hover:text-primary"
-        >
-          Sign in
+        {t.auth.alreadyHaveAccount}{" "}
+        <Link href="/login" className="underline underline-offset-4 hover:text-primary">
+          {t.auth.signIn}
         </Link>
       </p>
     </div>
-  )
+  );
 }

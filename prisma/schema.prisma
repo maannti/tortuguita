@@ -55,6 +55,7 @@ model User {
   image          String?
   password       String?
   organizationId String?
+  language       String        @default("es")
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 

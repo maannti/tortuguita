@@ -2,8 +2,9 @@
 
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import { CheckCircleIcon, XCircleIcon, SparklesIcon, UserIcon } from "lucide-react";
+import { CheckCircleIcon, XCircleIcon, UserIcon } from "lucide-react";
 import { MarkdownRenderer } from "./markdown-renderer";
+import { TurtleIcon } from "./turtle-icon";
 
 interface ChatMessageProps {
   message: {
@@ -21,8 +22,8 @@ export function ChatMessage({ message }: ChatMessageProps) {
     <div className={cn("flex gap-3", isUser ? "justify-end" : "justify-start")}>
       {/* Avatar */}
       {!isUser && (
-        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-          <SparklesIcon className="h-4 w-4 text-primary-foreground" />
+        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary flex items-center justify-center">
+          <TurtleIcon className="h-6 w-6" />
         </div>
       )}
 
