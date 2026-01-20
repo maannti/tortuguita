@@ -17,7 +17,58 @@ import { useRouter, usePathname } from "next/navigation"
 import { ThemeToggle } from "@/components/theme-toggle"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
-import { Menu, X, LogOut, Sun, Moon } from "lucide-react"
+import { LogOut, Sun, Moon } from "lucide-react"
+
+// Animated hamburger/close icon component
+function MenuIcon({ isOpen, className }: { isOpen: boolean; className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      {/* Top line - moves to center and rotates 45deg */}
+      <line
+        x1="4"
+        y1={isOpen ? "12" : "6"}
+        x2="20"
+        y2={isOpen ? "12" : "6"}
+        className="transition-all duration-300 ease-in-out"
+        style={{
+          transformOrigin: "center",
+          transform: isOpen ? "rotate(45deg)" : "rotate(0deg)",
+        }}
+      />
+      {/* Middle line - fades out */}
+      <line
+        x1="4"
+        y1="12"
+        x2="20"
+        y2="12"
+        className="transition-all duration-300 ease-in-out"
+        style={{
+          opacity: isOpen ? 0 : 1,
+        }}
+      />
+      {/* Bottom line - moves to center and rotates -45deg */}
+      <line
+        x1="4"
+        y1={isOpen ? "12" : "18"}
+        x2="20"
+        y2={isOpen ? "12" : "18"}
+        className="transition-all duration-300 ease-in-out"
+        style={{
+          transformOrigin: "center",
+          transform: isOpen ? "rotate(-45deg)" : "rotate(0deg)",
+        }}
+      />
+    </svg>
+  )
+}
 
 const navItems = [
   { title: "AI Assistant", href: "/ai" },
@@ -59,7 +110,7 @@ export function Header() {
       <header className="border-b bg-card">
         <div className="flex h-16 items-center px-4 md:px-6">
           <div className="flex items-center gap-6">
-            <Link href="/dashboard" className="flex items-center">
+            <Link href="/ai" className="flex items-center">
               <img src="/logo.png" alt="tortu.guita" className="h-10 w-auto" />
             </Link>
 
@@ -127,14 +178,13 @@ export function Header() {
             </div>
 
             {/* Mobile hamburger button */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="md:hidden"
-              onClick={() => setMobileMenuOpen(true)}
+            <button
+              className="md:hidden p-2 -mr-2 text-foreground hover:text-primary hover:bg-muted active:scale-90 rounded-lg cursor-pointer transition-all duration-150"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label="Toggle menu"
             >
-              <Menu className="h-6 w-6" />
-            </Button>
+              <MenuIcon isOpen={mobileMenuOpen} className="h-8 w-8" />
+            </button>
           </div>
         </div>
       </header>
@@ -148,17 +198,17 @@ export function Header() {
       >
         <div className="flex flex-col h-full">
           {/* Mobile menu header */}
-          <div className="flex h-16 items-center justify-between px-4 border-b">
-            <Link href="/dashboard" onClick={() => setMobileMenuOpen(false)} className="flex items-center">
+          <div className="flex h-20 items-center justify-between px-4 border-b">
+            <Link href="/ai" onClick={() => setMobileMenuOpen(false)} className="flex items-center">
               <img src="/logo.png" alt="tortu.guita" className="h-10 w-auto" />
             </Link>
-            <Button
-              variant="ghost"
-              size="icon"
+            <button
+              className="p-2 -mr-2 text-foreground hover:text-primary hover:bg-muted active:scale-90 rounded-lg cursor-pointer transition-all duration-150"
               onClick={() => setMobileMenuOpen(false)}
+              aria-label="Close menu"
             >
-              <X className="h-6 w-6" />
-            </Button>
+              <MenuIcon isOpen={true} className="h-8 w-8" />
+            </button>
           </div>
 
           {/* Mobile navigation links */}
@@ -171,7 +221,7 @@ export function Header() {
                     <button
                       onClick={() => handleNavClick(item.href)}
                       className={cn(
-                        "block w-full text-left text-[50px] font-bold py-2 transition-colors",
+                        "block w-full text-left text-[42px] font-extrabold py-2 transition-colors",
                         isActive
                           ? "text-primary underline underline-offset-8 decoration-4"
                           : "text-muted-foreground hover:text-foreground"
