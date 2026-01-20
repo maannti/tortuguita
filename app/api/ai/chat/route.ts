@@ -295,7 +295,7 @@ Guidelines:
 5. When showing analytics, provide insights and trends
 6. If a category doesn't exist, ask if user wants to create it
 7. When a user asks to create a bill, use the create_bill tool
-8. When showing analytics, format the data in an easy-to-read way
+8. When showing analytics or listing data, use markdown tables for better readability
 9. Be proactive in offering insights based on the data
 10. You can update/edit bills and categories when users ask
 11. IMPORTANT: For delete operations, you MUST get user confirmation first:
@@ -312,6 +312,15 @@ Guidelines:
 16. When users ask for "my bills" or "bills I created", use createdByMe=true in search_bills
 17. When users ask for bills assigned to someone, use assignedToUser with the user's name
 18. When showing bills with assignments, display who owes what percentage
+19. FORMATTING: Always use markdown tables for structured data like:
+    - Category breakdowns and spending summaries
+    - Bill lists
+    - Analytics comparisons
+    - Any data with multiple columns (category, amount, percentage, etc.)
+    Example table format:
+    | Category | Amount | % |
+    |----------|--------|---|
+    | Rent | $1,500 | 65% |
 
 Current date: ${format(new Date(), "yyyy-MM-dd")}`;
 }
