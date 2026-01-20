@@ -1,6 +1,8 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { signOut, useSession } from "next-auth/react"
+import { useTheme } from "next-themes"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   DropdownMenu,
@@ -15,7 +17,7 @@ import { useRouter, usePathname } from "next/navigation"
 import { ThemeToggle } from "@/components/theme-toggle"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
-import { Menu } from "lucide-react"
+import { Menu, X, LogOut, Sun, Moon } from "lucide-react"
 
 const navItems = [
   { title: "AI Assistant", href: "/ai" },
@@ -29,6 +31,13 @@ export function Header() {
   const { data: session } = useSession()
   const router = useRouter()
   const pathname = usePathname()
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const { theme, setTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const getInitials = (name: string | null | undefined) => {
     if (!name) return "U"
@@ -40,93 +49,189 @@ export function Header() {
       .slice(0, 2)
   }
 
+  const handleNavClick = (href: string) => {
+    setMobileMenuOpen(false)
+    router.push(href)
+  }
+
   return (
-    <header className="border-b bg-card">
-      <div className="flex h-16 items-center px-4 md:px-6">
-        <div className="flex items-center gap-6">
-          <Link href="/dashboard" className="flex items-center">
-            <img src="/logo.png" alt="tortu.guita" className="h-10 w-auto" />
-          </Link>
+    <>
+      <header className="border-b bg-card">
+        <div className="flex h-16 items-center px-4 md:px-6">
+          <div className="flex items-center gap-6">
+            <Link href="/dashboard" className="flex items-center">
+              <img src="/logo.png" alt="tortu.guita" className="h-10 w-auto" />
+            </Link>
 
-          {/* Desktop navigation */}
-          <nav className="hidden md:flex items-center gap-1">
-            {navItems.map((item) => {
-              const isActive = pathname === item.href || pathname.startsWith(item.href + "/")
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={cn(
-                    "px-3 py-2 text-sm font-medium rounded-md transition-colors",
-                    isActive
-                      ? "bg-primary text-primary-foreground"
-                      : "text-foreground hover:bg-muted"
-                  )}
-                >
-                  {item.title}
-                </Link>
-              )
-            })}
-          </nav>
-        </div>
-
-        <div className="ml-auto flex items-center gap-2">
-          {/* Mobile hamburger menu */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild className="md:hidden">
-              <Button variant="ghost" size="icon">
-                <Menu className="h-5 w-5" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-auto min-w-0">
+            {/* Desktop navigation */}
+            <nav className="hidden md:flex items-center gap-1">
               {navItems.map((item) => {
                 const isActive = pathname === item.href || pathname.startsWith(item.href + "/")
                 return (
-                  <DropdownMenuItem
+                  <Link
                     key={item.href}
-                    onClick={() => router.push(item.href)}
-                    className={cn(isActive && "bg-muted")}
+                    href={item.href}
+                    className={cn(
+                      "px-3 py-2 text-sm font-medium rounded-md transition-colors",
+                      isActive
+                        ? "bg-primary text-primary-foreground"
+                        : "text-foreground hover:bg-muted"
+                    )}
                   >
                     {item.title}
-                  </DropdownMenuItem>
+                  </Link>
                 )
               })}
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <ThemeToggle />
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-                <Avatar>
-                  <AvatarImage src={session?.user?.image || ""} alt={session?.user?.name || ""} />
-                  <AvatarFallback>{getInitials(session?.user?.name)}</AvatarFallback>
-                </Avatar>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel>
-                <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">{session?.user?.name}</p>
-                  <p className="text-xs leading-none text-muted-foreground">
-                    {session?.user?.email}
-                  </p>
+            </nav>
+          </div>
+
+          <div className="ml-auto flex items-center gap-2">
+            {/* Desktop only: Theme toggle */}
+            <div className="hidden md:block">
+              <ThemeToggle />
+            </div>
+
+            {/* Desktop only: User menu */}
+            <div className="hidden md:block">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                    <Avatar>
+                      <AvatarImage src={session?.user?.image || ""} alt={session?.user?.name || ""} />
+                      <AvatarFallback>{getInitials(session?.user?.name)}</AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-medium leading-none">{session?.user?.name}</p>
+                      <p className="text-xs leading-none text-muted-foreground">
+                        {session?.user?.email}
+                      </p>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => router.push("/settings/profile")}>
+                    Profile
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => router.push("/settings/organization")}>
+                    Organization
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => signOut({ callbackUrl: "/login" })}>
+                    Log out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+
+            {/* Mobile hamburger button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden"
+              onClick={() => setMobileMenuOpen(true)}
+            >
+              <Menu className="h-6 w-6" />
+            </Button>
+          </div>
+        </div>
+      </header>
+
+      {/* Mobile fullscreen menu */}
+      <div
+        className={cn(
+          "fixed inset-0 z-50 bg-background md:hidden transition-transform duration-300 ease-in-out",
+          mobileMenuOpen ? "translate-x-0" : "translate-x-full"
+        )}
+      >
+        <div className="flex flex-col h-full">
+          {/* Mobile menu header */}
+          <div className="flex h-16 items-center justify-between px-4 border-b">
+            <Link href="/dashboard" onClick={() => setMobileMenuOpen(false)} className="flex items-center">
+              <img src="/logo.png" alt="tortu.guita" className="h-10 w-auto" />
+            </Link>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <X className="h-6 w-6" />
+            </Button>
+          </div>
+
+          {/* Mobile navigation links */}
+          <nav className="flex-1 px-8 py-10 overflow-y-auto">
+            <ul className="space-y-6">
+              {navItems.map((item) => {
+                const isActive = pathname === item.href || pathname.startsWith(item.href + "/")
+                return (
+                  <li key={item.href}>
+                    <button
+                      onClick={() => handleNavClick(item.href)}
+                      className={cn(
+                        "block w-full text-left text-[50px] font-bold py-2 transition-colors",
+                        isActive
+                          ? "text-primary underline underline-offset-8 decoration-4"
+                          : "text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      {item.title}
+                    </button>
+                  </li>
+                )
+              })}
+            </ul>
+          </nav>
+
+          {/* Mobile menu footer with user info and actions */}
+          <div className="border-t px-8 py-6 space-y-5">
+            {/* User info with theme toggle */}
+            <div className="flex items-center gap-3">
+              <Avatar className="h-12 w-12">
+                <AvatarImage src={session?.user?.image || ""} alt={session?.user?.name || ""} />
+                <AvatarFallback className="text-lg font-bold">{getInitials(session?.user?.name)}</AvatarFallback>
+              </Avatar>
+              <div className="flex-1">
+                <p className="font-bold text-lg">{session?.user?.name}</p>
+                <p className="text-sm text-muted-foreground">{session?.user?.email}</p>
+              </div>
+              {/* Theme toggle */}
+              <button
+                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                className={cn(
+                  "relative w-16 h-9 rounded-full transition-colors flex items-center",
+                  mounted && theme === "dark" ? "bg-primary" : "bg-muted"
+                )}
+              >
+                <div
+                  className={cn(
+                    "absolute w-7 h-7 bg-white rounded-full shadow-md transition-transform flex items-center justify-center",
+                    mounted && theme === "dark" ? "translate-x-8" : "translate-x-1"
+                  )}
+                >
+                  {mounted && theme === "dark" ? (
+                    <Moon className="h-4 w-4 text-primary" />
+                  ) : (
+                    <Sun className="h-4 w-4 text-amber-500" />
+                  )}
                 </div>
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => router.push("/settings/profile")}>
-                Profile
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => router.push("/settings/organization")}>
-                Organization
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => signOut({ callbackUrl: "/login" })}>
-                Log out
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+              </button>
+            </div>
+
+            {/* Logout button */}
+            <Button
+              variant="outline"
+              className="w-full justify-start gap-2"
+              onClick={() => signOut({ callbackUrl: "/login" })}
+            >
+              <LogOut className="h-4 w-4" />
+              Log out
+            </Button>
+          </div>
         </div>
       </div>
-    </header>
+    </>
   )
 }
