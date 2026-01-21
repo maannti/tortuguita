@@ -11,9 +11,9 @@ const signupSchema = z.object({
   organizationName: z.string().optional(),
   joinCode: z.string().optional(),
 }).refine(
-  (data) => data.organizationName || data.joinCode,
+  (data) => (data.organizationName && data.organizationName.trim()) || (data.joinCode && data.joinCode.trim()),
   {
-    message: "Either organization name or join code is required",
+    message: "Either home name or join code is required",
     path: ["organizationName"],
   }
 )
@@ -42,27 +42,27 @@ export async function POST(request: NextRequest) {
     const result = await prisma.$transaction(async (tx) => {
       let organization
 
-      if (joinCode) {
+      if (joinCode && joinCode.trim()) {
         // Join existing organization
         organization = await tx.organization.findUnique({
-          where: { joinCode },
+          where: { joinCode: joinCode.trim() },
         })
 
         if (!organization) {
           throw new Error("Invalid join code")
         }
-      } else if (organizationName) {
+      } else if (organizationName && organizationName.trim()) {
         // Create new organization with a join code
         const newJoinCode = generateJoinCode()
 
         organization = await tx.organization.create({
           data: {
-            name: organizationName,
+            name: organizationName.trim(),
             joinCode: newJoinCode,
           },
         })
       } else {
-        throw new Error("Either organization name or join code is required")
+        throw new Error("Either home name or join code is required")
       }
 
       // Create user

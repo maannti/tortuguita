@@ -40,6 +40,16 @@ export function SignupForm() {
     },
   });
 
+  function translateError(error: string): string {
+    const errorMap: Record<string, string> = {
+      "User with this email already exists": t.errors.userAlreadyExists,
+      "Invalid join code. Please check and try again.": t.errors.invalidJoinCode,
+      "Either home name or join code is required": t.errors.homeNameOrJoinCodeRequired,
+      "Something went wrong": t.errors.somethingWentWrong,
+    };
+    return errorMap[error] || error;
+  }
+
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     setError(null);
@@ -56,7 +66,7 @@ export function SignupForm() {
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.error || "Something went wrong");
+        setError(translateError(data.error) || t.errors.somethingWentWrong);
         setIsLoading(false);
         return;
       }
@@ -69,13 +79,13 @@ export function SignupForm() {
       });
 
       if (result?.error) {
-        setError("Account created, but failed to sign in. Please try logging in.");
+        setError(t.errors.accountCreatedButSignInFailed);
       } else {
         router.push("/dashboard");
         router.refresh();
       }
     } catch (error) {
-      setError("Something went wrong. Please try again.");
+      setError(t.errors.somethingWentWrong);
     } finally {
       setIsLoading(false);
     }
@@ -94,10 +104,10 @@ export function SignupForm() {
   return (
     <div className="space-y-6">
       <div className="flex gap-2 p-1 bg-muted rounded-lg">
-        <Button type="button" variant={mode === "create" ? "default" : "ghost"} className="flex-1" onClick={() => setMode("create")}>
+        <Button type="button" variant={mode === "create" ? "default" : "ghost"} className="flex-1 text-xs sm:text-sm truncate" onClick={() => setMode("create")}>
           {t.settings.createOrganization}
         </Button>
-        <Button type="button" variant={mode === "join" ? "default" : "ghost"} className="flex-1" onClick={() => setMode("join")}>
+        <Button type="button" variant={mode === "join" ? "default" : "ghost"} className="flex-1 text-xs sm:text-sm truncate" onClick={() => setMode("join")}>
           {t.settings.joinOrganization}
         </Button>
       </div>
