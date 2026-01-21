@@ -37,7 +37,7 @@ export const es: Translations = {
   // Navigation
   nav: {
     aiAssistant: "asistente IA",
-    dashboard: "panel",
+    dashboard: "dashboard",
     bills: "gastos",
     categories: "categorías",
     settings: "configuración",

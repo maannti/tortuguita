@@ -242,15 +242,26 @@ export function Header() {
 
           {/* Mobile navigation links */}
           <nav className="flex-1 px-8 py-10 overflow-y-auto">
-            <ul className="space-y-6">
-              {navItems.map((item) => {
+            <ul className="space-y-3">
+              {navItems.map((item, index) => {
                 const isActive = pathname === item.href || pathname.startsWith(item.href + "/")
                 return (
-                  <li key={item.href}>
+                  <li
+                    key={item.href}
+                    className={cn(
+                      "transition-all duration-300 ease-out",
+                      mobileMenuOpen
+                        ? "opacity-100 translate-x-0"
+                        : "opacity-0 -translate-x-8"
+                    )}
+                    style={{
+                      transitionDelay: mobileMenuOpen ? `${index * 50 + 100}ms` : "0ms",
+                    }}
+                  >
                     <button
                       onClick={() => handleNavClick(item.href)}
                       className={cn(
-                        "block w-full text-left text-[42px] font-light lowercase leading-normal py-2 transition-colors",
+                        "block w-full text-left text-[42px] font-light lowercase leading-tight py-1 transition-colors",
                         isActive
                           ? "text-primary underline underline-offset-8 decoration-4"
                           : "text-muted-foreground hover:text-foreground"
