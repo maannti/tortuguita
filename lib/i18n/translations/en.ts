@@ -118,6 +118,7 @@ export const en = {
     notes: "Notes (Optional)",
     notesPlaceholder: "Additional details about this bill...",
     addedBy: "Added By",
+    details: "Details",
     assignments: "Assignments",
     splitBill: "Split Bill",
     addAssignment: "Add Assignment",

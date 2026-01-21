@@ -120,6 +120,7 @@ export const es: Translations = {
     notes: "Notas (Opcional)",
     notesPlaceholder: "Detalles adicionales sobre este gasto...",
     addedBy: "Agregado Por",
+    details: "Detalles",
     assignments: "Asignaciones",
     splitBill: "Dividir Gasto",
     addAssignment: "Agregar Asignación",

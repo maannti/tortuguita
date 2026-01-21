@@ -12,15 +12,19 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { X } from "lucide-react"
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
+import { X, Trash2 } from "lucide-react"
+import { useTranslations } from "@/components/providers/language-provider"
 
 interface DeleteBillButtonProps {
   id: string
   label: string
   iconOnly?: boolean
+  asMenuItem?: boolean
 }
 
-export function DeleteBillButton({ id, label, iconOnly }: DeleteBillButtonProps) {
+export function DeleteBillButton({ id, label, iconOnly, asMenuItem }: DeleteBillButtonProps) {
+  const t = useTranslations()
   const router = useRouter()
   const [isOpen, setIsOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -53,13 +57,21 @@ export function DeleteBillButton({ id, label, iconOnly }: DeleteBillButtonProps)
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        {iconOnly ? (
+        {asMenuItem ? (
+          <DropdownMenuItem
+            onSelect={(e) => e.preventDefault()}
+            className="flex items-center gap-2 text-destructive focus:text-destructive"
+          >
+            <Trash2 className="h-4 w-4" />
+            {t.common.delete}
+          </DropdownMenuItem>
+        ) : iconOnly ? (
           <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10">
             <X className="h-4 w-4" />
           </Button>
         ) : (
           <Button variant="destructive" size="sm">
-            Delete
+            {t.common.delete}
           </Button>
         )}
       </DialogTrigger>
