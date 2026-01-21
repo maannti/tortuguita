@@ -419,9 +419,9 @@ export default function AIPage() {
           </div>
 
           {/* Mobile Input - At bottom */}
-          <div className="flex-shrink-0 bg-background px-3 py-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
+          <div className="flex-shrink-0 bg-background px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
             <form onSubmit={handleSubmit}>
-              <div className="flex items-center gap-2 bg-muted rounded-3xl pl-4 pr-1.5 min-h-[48px]">
+              <div className="flex items-center gap-3 bg-muted rounded-3xl pl-5 pr-2 min-h-[52px]">
                 <Textarea
                   ref={textareaRef}
                   value={input}
