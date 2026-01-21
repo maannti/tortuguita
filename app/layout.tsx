@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "tortu.guita - Expense Tracker",
+  title: "tortuguita",
   description: "Track and manage your monthly expenses with ease",
 };
 

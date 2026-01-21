@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { ChatMessage } from "@/components/ai/chat-message";
 import { ConversationSidebar } from "@/components/ai/conversation-sidebar";
 import { SendIcon } from "lucide-react";
@@ -26,8 +26,14 @@ export default function AIPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const t = useTranslations();
   const { language } = useLanguage();
+
+  // Auto-focus textarea on mount to prompt keyboard
+  useEffect(() => {
+    textareaRef.current?.focus();
+  }, []);
 
   const { data: conversations, mutate: refreshConversations } = useSWR("/api/ai/conversations", fetcher);
 
@@ -38,6 +44,16 @@ export default function AIPage() {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      if (input.trim() && !isLoading) {
+        const form = document.querySelector("form");
+        form?.requestSubmit();
+      }
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -223,7 +239,7 @@ export default function AIPage() {
   };
 
   return (
-    <div className="flex h-[calc(100vh-4rem-2rem)] md:h-[calc(100vh-4rem-3rem)] gap-4">
+    <div className="flex h-full gap-4">
       {/* Sidebar with conversation history - hidden on mobile */}
       <div className="hidden md:block">
         <ConversationSidebar
@@ -241,64 +257,48 @@ export default function AIPage() {
           {/* Messages */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {messages.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full text-center">
+              <div className="flex flex-col items-center justify-center h-full text-center px-2">
                 <div className="max-w-2xl space-y-6">
                   <div>
-                    <h2 className="text-3xl font-bold mb-2">{t.ai.title}</h2>
-                    <p className="text-muted-foreground">{t.ai.subtitle}</p>
+                    <h2 className="text-2xl md:text-3xl font-bold mb-2">{t.ai.title}</h2>
+                    <p className="text-muted-foreground text-sm md:text-base">{t.ai.subtitle}</p>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="flex flex-wrap justify-center gap-2">
                     <Button
                       variant="outline"
-                      className="h-auto py-4 px-6 text-left justify-start"
+                      size="sm"
+                      className="text-xs md:text-sm whitespace-nowrap"
                       onClick={() => handleSuggestionClick(suggestions.analytics)}
                     >
-                      <div>
-                        <div className="font-medium">{t.ai.suggestions.viewAnalytics}</div>
-                        <div className="text-xs text-muted-foreground mt-1">
-                          {t.ai.suggestions.viewAnalyticsDesc}
-                        </div>
-                      </div>
+                      {t.ai.suggestions.viewAnalytics}
                     </Button>
 
                     <Button
                       variant="outline"
-                      className="h-auto py-4 px-6 text-left justify-start"
+                      size="sm"
+                      className="text-xs md:text-sm whitespace-nowrap"
                       onClick={() => handleSuggestionClick(suggestions.createBill)}
                     >
-                      <div>
-                        <div className="font-medium">{t.ai.suggestions.createBill}</div>
-                        <div className="text-xs text-muted-foreground mt-1">
-                          {t.ai.suggestions.createBillDesc}
-                        </div>
-                      </div>
+                      {t.ai.suggestions.createBill}
                     </Button>
 
                     <Button
                       variant="outline"
-                      className="h-auto py-4 px-6 text-left justify-start"
+                      size="sm"
+                      className="text-xs md:text-sm whitespace-nowrap"
                       onClick={() => handleSuggestionClick(suggestions.showBills)}
                     >
-                      <div>
-                        <div className="font-medium">{t.ai.suggestions.showBills}</div>
-                        <div className="text-xs text-muted-foreground mt-1">
-                          {t.ai.suggestions.showBillsDesc}
-                        </div>
-                      </div>
+                      {t.ai.suggestions.showBills}
                     </Button>
 
                     <Button
                       variant="outline"
-                      className="h-auto py-4 px-6 text-left justify-start"
+                      size="sm"
+                      className="text-xs md:text-sm whitespace-nowrap"
                       onClick={() => handleSuggestionClick(suggestions.createCategory)}
                     >
-                      <div>
-                        <div className="font-medium">{t.ai.suggestions.createCategory}</div>
-                        <div className="text-xs text-muted-foreground mt-1">
-                          {t.ai.suggestions.createCategoryDesc}
-                        </div>
-                      </div>
+                      {t.ai.suggestions.createCategory}
                     </Button>
                   </div>
                 </div>
@@ -319,15 +319,19 @@ export default function AIPage() {
 
           {/* Input */}
           <div className="border-t p-4">
-            <form onSubmit={handleSubmit} className="flex gap-2">
-              <Input
+            <form onSubmit={handleSubmit} className="flex gap-2 items-end">
+              <Textarea
+                ref={textareaRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
                 placeholder={t.ai.placeholder}
                 disabled={isLoading}
-                className="flex-1"
+                className="flex-1 max-h-32"
+                rows={1}
+                autoFocus
               />
-              <Button type="submit" disabled={isLoading || !input.trim()}>
+              <Button type="submit" disabled={isLoading || !input.trim()} className="shrink-0">
                 <SendIcon className="h-4 w-4" />
               </Button>
             </form>

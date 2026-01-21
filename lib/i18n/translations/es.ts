@@ -48,10 +48,10 @@ export const es: Translations = {
 
   // Auth
   auth: {
-    welcomeBack: "Bienvenido de nuevo",
-    signInDescription: "Ingresa tus credenciales para acceder a tu gestor de gastos",
+    welcomeBack: "Bienvenido",
+    signInDescription: "Ingresa tus credenciales para acceder a tortuguita",
     createAccount: "Crear una cuenta",
-    signUpDescription: "Ingresa tu informacion para comenzar a gestionar tus gastos",
+    signUpDescription: "Ingresa tu informacion para registrarte en tortuguita",
     signIn: "Iniciar sesion",
     signingIn: "Iniciando sesion...",
     signUp: "Registrarse",

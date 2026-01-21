@@ -46,10 +46,10 @@ export const en = {
 
   // Auth
   auth: {
-    welcomeBack: "Welcome back",
-    signInDescription: "Enter your credentials to access your expense tracker",
+    welcomeBack: "Welcome",
+    signInDescription: "Enter your credentials to access tortuguita",
     createAccount: "Create an account",
-    signUpDescription: "Enter your information to start tracking your expenses",
+    signUpDescription: "Enter your information to register in tortuguita",
     signIn: "Sign in",
     signingIn: "Signing in...",
     signUp: "Sign up",

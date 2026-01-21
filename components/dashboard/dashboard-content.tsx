@@ -11,6 +11,17 @@ import { UserDistributionChart } from "./user-distribution-chart";
 import { MonthFilter } from "@/components/month-filter";
 import { useTranslations } from "@/components/providers/language-provider";
 
+// Format large numbers compactly (e.g., 2.36M, 558K)
+function formatCompact(num: number): string {
+  if (num >= 1000000) {
+    return (num / 1000000).toFixed(2) + "M";
+  }
+  if (num >= 1000) {
+    return (num / 1000).toFixed(1) + "K";
+  }
+  return num.toFixed(2);
+}
+
 interface DashboardContentProps {
   currentTotal: number;
   lastTotal: number;
@@ -57,58 +68,50 @@ export function DashboardContent({
       </div>
 
       {/* KPI Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t.dashboard.totalThisMonth}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">${currentTotal.toFixed(2)}</div>
-            <p className="text-xs text-muted-foreground mt-1">{currentMonthLabel}</p>
+      <div className="grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-4">
+        <Card className="aspect-square md:aspect-auto">
+          <CardContent className="h-full flex flex-col justify-center items-center text-center p-4 md:p-6">
+            <div className="text-xl md:text-2xl font-bold">${formatCompact(currentTotal)}</div>
+            <p className="text-sm md:text-sm font-medium text-muted-foreground mt-2">{t.dashboard.totalThisMonth}</p>
+            <p className="text-xs text-muted-foreground/70 mt-1 hidden md:block">{currentMonthLabel}</p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t.dashboard.vsLastMonth}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-2">
+        <Card className="aspect-square md:aspect-auto">
+          <CardContent className="h-full flex flex-col justify-center items-center text-center p-4 md:p-6">
+            <div className="flex items-center gap-1">
               {percentageChange > 0 ? (
                 <>
-                  <ArrowUpIcon className="h-4 w-4 text-red-500" />
-                  <div className="text-2xl font-bold text-red-500">+{percentageChange.toFixed(1)}%</div>
+                  <ArrowUpIcon className="h-5 w-5 text-red-500" />
+                  <div className="text-xl md:text-2xl font-bold text-red-500">+{percentageChange.toFixed(1)}%</div>
                 </>
               ) : percentageChange < 0 ? (
                 <>
-                  <ArrowDownIcon className="h-4 w-4 text-green-500" />
-                  <div className="text-2xl font-bold text-green-500">{percentageChange.toFixed(1)}%</div>
+                  <ArrowDownIcon className="h-5 w-5 text-green-500" />
+                  <div className="text-xl md:text-2xl font-bold text-green-500">{percentageChange.toFixed(1)}%</div>
                 </>
               ) : (
-                <div className="text-2xl font-bold">0%</div>
+                <div className="text-xl md:text-2xl font-bold">0%</div>
               )}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">${lastTotal.toFixed(2)}</p>
+            <p className="text-sm md:text-sm font-medium text-muted-foreground mt-2">{t.dashboard.vsLastMonth}</p>
+            <p className="text-xs text-muted-foreground/70 mt-1 hidden md:block">${formatCompact(lastTotal)}</p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t.dashboard.sixMonthAverage}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">${averageMonthly.toFixed(2)}</div>
-            <p className="text-xs text-muted-foreground mt-1">{t.dashboard.monthlyAverage}</p>
+        <Card className="aspect-square md:aspect-auto">
+          <CardContent className="h-full flex flex-col justify-center items-center text-center p-4 md:p-6">
+            <div className="text-xl md:text-2xl font-bold">${formatCompact(averageMonthly)}</div>
+            <p className="text-sm md:text-sm font-medium text-muted-foreground mt-2">{t.dashboard.sixMonthAverage}</p>
+            <p className="text-xs text-muted-foreground/70 mt-1 hidden md:block">{t.dashboard.monthlyAverage}</p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t.dashboard.totalCategories}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{categoryCount}</div>
-            <p className="text-xs text-muted-foreground mt-1">{t.dashboard.activeThisMonth}</p>
+        <Card className="aspect-square md:aspect-auto">
+          <CardContent className="h-full flex flex-col justify-center items-center text-center p-4 md:p-6">
+            <div className="text-xl md:text-2xl font-bold">{categoryCount}</div>
+            <p className="text-sm md:text-sm font-medium text-muted-foreground mt-2">{t.dashboard.totalCategories}</p>
+            <p className="text-xs text-muted-foreground/70 mt-1 hidden md:block">{t.dashboard.activeThisMonth}</p>
           </CardContent>
         </Card>
       </div>
