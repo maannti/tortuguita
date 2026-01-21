@@ -25,7 +25,9 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
 import { X, Plus } from "lucide-react";
+import { useTranslations } from "@/components/providers/language-provider";
 
 interface BillFormProps {
   initialData?: BillFormData & { id: string };
@@ -44,10 +46,15 @@ interface BillFormProps {
   mode: "create" | "edit";
 }
 
+const INSTALLMENT_OPTIONS = [2, 3, 4, 6, 9, 12, 18, 24];
+
 export function BillForm({ initialData, categories, members, currentUserId, mode }: BillFormProps) {
   const router = useRouter();
+  const t = useTranslations();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasInstallments, setHasInstallments] = useState(false);
+  const [installmentsCount, setInstallmentsCount] = useState<number>(2);
 
   const form = useForm<BillFormData>({
     resolver: zodResolver(billSchema),
@@ -78,13 +85,18 @@ export function BillForm({ initialData, categories, members, currentUserId, mode
     setError(null);
 
     try {
+      // If installments enabled, add to notes
+      const notesWithInstallments = hasInstallments
+        ? `${data.notes ? data.notes + " - " : ""}Cuota 1 de ${installmentsCount}`
+        : data.notes;
+
       const url =
         mode === "create" ? "/api/bills" : `/api/bills/${initialData?.id}`;
 
       const response = await fetch(url, {
         method: mode === "create" ? "POST" : "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ ...data, notes: notesWithInstallments }),
       });
 
       const result = await response.json();
@@ -107,7 +119,7 @@ export function BillForm({ initialData, categories, members, currentUserId, mode
     <Card>
       <CardHeader>
         <CardTitle>
-          {mode === "create" ? "Add New Bill" : "Edit Bill"}
+          {mode === "create" ? t.bills.newBill : t.bills.editBill}
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -124,10 +136,10 @@ export function BillForm({ initialData, categories, members, currentUserId, mode
               name="label"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Description</FormLabel>
+                  <FormLabel>{t.bills.label}</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="Electric bill"
+                      placeholder={t.bills.labelPlaceholder}
                       disabled={isLoading}
                       {...field}
                     />
@@ -142,7 +154,7 @@ export function BillForm({ initialData, categories, members, currentUserId, mode
               name="amount"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Amount</FormLabel>
+                  <FormLabel>{t.bills.amount}</FormLabel>
                   <FormControl>
                     <Input
                       type="number"
@@ -169,7 +181,7 @@ export function BillForm({ initialData, categories, members, currentUserId, mode
               name="billTypeId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Category</FormLabel>
+                  <FormLabel>{t.bills.category}</FormLabel>
                   <Select
                     onValueChange={field.onChange}
                     defaultValue={field.value}
@@ -177,7 +189,7 @@ export function BillForm({ initialData, categories, members, currentUserId, mode
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select a category" />
+                        <SelectValue placeholder={t.bills.selectCategory} />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -201,7 +213,7 @@ export function BillForm({ initialData, categories, members, currentUserId, mode
               name="paymentDate"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Payment Date</FormLabel>
+                  <FormLabel>{t.bills.paymentDate}</FormLabel>
                   <FormControl>
                     <Input
                       type="date"
@@ -219,7 +231,7 @@ export function BillForm({ initialData, categories, members, currentUserId, mode
                       }}
                     />
                   </FormControl>
-                  <FormDescription>When the payment was made</FormDescription>
+                  <FormDescription>{t.bills.paymentDateDescription}</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -230,7 +242,7 @@ export function BillForm({ initialData, categories, members, currentUserId, mode
               name="dueDate"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Due Date (Optional)</FormLabel>
+                  <FormLabel>{t.bills.dueDate}</FormLabel>
                   <FormControl>
                     <Input
                       type="date"
@@ -252,22 +264,59 @@ export function BillForm({ initialData, categories, members, currentUserId, mode
                     />
                   </FormControl>
                   <FormDescription>
-                    For future payment reminders
+                    {t.bills.dueDateDescription}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
+            {/* Installments Section */}
+            <div className="space-y-4 border rounded-lg p-4 bg-muted/30">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-medium">{t.bills.installments}</h3>
+                  <p className="text-xs text-muted-foreground">{t.bills.installmentsDescription}</p>
+                </div>
+                <Switch
+                  checked={hasInstallments}
+                  onCheckedChange={setHasInstallments}
+                  disabled={isLoading}
+                />
+              </div>
+
+              {hasInstallments && (
+                <div className="pt-2">
+                  <FormLabel>{t.bills.installmentsCount}</FormLabel>
+                  <Select
+                    value={installmentsCount.toString()}
+                    onValueChange={(value) => setInstallmentsCount(Number(value))}
+                    disabled={isLoading}
+                  >
+                    <SelectTrigger className="mt-2">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {INSTALLMENT_OPTIONS.map((count) => (
+                        <SelectItem key={count} value={count.toString()}>
+                          {count} {t.bills.installmentsCount.toLowerCase()}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            </div>
+
             <FormField
               control={form.control}
               name="notes"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Notes (Optional)</FormLabel>
+                  <FormLabel>{t.bills.notes}</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="Additional information"
+                      placeholder={t.bills.notesPlaceholder}
                       disabled={isLoading}
                       {...field}
                     />
@@ -280,10 +329,10 @@ export function BillForm({ initialData, categories, members, currentUserId, mode
             <div className="space-y-4 border-t pt-4">
               <div>
                 <h3 className="text-sm font-medium mb-2">
-                  Assign to Members (Optional)
+                  {t.bills.assignToMembers}
                 </h3>
                 <p className="text-xs text-muted-foreground mb-4">
-                  Split this bill between organization members. Total must equal 100%.
+                  {t.bills.splitBillDescription}
                 </p>
 
                 {fields.map((field, index) => {
@@ -295,12 +344,12 @@ export function BillForm({ initialData, categories, members, currentUserId, mode
                   );
 
                   return (
-                    <div key={field.id} className="flex gap-3 mb-3 items-start">
+                    <div key={field.id} className="flex flex-col md:flex-row gap-3 mb-4 p-3 bg-muted/30 rounded-lg">
                       <FormField
                         control={form.control}
                         name={`assignments.${index}.userId`}
                         render={({ field }) => (
-                          <FormItem className="w-48">
+                          <FormItem className="w-full md:w-48">
                             <Select
                               onValueChange={field.onChange}
                               value={field.value}
@@ -308,7 +357,7 @@ export function BillForm({ initialData, categories, members, currentUserId, mode
                             >
                               <FormControl>
                                 <SelectTrigger>
-                                  <SelectValue placeholder="Select member" />
+                                  <SelectValue placeholder={t.bills.selectMember} />
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
@@ -330,35 +379,38 @@ export function BillForm({ initialData, categories, members, currentUserId, mode
                           <FormItem className="flex-1">
                             <FormControl>
                               <div className="flex items-center gap-3">
-                                <Slider
-                                  min={0}
-                                  max={100}
-                                  step={0.01}
-                                  value={[Number(field.value) || 0]}
-                                  onValueChange={(values) => {
-                                    field.onChange(values[0]);
-                                  }}
-                                  disabled={isLoading}
-                                  className="flex-1"
-                                />
-                                <span className="text-sm font-medium w-14 text-right">
+                                <div className="flex-1 min-w-0">
+                                  <Slider
+                                    min={0}
+                                    max={100}
+                                    step={0.01}
+                                    value={[Number(field.value) || 0]}
+                                    onValueChange={(values) => {
+                                      field.onChange(values[0]);
+                                    }}
+                                    disabled={isLoading}
+                                    className="w-full"
+                                  />
+                                </div>
+                                <span className="text-sm font-medium w-14 text-right flex-shrink-0">
                                   {(Number(field.value) || 0).toFixed(1)}%
                                 </span>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => remove(index)}
+                                  disabled={isLoading}
+                                  className="flex-shrink-0"
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
                               </div>
                             </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => remove(index)}
-                        disabled={isLoading}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
                     </div>
                   );
                 })}
@@ -373,16 +425,16 @@ export function BillForm({ initialData, categories, members, currentUserId, mode
                       append({ userId: "", percentage: remaining });
                     }}
                     disabled={isLoading}
-                    className="mt-2"
+                    className="mt-2 w-full md:w-auto"
                   >
                     <Plus className="h-4 w-4 mr-2" />
-                    Add Member
+                    {t.bills.addMember}
                   </Button>
                 )}
 
                 {fields.length > 0 && (
                   <div className="mt-3 flex justify-between items-center text-sm">
-                    <span className="text-muted-foreground">Total:</span>
+                    <span className="text-muted-foreground">{t.bills.total}:</span>
                     <span
                       className={
                         Math.abs(totalPercentage - 100) < 0.01
@@ -403,21 +455,22 @@ export function BillForm({ initialData, categories, members, currentUserId, mode
               </div>
             </div>
 
-            <div className="flex gap-4">
-              <Button type="submit" disabled={isLoading}>
+            <div className="flex flex-col md:flex-row gap-3">
+              <Button type="submit" disabled={isLoading} className="w-full md:w-auto">
                 {isLoading
-                  ? "Saving..."
+                  ? t.bills.saving
                   : mode === "create"
-                    ? "Create"
-                    : "Update"}
+                    ? t.bills.create
+                    : t.bills.update}
               </Button>
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => router.push("/bills")}
                 disabled={isLoading}
+                className="w-full md:w-auto"
               >
-                Cancel
+                {t.common.cancel}
               </Button>
             </div>
           </form>

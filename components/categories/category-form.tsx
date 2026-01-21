@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { useTranslations } from "@/components/providers/language-provider"
 
 const defaultColors = [
   "#3b82f6", // blue
@@ -36,6 +37,7 @@ interface CategoryFormProps {
 
 export function CategoryForm({ initialData, mode }: CategoryFormProps) {
   const router = useRouter()
+  const t = useTranslations()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -83,7 +85,7 @@ export function CategoryForm({ initialData, mode }: CategoryFormProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{mode === "create" ? "Create Category" : "Edit Category"}</CardTitle>
+        <CardTitle>{mode === "create" ? t.categories.newCategory : t.categories.editCategory}</CardTitle>
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -99,9 +101,9 @@ export function CategoryForm({ initialData, mode }: CategoryFormProps) {
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Name</FormLabel>
+                  <FormLabel>{t.categories.categoryName}</FormLabel>
                   <FormControl>
-                    <Input placeholder="Groceries" disabled={isLoading} {...field} />
+                    <Input placeholder={t.categories.categoryNamePlaceholder} disabled={isLoading} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -113,10 +115,10 @@ export function CategoryForm({ initialData, mode }: CategoryFormProps) {
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Description (Optional)</FormLabel>
+                  <FormLabel>{t.categories.categoryDescription}</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="Food and household items"
+                      placeholder={t.categories.categoryDescriptionPlaceholder}
                       disabled={isLoading}
                       {...field}
                     />
@@ -131,9 +133,9 @@ export function CategoryForm({ initialData, mode }: CategoryFormProps) {
               name="color"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Color</FormLabel>
+                  <FormLabel>{t.categories.color}</FormLabel>
                   <FormDescription>
-                    Choose a color for this category
+                    {t.categories.colorDescription}
                   </FormDescription>
                   <div className="flex gap-2 flex-wrap">
                     {defaultColors.map((color) => (
@@ -168,33 +170,34 @@ export function CategoryForm({ initialData, mode }: CategoryFormProps) {
               name="icon"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Icon (Optional)</FormLabel>
+                  <FormLabel>{t.categories.icon}</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="🛒"
+                      placeholder={t.categories.iconPlaceholder}
                       disabled={isLoading}
                       {...field}
                     />
                   </FormControl>
                   <FormDescription>
-                    Add an emoji or icon character
+                    {t.categories.iconDescription}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
-            <div className="flex gap-4">
-              <Button type="submit" disabled={isLoading}>
-                {isLoading ? "Saving..." : mode === "create" ? "Create" : "Update"}
+            <div className="flex flex-col md:flex-row gap-3">
+              <Button type="submit" disabled={isLoading} className="w-full md:w-auto">
+                {isLoading ? t.categories.saving : mode === "create" ? t.categories.create : t.categories.update}
               </Button>
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => router.push("/categories")}
                 disabled={isLoading}
+                className="w-full md:w-auto"
               >
-                Cancel
+                {t.common.cancel}
               </Button>
             </div>
           </form>
