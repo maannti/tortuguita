@@ -132,7 +132,7 @@ export function BillsContent({ bills, availableMonths }: BillsContentProps) {
                           <DeleteBillButton id={bill.id} label={bill.label} asMenuItem />
                         </DropdownMenuContent>
                       </DropdownMenu>
-                      <DialogContent className="rounded-3xl border-border/50 bg-background/95 backdrop-blur-md mx-4 max-w-[calc(100%-2rem)]">
+                      <DialogContent className="rounded-3xl border-border/50 bg-background/95 backdrop-blur-md w-[calc(100%-2rem)] max-w-md">
                         <DialogHeader>
                           <DialogTitle>{bill.label}</DialogTitle>
                         </DialogHeader>
