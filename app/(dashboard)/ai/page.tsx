@@ -352,9 +352,9 @@ export default function AIPage() {
         </div>
 
         {/* Mobile: Full-screen app-like layout */}
-        <div className="flex md:hidden flex-col h-full bg-background">
+        <div className="flex md:hidden flex-col h-full bg-background overflow-hidden">
           {/* Mobile Messages area */}
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto min-h-0">
             {messages.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-center px-6 pb-4">
                 <div className="space-y-8">
@@ -418,8 +418,8 @@ export default function AIPage() {
             )}
           </div>
 
-          {/* Mobile Input - Fixed at bottom */}
-          <div className="sticky bottom-0 bg-background border-t px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
+          {/* Mobile Input - At bottom */}
+          <div className="flex-shrink-0 bg-background border-t px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
             <form onSubmit={handleSubmit}>
               <div className="relative flex items-end bg-muted rounded-3xl shadow-sm">
                 <Textarea
