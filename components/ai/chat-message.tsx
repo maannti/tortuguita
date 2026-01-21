@@ -2,7 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import { CheckCircleIcon, XCircleIcon, UserIcon } from "lucide-react";
+import { CheckCircleIcon, XCircleIcon } from "lucide-react";
 import { MarkdownRenderer } from "./markdown-renderer";
 import { TurtleIcon } from "./turtle-icon";
 
@@ -13,11 +13,68 @@ interface ChatMessageProps {
     toolCalls?: any;
     timestamp: Date;
   };
+  isMobile?: boolean;
 }
 
-export function ChatMessage({ message }: ChatMessageProps) {
+export function ChatMessage({ message, isMobile = false }: ChatMessageProps) {
   const isUser = message.role === "user";
 
+  if (isMobile) {
+    // Mobile: Clean, app-like layout similar to Claude/ChatGPT
+    return (
+      <div className={cn("flex gap-3", isUser ? "justify-end" : "justify-start")}>
+        {/* Assistant avatar */}
+        {!isUser && (
+          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary flex items-center justify-center">
+            <TurtleIcon className="h-5 w-5" />
+          </div>
+        )}
+
+        {/* Message bubble */}
+        <div
+          className={cn(
+            "max-w-[85%] rounded-2xl px-4 py-2.5",
+            isUser
+              ? "bg-primary text-primary-foreground"
+              : "bg-muted"
+          )}
+        >
+          {/* Message content */}
+          <div className="text-[15px] leading-relaxed">
+            <MarkdownRenderer content={message.content} isUser={isUser} />
+          </div>
+
+          {/* Tool calls results */}
+          {message.toolCalls?.calls && (
+            <div className="mt-2 space-y-1.5 border-t pt-2 border-border/40">
+              {message.toolCalls.calls.map((call: any, idx: number) => (
+                <div key={idx} className="flex items-start gap-2 text-xs">
+                  {call.result.success ? (
+                    <CheckCircleIcon className="h-3.5 w-3.5 text-green-500 mt-0.5 flex-shrink-0" />
+                  ) : (
+                    <XCircleIcon className="h-3.5 w-3.5 text-red-500 mt-0.5 flex-shrink-0" />
+                  )}
+                  <div className="flex-1">
+                    <div className="font-medium">
+                      {call.tool === "create_bill" && "Created bill"}
+                      {call.tool === "create_category" && "Created category"}
+                      {call.tool === "get_analytics" && "Retrieved analytics"}
+                      {call.tool === "search_bills" && "Found bills"}
+                    </div>
+                    {call.result.error && (
+                      <div className="text-red-500 mt-0.5">{call.result.error}</div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Desktop: Original layout with timestamps
   return (
     <div className={cn("flex gap-3", isUser ? "justify-end" : "justify-start")}>
       {/* Avatar */}
@@ -69,10 +126,12 @@ export function ChatMessage({ message }: ChatMessageProps) {
         </div>
       </div>
 
-      {/* User avatar */}
+      {/* User avatar - only on desktop */}
       {isUser && (
         <div className="flex-shrink-0 w-8 h-8 rounded-full bg-muted flex items-center justify-center">
-          <UserIcon className="h-4 w-4" />
+          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          </svg>
         </div>
       )}
     </div>

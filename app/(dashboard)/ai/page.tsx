@@ -30,11 +30,6 @@ export default function AIPage() {
   const t = useTranslations();
   const { language } = useLanguage();
 
-  // Auto-focus textarea on mount to prompt keyboard
-  useEffect(() => {
-    textareaRef.current?.focus();
-  }, []);
-
   const { data: conversations, mutate: refreshConversations } = useSWR("/api/ai/conversations", fetcher);
 
   const scrollToBottom = () => {
@@ -60,7 +55,7 @@ export default function AIPage() {
     const textarea = textareaRef.current;
     if (textarea) {
       textarea.style.height = "auto";
-      textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`;
+      textarea.style.height = `${Math.min(textarea.scrollHeight, 120)}px`;
     }
   }, [input]);
 
@@ -248,9 +243,9 @@ export default function AIPage() {
   };
 
   return (
-    <div className="flex h-full gap-4">
+    <div className="flex h-full -m-4 md:-m-6">
       {/* Sidebar with conversation history - hidden on mobile */}
-      <div className="hidden md:block">
+      <div className="hidden md:block p-4 md:p-6">
         <ConversationSidebar
           conversations={Array.isArray(conversations) ? conversations : []}
           currentConversationId={conversationId}
@@ -261,75 +256,172 @@ export default function AIPage() {
       </div>
 
       {/* Main chat area */}
-      <div className="flex-1 flex flex-col">
-        <Card className="flex-1 flex flex-col overflow-hidden">
-          {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Desktop: Card wrapper */}
+        <div className="hidden md:flex flex-1 p-4 md:p-6 pl-0">
+          <Card className="flex-1 flex flex-col overflow-hidden">
+            {/* Desktop Messages */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {messages.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full text-center px-2">
+                  <div className="max-w-2xl space-y-6">
+                    <div>
+                      <h2 className="text-2xl md:text-3xl font-bold mb-2">{t.ai.title}</h2>
+                      <p className="text-muted-foreground text-sm md:text-base">{t.ai.subtitle}</p>
+                    </div>
+
+                    <div className="flex flex-wrap justify-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-xs md:text-sm whitespace-nowrap"
+                        onClick={() => handleSuggestionClick(suggestions.analytics)}
+                      >
+                        {t.ai.suggestions.viewAnalytics}
+                      </Button>
+
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-xs md:text-sm whitespace-nowrap"
+                        onClick={() => handleSuggestionClick(suggestions.createBill)}
+                      >
+                        {t.ai.suggestions.createBill}
+                      </Button>
+
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-xs md:text-sm whitespace-nowrap"
+                        onClick={() => handleSuggestionClick(suggestions.showBills)}
+                      >
+                        {t.ai.suggestions.showBills}
+                      </Button>
+
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-xs md:text-sm whitespace-nowrap"
+                        onClick={() => handleSuggestionClick(suggestions.createCategory)}
+                      >
+                        {t.ai.suggestions.createCategory}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                messages.map((msg, idx) => <ChatMessage key={idx} message={msg} />)
+              )}
+              {isLoading && messages.length > 0 && messages[messages.length - 1]?.role === "user" && (
+                <div className="flex items-center gap-3 text-muted-foreground">
+                  <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary flex items-center justify-center">
+                    <TurtleIcon className="h-6 w-6" isThinking />
+                  </div>
+                  <span className="text-sm">{t.ai.thinking}</span>
+                </div>
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+
+            {/* Desktop Input */}
+            <div className="p-4 border-t">
+              <form onSubmit={handleSubmit}>
+                <div className="relative flex items-end bg-muted/50 rounded-2xl border border-border/50 shadow-sm focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/20 transition-all">
+                  <Textarea
+                    ref={textareaRef}
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder={t.ai.placeholder}
+                    disabled={isLoading}
+                    className="flex-1 min-h-[48px] max-h-[120px] resize-none overflow-y-auto bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0 py-[14px] px-4 pr-14 leading-5"
+                    rows={1}
+                  />
+                  <Button
+                    type="submit"
+                    disabled={isLoading || !input.trim()}
+                    size="icon"
+                    className="absolute right-2 bottom-2 h-9 w-9 rounded-xl bg-primary hover:bg-primary/90 disabled:opacity-40"
+                  >
+                    <SendIcon className="h-4 w-4" />
+                  </Button>
+                </div>
+              </form>
+            </div>
+          </Card>
+        </div>
+
+        {/* Mobile: Full-screen app-like layout */}
+        <div className="flex md:hidden flex-col h-full bg-background">
+          {/* Mobile Messages area */}
+          <div className="flex-1 overflow-y-auto">
             {messages.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full text-center px-2">
-                <div className="max-w-2xl space-y-6">
-                  <div>
-                    <h2 className="text-2xl md:text-3xl font-bold mb-2">{t.ai.title}</h2>
-                    <p className="text-muted-foreground text-sm md:text-base">{t.ai.subtitle}</p>
+              <div className="flex flex-col items-center justify-center h-full text-center px-6 pb-4">
+                <div className="space-y-8">
+                  {/* Turtle icon */}
+                  <div className="flex justify-center">
+                    <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                      <TurtleIcon className="h-10 w-10 text-primary" />
+                    </div>
                   </div>
 
-                  <div className="flex flex-wrap justify-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="text-xs md:text-sm whitespace-nowrap"
+                  <div>
+                    <h2 className="text-xl font-semibold mb-2">{t.ai.title}</h2>
+                    <p className="text-muted-foreground text-sm">{t.ai.subtitle}</p>
+                  </div>
+
+                  {/* Suggestion chips - vertical stack on mobile */}
+                  <div className="flex flex-col gap-2 w-full max-w-xs mx-auto">
+                    <button
                       onClick={() => handleSuggestionClick(suggestions.analytics)}
+                      className="w-full px-4 py-3 text-sm text-left rounded-2xl bg-muted/50 hover:bg-muted active:scale-[0.98] transition-all"
                     >
                       {t.ai.suggestions.viewAnalytics}
-                    </Button>
+                    </button>
 
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="text-xs md:text-sm whitespace-nowrap"
+                    <button
                       onClick={() => handleSuggestionClick(suggestions.createBill)}
+                      className="w-full px-4 py-3 text-sm text-left rounded-2xl bg-muted/50 hover:bg-muted active:scale-[0.98] transition-all"
                     >
                       {t.ai.suggestions.createBill}
-                    </Button>
+                    </button>
 
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="text-xs md:text-sm whitespace-nowrap"
+                    <button
                       onClick={() => handleSuggestionClick(suggestions.showBills)}
+                      className="w-full px-4 py-3 text-sm text-left rounded-2xl bg-muted/50 hover:bg-muted active:scale-[0.98] transition-all"
                     >
                       {t.ai.suggestions.showBills}
-                    </Button>
+                    </button>
 
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="text-xs md:text-sm whitespace-nowrap"
+                    <button
                       onClick={() => handleSuggestionClick(suggestions.createCategory)}
+                      className="w-full px-4 py-3 text-sm text-left rounded-2xl bg-muted/50 hover:bg-muted active:scale-[0.98] transition-all"
                     >
                       {t.ai.suggestions.createCategory}
-                    </Button>
+                    </button>
                   </div>
                 </div>
               </div>
             ) : (
-              messages.map((msg, idx) => <ChatMessage key={idx} message={msg} />)
-            )}
-            {isLoading && (
-              <div className="flex items-center gap-3 text-muted-foreground">
-                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary flex items-center justify-center">
-                  <TurtleIcon className="h-6 w-6" isThinking />
-                </div>
-                <span className="text-sm">{t.ai.thinking}</span>
+              <div className="px-4 py-4 space-y-4">
+                {messages.map((msg, idx) => <ChatMessage key={idx} message={msg} isMobile />)}
+                {isLoading && messages.length > 0 && messages[messages.length - 1]?.role === "user" && (
+                  <div className="flex items-center gap-3 text-muted-foreground py-2">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary flex items-center justify-center">
+                      <TurtleIcon className="h-5 w-5" isThinking />
+                    </div>
+                    <span className="text-sm">{t.ai.thinking}</span>
+                  </div>
+                )}
+                <div ref={messagesEndRef} />
               </div>
             )}
-            <div ref={messagesEndRef} />
           </div>
 
-          {/* Input */}
-          <div className="p-4">
+          {/* Mobile Input - Fixed at bottom */}
+          <div className="sticky bottom-0 bg-background border-t px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
             <form onSubmit={handleSubmit}>
-              <div className="relative flex items-end bg-muted/50 rounded-2xl border border-border/50 shadow-sm focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/20 transition-all">
+              <div className="relative flex items-end bg-muted rounded-3xl shadow-sm">
                 <Textarea
                   ref={textareaRef}
                   value={input}
@@ -337,22 +429,21 @@ export default function AIPage() {
                   onKeyDown={handleKeyDown}
                   placeholder={t.ai.placeholder}
                   disabled={isLoading}
-                  className="flex-1 min-h-[48px] max-h-[200px] resize-none overflow-y-auto bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0 py-[14px] px-4 pr-14 leading-5"
+                  className="flex-1 min-h-[44px] max-h-[120px] resize-none overflow-y-auto bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0 py-3 px-4 pr-12 leading-5 text-[16px]"
                   rows={1}
-                  autoFocus
                 />
                 <Button
                   type="submit"
                   disabled={isLoading || !input.trim()}
                   size="icon"
-                  className="absolute right-2 bottom-2 h-9 w-9 rounded-xl bg-primary hover:bg-primary/90 disabled:opacity-40"
+                  className="absolute right-1.5 bottom-1.5 h-8 w-8 rounded-full bg-primary hover:bg-primary/90 disabled:opacity-40"
                 >
                   <SendIcon className="h-4 w-4" />
                 </Button>
               </div>
             </form>
           </div>
-        </Card>
+        </div>
       </div>
     </div>
   );
