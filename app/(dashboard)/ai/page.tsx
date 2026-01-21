@@ -421,7 +421,7 @@ export default function AIPage() {
           {/* Mobile Input - At bottom */}
           <div className="flex-shrink-0 bg-background px-3 py-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
             <form onSubmit={handleSubmit}>
-              <div className="flex items-center gap-2 bg-muted rounded-3xl pl-4 pr-2 py-1.5">
+              <div className="flex items-center gap-2 bg-muted rounded-3xl pl-4 pr-1.5 min-h-[48px]">
                 <Textarea
                   ref={textareaRef}
                   value={input}
@@ -429,13 +429,13 @@ export default function AIPage() {
                   onKeyDown={handleKeyDown}
                   placeholder={t.ai.placeholder}
                   disabled={isLoading}
-                  className="flex-1 min-h-[40px] max-h-[120px] resize-none overflow-y-auto bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0 py-2.5 px-0 leading-5 text-[16px] placeholder:text-muted-foreground/70"
+                  className="flex-1 min-h-[24px] max-h-[120px] resize-none overflow-y-auto bg-transparent border-none shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 py-0 px-0 leading-6 text-[16px] placeholder:text-muted-foreground/70 self-center"
                   rows={1}
                 />
                 <button
                   type="submit"
                   disabled={isLoading || !input.trim()}
-                  className="flex-shrink-0 w-9 h-9 flex items-center justify-center rounded-full bg-primary text-primary-foreground disabled:opacity-40 transition-opacity"
+                  className="flex-shrink-0 w-9 h-9 rounded-full bg-primary text-primary-foreground disabled:opacity-40 transition-opacity grid place-items-center self-center"
                 >
                   <SendIcon className="h-4 w-4" />
                 </button>
