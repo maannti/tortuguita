@@ -99,19 +99,19 @@ export function BillsContent({ bills, availableMonths }: BillsContentProps) {
                 style={{ backgroundColor: getPastelBackground(bill.billType.color) }}
               >
                 <CardContent className="p-4">
-                  <div className="flex items-start gap-3">
-                    <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 min-w-0 py-0.5">
                       <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
                         <span>{bill.paymentDate}</span>
                         {bill.billType.icon && <span>{bill.billType.icon}</span>}
                       </div>
                       <p className="font-medium leading-snug">{bill.label}</p>
                     </div>
-                    <span className="font-semibold whitespace-nowrap pt-0.5">${bill.amount.toFixed(2)}</span>
+                    <span className="font-semibold whitespace-nowrap">${bill.amount.toFixed(2)}</span>
                     <Dialog>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0 -mr-1 rounded-full hover:bg-black/5">
+                          <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0 rounded-full hover:bg-black/5">
                             <MoreVertical className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
