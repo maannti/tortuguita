@@ -98,80 +98,84 @@ export function BillsContent({ bills, availableMonths }: BillsContentProps) {
                 key={bill.id}
                 style={{ backgroundColor: getPastelBackground(bill.billType.color) }}
               >
-                <CardContent className="p-3">
-                  <div className="flex items-center justify-between gap-3">
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-3">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
                         <span>{bill.paymentDate}</span>
                         {bill.billType.icon && <span>{bill.billType.icon}</span>}
                       </div>
-                      <p className="font-medium truncate">{bill.label}</p>
+                      <p className="font-medium leading-snug">{bill.label}</p>
                     </div>
-                    <span className="font-semibold whitespace-nowrap">${bill.amount.toFixed(2)}</span>
+                    <span className="font-semibold whitespace-nowrap pt-0.5">${bill.amount.toFixed(2)}</span>
                     <Dialog>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0">
+                          <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0 -mr-1 rounded-full hover:bg-black/5">
                             <MoreVertical className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-48">
+                        <DropdownMenuContent align="end" className="w-44 rounded-2xl bg-background/95 backdrop-blur-sm border-border/50 p-1.5">
                           <DialogTrigger asChild>
-                            <DropdownMenuItem className="flex items-center gap-2">
+                            <DropdownMenuItem className="flex items-center gap-2 rounded-xl py-2.5 px-3">
                               <Info className="h-4 w-4" />
                               {t.bills.details}
                             </DropdownMenuItem>
                           </DialogTrigger>
-                          <DropdownMenuItem asChild>
+                          <DropdownMenuItem asChild className="rounded-xl py-2.5 px-3">
                             <Link href={`/bills/${bill.id}/edit`} className="flex items-center gap-2">
                               <Pencil className="h-4 w-4" />
                               {t.common.edit}
                             </Link>
                           </DropdownMenuItem>
-                          <DropdownMenuSeparator />
+                          <DropdownMenuSeparator className="my-1.5" />
                           <DeleteBillButton id={bill.id} label={bill.label} asMenuItem />
                         </DropdownMenuContent>
                       </DropdownMenu>
-                      <DialogContent>
+                      <DialogContent className="rounded-3xl border-border/50 bg-background/95 backdrop-blur-md mx-4 max-w-[calc(100%-2rem)]">
                         <DialogHeader>
                           <DialogTitle>{bill.label}</DialogTitle>
                         </DialogHeader>
-                        <div className="space-y-3">
-                          <div>
-                            <p className="text-xs text-muted-foreground">{t.bills.category}</p>
-                            <CategoryBadge
-                              name={bill.billType.name}
-                              color={bill.billType.color}
-                              icon={bill.billType.icon}
-                            />
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-xs text-muted-foreground mb-1">{t.bills.category}</p>
+                              <CategoryBadge
+                                name={bill.billType.name}
+                                color={bill.billType.color}
+                                icon={bill.billType.icon}
+                              />
+                            </div>
+                            <div className="text-right">
+                              <p className="text-xs text-muted-foreground mb-1">{t.common.amount}</p>
+                              <p className="text-lg font-semibold">${bill.amount.toFixed(2)}</p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="text-xs text-muted-foreground">{t.common.amount}</p>
-                            <p className="text-sm font-medium">${bill.amount.toFixed(2)}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-muted-foreground">{t.bills.paymentDate}</p>
-                            <p className="text-sm">{bill.paymentDate}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-muted-foreground">{t.bills.addedBy}</p>
-                            <p className="text-sm">{bill.user.name}</p>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <p className="text-xs text-muted-foreground mb-1">{t.bills.paymentDate}</p>
+                              <p className="text-sm">{bill.paymentDate}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground mb-1">{t.bills.addedBy}</p>
+                              <p className="text-sm">{bill.user.name}</p>
+                            </div>
                           </div>
                           {bill.dueDate && (
                             <div>
-                              <p className="text-xs text-muted-foreground">{t.bills.dueDate}</p>
+                              <p className="text-xs text-muted-foreground mb-1">{t.bills.dueDate}</p>
                               <p className="text-sm">{bill.dueDate}</p>
                             </div>
                           )}
                           {bill.notes && (
                             <div>
-                              <p className="text-xs text-muted-foreground">{t.bills.notes}</p>
+                              <p className="text-xs text-muted-foreground mb-1">{t.bills.notes}</p>
                               <p className="text-sm">{bill.notes}</p>
                             </div>
                           )}
                           {bill.assignments.length > 0 && (
                             <div>
-                              <p className="text-xs text-muted-foreground">{t.bills.assignments}</p>
+                              <p className="text-xs text-muted-foreground mb-1">{t.bills.assignments}</p>
                               <div className="text-sm space-y-0.5">
                                 {bill.assignments.map((a) => (
                                   <p key={a.id}>

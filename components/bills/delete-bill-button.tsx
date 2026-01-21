@@ -60,7 +60,7 @@ export function DeleteBillButton({ id, label, iconOnly, asMenuItem }: DeleteBill
         {asMenuItem ? (
           <DropdownMenuItem
             onSelect={(e) => e.preventDefault()}
-            className="flex items-center gap-2 text-destructive focus:text-destructive"
+            className="flex items-center gap-2 text-destructive focus:text-destructive rounded-xl py-2.5 px-3"
           >
             <Trash2 className="h-4 w-4" />
             {t.common.delete}
