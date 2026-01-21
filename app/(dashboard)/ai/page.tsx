@@ -419,9 +419,9 @@ export default function AIPage() {
           </div>
 
           {/* Mobile Input - At bottom */}
-          <div className="flex-shrink-0 bg-background border-t px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
+          <div className="flex-shrink-0 bg-background border-t px-2 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
             <form onSubmit={handleSubmit}>
-              <div className="relative flex items-end bg-muted rounded-3xl shadow-sm">
+              <div className="relative flex items-end bg-muted rounded-3xl">
                 <Textarea
                   ref={textareaRef}
                   value={input}
@@ -432,14 +432,13 @@ export default function AIPage() {
                   className="flex-1 min-h-[44px] max-h-[120px] resize-none overflow-y-auto bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0 py-3 px-4 pr-12 leading-5 text-[16px]"
                   rows={1}
                 />
-                <Button
+                <button
                   type="submit"
                   disabled={isLoading || !input.trim()}
-                  size="icon"
-                  className="absolute right-1.5 bottom-1.5 h-8 w-8 rounded-full bg-primary hover:bg-primary/90 disabled:opacity-40"
+                  className="absolute right-3 bottom-3 text-primary disabled:opacity-40"
                 >
-                  <SendIcon className="h-4 w-4" />
-                </Button>
+                  <SendIcon className="h-5 w-5" />
+                </button>
               </div>
             </form>
           </div>
