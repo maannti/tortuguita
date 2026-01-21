@@ -55,6 +55,15 @@ export default function AIPage() {
     }
   };
 
+  // Auto-resize textarea
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      textarea.style.height = "auto";
+      textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`;
+    }
+  }, [input]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
@@ -318,22 +327,29 @@ export default function AIPage() {
           </div>
 
           {/* Input */}
-          <div className="border-t p-4">
-            <form onSubmit={handleSubmit} className="flex gap-2 items-end">
-              <Textarea
-                ref={textareaRef}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder={t.ai.placeholder}
-                disabled={isLoading}
-                className="flex-1 max-h-32"
-                rows={1}
-                autoFocus
-              />
-              <Button type="submit" disabled={isLoading || !input.trim()} className="shrink-0">
-                <SendIcon className="h-4 w-4" />
-              </Button>
+          <div className="p-4">
+            <form onSubmit={handleSubmit}>
+              <div className="relative flex items-end bg-muted/50 rounded-2xl border border-border/50 shadow-sm focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/20 transition-all">
+                <Textarea
+                  ref={textareaRef}
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder={t.ai.placeholder}
+                  disabled={isLoading}
+                  className="flex-1 min-h-[48px] max-h-[200px] resize-none overflow-y-auto bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0 py-[14px] px-4 pr-14 leading-5"
+                  rows={1}
+                  autoFocus
+                />
+                <Button
+                  type="submit"
+                  disabled={isLoading || !input.trim()}
+                  size="icon"
+                  className="absolute right-2 bottom-2 h-9 w-9 rounded-xl bg-primary hover:bg-primary/90 disabled:opacity-40"
+                >
+                  <SendIcon className="h-4 w-4" />
+                </Button>
+              </div>
             </form>
           </div>
         </Card>

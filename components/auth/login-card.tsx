@@ -1,6 +1,6 @@
 "use client";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import Image from "next/image";
 import { LoginForm } from "./login-form";
 import { useTranslations } from "@/components/providers/language-provider";
 
@@ -8,14 +8,28 @@ export function LoginCard() {
   const t = useTranslations();
 
   return (
-    <Card>
-      <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl font-bold">{t.auth.welcomeBack}</CardTitle>
-        <CardDescription>{t.auth.signInDescription}</CardDescription>
-      </CardHeader>
-      <CardContent>
+    <div className="relative p-8 rounded-2xl border border-white/20 bg-white/10 backdrop-blur-xl shadow-2xl">
+      {/* Subtle inner glow */}
+      <div className="absolute inset-0 rounded-2xl bg-gradient-to-b from-white/5 to-transparent pointer-events-none" />
+
+      <div className="relative z-10 space-y-6">
+        {/* Logo */}
+        <div className="flex justify-center">
+          <Image
+            src="/logo-dark.svg"
+            alt="Logo"
+            width={280}
+            height={280}
+            className="drop-shadow-lg"
+          />
+        </div>
+
+        {/* Title */}
+        <h1 className="text-2xl font-bold text-white text-center">{t.auth.login}</h1>
+
+        {/* Form */}
         <LoginForm />
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

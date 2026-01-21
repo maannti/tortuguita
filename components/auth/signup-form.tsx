@@ -11,12 +11,14 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import { useTranslations } from "@/components/providers/language-provider";
+import { Eye, EyeOff } from "lucide-react";
 
 export function SignupForm() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mode, setMode] = useState<"create" | "join">("create");
+  const [showPassword, setShowPassword] = useState(false);
   const t = useTranslations();
 
   const formSchema = z.object({
@@ -143,7 +145,27 @@ export function SignupForm() {
               <FormItem>
                 <FormLabel>{t.common.password}</FormLabel>
                 <FormControl>
-                  <Input placeholder="••••••••" type="password" autoComplete="new-password" disabled={isLoading} {...field} />
+                  <div className="relative">
+                    <Input
+                      placeholder="••••••••"
+                      type={showPassword ? "text" : "password"}
+                      autoComplete="new-password"
+                      disabled={isLoading}
+                      className="pr-10"
+                      {...field}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </button>
+                  </div>
                 </FormControl>
                 <FormMessage />
               </FormItem>
