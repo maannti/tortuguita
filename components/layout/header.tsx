@@ -227,7 +227,7 @@ export function Header() {
       >
         <div className="flex flex-col h-full">
           {/* Mobile menu header */}
-          <div className="flex h-20 items-center justify-between px-4 border-b">
+          <div className="flex h-16 items-center justify-between px-4">
             <Link href="/ai" onClick={closeMobileMenu} className="flex items-center">
               <img src={mounted && theme === "dark" ? "/logo-dark.svg" : "/logo-light.svg"} alt="tortuguita" className="h-10 w-auto" />
             </Link>
