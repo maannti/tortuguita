@@ -50,6 +50,7 @@ export function BillForm({ initialData, categories, members, currentUserId, mode
   const t = useTranslations();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [cuotas, setCuotas] = useState("0");
 
   const form = useForm<BillFormData>({
     resolver: zodResolver(billSchema),
@@ -80,13 +81,19 @@ export function BillForm({ initialData, categories, members, currentUserId, mode
     setError(null);
 
     try {
+      // Add cuotas info to notes
+      const cuotasNum = parseInt(cuotas);
+      const finalNotes = cuotasNum > 0
+        ? `${data.notes ? data.notes + " - " : ""}Cuota 1 de ${cuotasNum}`
+        : data.notes;
+
       const url =
         mode === "create" ? "/api/bills" : `/api/bills/${initialData?.id}`;
 
       const response = await fetch(url, {
         method: mode === "create" ? "POST" : "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ ...data, notes: finalNotes }),
       });
 
       const result = await response.json();
@@ -260,6 +267,23 @@ export function BillForm({ initialData, categories, members, currentUserId, mode
                 </FormItem>
               )}
             />
+
+            {/* Cuotas */}
+            <FormItem>
+              <FormLabel>Cuotas</FormLabel>
+              <Select value={cuotas} onValueChange={setCuotas} disabled={isLoading}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Sin cuotas" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="0">Sin cuotas</SelectItem>
+                  <SelectItem value="2">2 cuotas</SelectItem>
+                  <SelectItem value="3">3 cuotas</SelectItem>
+                  <SelectItem value="6">6 cuotas</SelectItem>
+                  <SelectItem value="12">12 cuotas</SelectItem>
+                </SelectContent>
+              </Select>
+            </FormItem>
 
             <FormField
               control={form.control}
