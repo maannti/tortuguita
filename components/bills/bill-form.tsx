@@ -50,7 +50,6 @@ export function BillForm({ initialData, categories, members, currentUserId, mode
   const t = useTranslations();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [installments, setInstallments] = useState<string>("0");
 
   const form = useForm<BillFormData>({
     resolver: zodResolver(billSchema),
@@ -81,19 +80,13 @@ export function BillForm({ initialData, categories, members, currentUserId, mode
     setError(null);
 
     try {
-      // Add installment info to notes if selected
-      const installmentCount = parseInt(installments);
-      const finalNotes = installmentCount > 0
-        ? `${data.notes ? data.notes + " - " : ""}Cuota 1 de ${installmentCount}`
-        : data.notes;
-
       const url =
         mode === "create" ? "/api/bills" : `/api/bills/${initialData?.id}`;
 
       const response = await fetch(url, {
         method: mode === "create" ? "POST" : "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...data, notes: finalNotes }),
+        body: JSON.stringify(data),
       });
 
       const result = await response.json();
@@ -267,32 +260,6 @@ export function BillForm({ initialData, categories, members, currentUserId, mode
                 </FormItem>
               )}
             />
-
-            {/* Installments */}
-            <div>
-              <FormLabel>{t.bills.installments}</FormLabel>
-              <Select
-                value={installments}
-                onValueChange={setInstallments}
-                disabled={isLoading}
-              >
-                <SelectTrigger className="mt-2">
-                  <SelectValue placeholder={t.bills.noInstallments} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="0">{t.bills.noInstallments}</SelectItem>
-                  <SelectItem value="2">2 cuotas</SelectItem>
-                  <SelectItem value="3">3 cuotas</SelectItem>
-                  <SelectItem value="4">4 cuotas</SelectItem>
-                  <SelectItem value="6">6 cuotas</SelectItem>
-                  <SelectItem value="9">9 cuotas</SelectItem>
-                  <SelectItem value="12">12 cuotas</SelectItem>
-                  <SelectItem value="18">18 cuotas</SelectItem>
-                  <SelectItem value="24">24 cuotas</SelectItem>
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground mt-1.5">{t.bills.installmentsDescription}</p>
-            </div>
 
             <FormField
               control={form.control}
