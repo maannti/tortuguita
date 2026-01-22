@@ -45,15 +45,11 @@ interface BillFormProps {
   mode: "create" | "edit";
 }
 
-const INSTALLMENT_OPTIONS = [2, 3, 4, 6, 9, 12, 18, 24];
-
 export function BillForm({ initialData, categories, members, currentUserId, mode }: BillFormProps) {
   const router = useRouter();
   const t = useTranslations();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [hasInstallments, setHasInstallments] = useState(false);
-  const [installmentsCount, setInstallmentsCount] = useState<number>(2);
 
   const form = useForm<BillFormData>({
     resolver: zodResolver(billSchema),
@@ -84,18 +80,13 @@ export function BillForm({ initialData, categories, members, currentUserId, mode
     setError(null);
 
     try {
-      // If installments enabled, add to notes
-      const notesWithInstallments = hasInstallments
-        ? `${data.notes ? data.notes + " - " : ""}Cuota 1 de ${installmentsCount}`
-        : data.notes;
-
       const url =
         mode === "create" ? "/api/bills" : `/api/bills/${initialData?.id}`;
 
       const response = await fetch(url, {
         method: mode === "create" ? "POST" : "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...data, notes: notesWithInstallments }),
+        body: JSON.stringify(data),
       });
 
       const result = await response.json();
@@ -269,52 +260,6 @@ export function BillForm({ initialData, categories, members, currentUserId, mode
                 </FormItem>
               )}
             />
-
-            {/* Installments Section */}
-            <div className="space-y-4 border rounded-lg p-4 bg-muted/30">
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex-1">
-                  <h3 className="text-sm font-medium">{t.bills.installments}</h3>
-                  <p className="text-xs text-muted-foreground">{t.bills.installmentsDescription}</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setHasInstallments(!hasInstallments)}
-                  disabled={isLoading}
-                  className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
-                    hasInstallments ? "bg-primary" : "bg-input"
-                  }`}
-                >
-                  <span
-                    className={`pointer-events-none block h-5 w-5 rounded-full bg-background shadow-lg ring-0 transition-transform ${
-                      hasInstallments ? "translate-x-5" : "translate-x-0"
-                    }`}
-                  />
-                </button>
-              </div>
-
-              {hasInstallments && (
-                <div className="pt-2">
-                  <FormLabel>{t.bills.installmentsCount}</FormLabel>
-                  <Select
-                    value={installmentsCount.toString()}
-                    onValueChange={(value) => setInstallmentsCount(Number(value))}
-                    disabled={isLoading}
-                  >
-                    <SelectTrigger className="mt-2">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {INSTALLMENT_OPTIONS.map((count) => (
-                        <SelectItem key={count} value={count.toString()}>
-                          {count} cuotas
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-            </div>
 
             <FormField
               control={form.control}
