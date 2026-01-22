@@ -25,7 +25,6 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
-import { Switch } from "@/components/ui/switch";
 import { X, Plus } from "lucide-react";
 import { useTranslations } from "@/components/providers/language-provider";
 
@@ -273,16 +272,25 @@ export function BillForm({ initialData, categories, members, currentUserId, mode
 
             {/* Installments Section */}
             <div className="space-y-4 border rounded-lg p-4 bg-muted/30">
-              <div className="flex items-center justify-between">
-                <div>
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex-1">
                   <h3 className="text-sm font-medium">{t.bills.installments}</h3>
                   <p className="text-xs text-muted-foreground">{t.bills.installmentsDescription}</p>
                 </div>
-                <Switch
-                  checked={hasInstallments}
-                  onCheckedChange={setHasInstallments}
+                <button
+                  type="button"
+                  onClick={() => setHasInstallments(!hasInstallments)}
                   disabled={isLoading}
-                />
+                  className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
+                    hasInstallments ? "bg-primary" : "bg-input"
+                  }`}
+                >
+                  <span
+                    className={`pointer-events-none block h-5 w-5 rounded-full bg-background shadow-lg ring-0 transition-transform ${
+                      hasInstallments ? "translate-x-5" : "translate-x-0"
+                    }`}
+                  />
+                </button>
               </div>
 
               {hasInstallments && (
@@ -299,7 +307,7 @@ export function BillForm({ initialData, categories, members, currentUserId, mode
                     <SelectContent>
                       {INSTALLMENT_OPTIONS.map((count) => (
                         <SelectItem key={count} value={count.toString()}>
-                          {count} {t.bills.installmentsCount.toLowerCase()}
+                          {count} cuotas
                         </SelectItem>
                       ))}
                     </SelectContent>
