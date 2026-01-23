@@ -173,6 +173,8 @@ export const en = {
     categoryDeleted: "Category deleted successfully",
     confirmDelete: "Are you sure you want to delete this category?",
     cannotDeleteWithBills: "Cannot delete category with existing bills",
+    isCreditCard: "Credit card",
+    isCreditCardDescription: "Enable installment options when creating expenses with this category",
   },
 
   // Settings

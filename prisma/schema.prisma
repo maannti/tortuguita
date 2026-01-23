@@ -103,6 +103,7 @@ model BillType {
   description    String?
   color          String?
   icon           String?
+  isCreditCard   Boolean      @default(false)
   organizationId String
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
@@ -115,17 +116,20 @@ model BillType {
 }
 
 model Bill {
-  id             String       @id @default(cuid())
-  label          String
-  amount         Decimal      @db.Decimal(10, 2)
-  paymentDate    DateTime
-  dueDate        DateTime?
-  billTypeId     String
-  organizationId String
-  userId         String
-  notes          String?      @db.Text
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  id                  String       @id @default(cuid())
+  label               String
+  amount              Decimal      @db.Decimal(10, 2)
+  paymentDate         DateTime
+  dueDate             DateTime?
+  billTypeId          String
+  organizationId      String
+  userId              String
+  notes               String?      @db.Text
+  totalInstallments   Int?         // e.g., 12 for 12-cuota plan
+  currentInstallment  Int?         // e.g., 1, 2, 3...
+  installmentGroupId  String?      // shared ID to group related installments
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
 
   billType       BillType         @relation(fields: [billTypeId], references: [id], onDelete: Restrict)
   organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
@@ -136,6 +140,7 @@ model Bill {
   @@index([billTypeId])
   @@index([userId])
   @@index([paymentDate])
+  @@index([installmentGroupId])
 }
 
 model BillAssignment {

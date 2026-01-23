@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { billSchema } from "@/lib/validations/bill"
 import { z } from "zod"
 import { Prisma } from "@prisma/client"
+import { randomUUID } from "crypto"
 
 export async function GET(request: NextRequest) {
   try {
@@ -129,6 +130,76 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Extract session values for use in transaction (TypeScript narrowing)
+    const organizationId = session.user.organizationId
+    const userId = session.user.id
+
+    // Check if creating installments
+    const totalInstallments = data.totalInstallments || 1
+
+    if (totalInstallments > 1) {
+      // Create multiple bills for installments
+      const installmentGroupId = randomUUID()
+      const amountPerInstallment = Math.round((data.amount / totalInstallments) * 100) / 100
+
+      // Build all bill creation promises
+      const billPromises = []
+      for (let i = 1; i <= totalInstallments; i++) {
+        // Calculate payment date (monthly intervals)
+        const paymentDate = new Date(data.paymentDate)
+        paymentDate.setMonth(paymentDate.getMonth() + (i - 1))
+
+        billPromises.push(
+          prisma.bill.create({
+            data: {
+              label: data.label,
+              amount: amountPerInstallment,
+              paymentDate,
+              dueDate: data.dueDate || null,
+              billTypeId: data.billTypeId,
+              notes: data.notes,
+              organizationId,
+              userId,
+              totalInstallments,
+              currentInstallment: i,
+              installmentGroupId,
+              assignments: {
+                create: data.assignments?.map((assignment) => ({
+                  userId: assignment.userId,
+                  percentage: assignment.percentage,
+                })),
+              },
+            },
+            include: {
+              billType: true,
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                },
+              },
+              assignments: {
+                include: {
+                  user: {
+                    select: {
+                      id: true,
+                      name: true,
+                      email: true,
+                    },
+                  },
+                },
+              },
+            },
+          })
+        )
+      }
+
+      const bills = await Promise.all(billPromises)
+      return NextResponse.json(bills, { status: 201 })
+    }
+
+    // Single bill (no installments)
     const bill = await prisma.bill.create({
       data: {
         label: data.label,
@@ -137,8 +208,8 @@ export async function POST(request: NextRequest) {
         dueDate: data.dueDate || null,
         billTypeId: data.billTypeId,
         notes: data.notes,
-        organizationId: session.user.organizationId,
-        userId: session.user.id,
+        organizationId,
+        userId,
         assignments: {
           create: data.assignments?.map((assignment) => ({
             userId: assignment.userId,
@@ -179,8 +250,9 @@ export async function POST(request: NextRequest) {
     }
 
     console.error("Error creating bill:", error)
+    const errorMessage = error instanceof Error ? error.message : "Unknown error"
     return NextResponse.json(
-      { error: "Failed to create bill" },
+      { error: `Failed to create bill: ${errorMessage}` },
       { status: 500 }
     )
   }

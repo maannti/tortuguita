@@ -36,6 +36,7 @@ export default async function EditCategoryPage({
           description: category.description || "",
           color: category.color || "#3b82f6",
           icon: category.icon || "",
+          isCreditCard: category.isCreditCard,
         }}
       />
     </div>

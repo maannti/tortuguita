@@ -85,6 +85,24 @@ export default function AIPage() {
 
       if (!response.ok) throw new Error("Failed to send message");
 
+      // Check for safety block response
+      const contentType = response.headers.get("content-type");
+      if (contentType?.includes("application/json")) {
+        const data = await response.json();
+        if (data.type === "safety_block") {
+          setMessages((prev) => [
+            ...prev,
+            {
+              role: "assistant",
+              content: data.message,
+              timestamp: new Date(),
+            },
+          ]);
+          setIsLoading(false);
+          return;
+        }
+      }
+
       // Handle streaming response
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
@@ -257,94 +275,100 @@ export default function AIPage() {
 
       {/* Main chat area */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Desktop: Card wrapper */}
-        <div className="hidden md:flex flex-1 p-4 md:p-6 pl-0">
+        {/* Desktop: Same layout as mobile */}
+        <div className="hidden md:flex flex-col flex-1 p-4 md:p-6 pl-0 overflow-hidden">
           <Card className="flex-1 flex flex-col overflow-hidden">
-            {/* Desktop Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            {/* Desktop Messages area */}
+            <div className="flex-1 overflow-y-auto min-h-0">
               {messages.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full text-center px-2">
-                  <div className="max-w-2xl space-y-6">
-                    <div>
-                      <h2 className="text-2xl md:text-3xl font-bold mb-2">{t.ai.title}</h2>
-                      <p className="text-muted-foreground text-sm md:text-base">{t.ai.subtitle}</p>
+                <div className="flex flex-col items-center justify-center h-full text-center px-6 pb-4">
+                  <div className="space-y-8">
+                    {/* Turtle icon */}
+                    <div className="flex justify-center">
+                      <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
+                        <TurtleIcon className="h-12 w-12 text-primary" />
+                      </div>
                     </div>
 
-                    <div className="flex flex-wrap justify-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="text-xs md:text-sm whitespace-nowrap"
+                    <div>
+                      <h2 className="text-2xl font-semibold mb-2">{t.ai.title}</h2>
+                      <p className="text-muted-foreground">{t.ai.subtitle}</p>
+                    </div>
+
+                    {/* Suggestion chips - vertical stack */}
+                    <div className="flex flex-col gap-2 w-full max-w-md mx-auto">
+                      <button
                         onClick={() => handleSuggestionClick(suggestions.analytics)}
+                        className="w-full px-4 py-3.5 text-sm text-left rounded-2xl bg-muted/50 hover:bg-muted active:scale-[0.98] transition-all"
                       >
                         {t.ai.suggestions.viewAnalytics}
-                      </Button>
+                      </button>
 
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="text-xs md:text-sm whitespace-nowrap"
+                      <button
                         onClick={() => handleSuggestionClick(suggestions.createBill)}
+                        className="w-full px-4 py-3.5 text-sm text-left rounded-2xl bg-muted/50 hover:bg-muted active:scale-[0.98] transition-all"
                       >
                         {t.ai.suggestions.createBill}
-                      </Button>
+                      </button>
 
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="text-xs md:text-sm whitespace-nowrap"
+                      <button
                         onClick={() => handleSuggestionClick(suggestions.showBills)}
+                        className="w-full px-4 py-3.5 text-sm text-left rounded-2xl bg-muted/50 hover:bg-muted active:scale-[0.98] transition-all"
                       >
                         {t.ai.suggestions.showBills}
-                      </Button>
+                      </button>
 
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="text-xs md:text-sm whitespace-nowrap"
+                      <button
                         onClick={() => handleSuggestionClick(suggestions.createCategory)}
+                        className="w-full px-4 py-3.5 text-sm text-left rounded-2xl bg-muted/50 hover:bg-muted active:scale-[0.98] transition-all"
                       >
                         {t.ai.suggestions.createCategory}
-                      </Button>
+                      </button>
                     </div>
                   </div>
                 </div>
               ) : (
-                messages.map((msg, idx) => <ChatMessage key={idx} message={msg} />)
-              )}
-              {isLoading && messages.length > 0 && messages[messages.length - 1]?.role === "user" && (
-                <div className="flex items-center gap-3 text-muted-foreground">
-                  <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary flex items-center justify-center">
-                    <TurtleIcon className="h-6 w-6" isThinking />
-                  </div>
-                  <span className="text-sm">{t.ai.thinking}</span>
+                <div className="px-4 py-4 space-y-4">
+                  {messages.map((msg, idx) => <ChatMessage key={idx} message={msg} />)}
+                  {isLoading && messages.length > 0 && messages[messages.length - 1]?.role === "user" && (
+                    <div className="flex items-center gap-3 text-muted-foreground py-2">
+                      <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary flex items-center justify-center">
+                        <TurtleIcon className="h-6 w-6" isThinking />
+                      </div>
+                      <span className="text-sm">{t.ai.thinking}</span>
+                    </div>
+                  )}
+                  <div ref={messagesEndRef} />
                 </div>
               )}
-              <div ref={messagesEndRef} />
             </div>
 
-            {/* Desktop Input */}
-            <div className="p-4 border-t">
+            {/* Desktop Input - Same style as mobile */}
+            <div className="flex-shrink-0 px-5 py-4">
               <form onSubmit={handleSubmit}>
-                <div className="relative flex items-end bg-muted/50 rounded-2xl border border-border/50 shadow-sm focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/20 transition-all">
-                  <Textarea
+                <div className="flex items-center gap-3 bg-muted rounded-3xl px-4 py-3 min-h-[56px]">
+                  <textarea
                     ref={textareaRef}
                     value={input}
-                    onChange={(e) => setInput(e.target.value)}
+                    onChange={(e) => {
+                      setInput(e.target.value);
+                      // Auto-resize
+                      e.target.style.height = "auto";
+                      e.target.style.height = `${Math.min(e.target.scrollHeight, 200)}px`;
+                    }}
                     onKeyDown={handleKeyDown}
                     placeholder={t.ai.placeholder}
                     disabled={isLoading}
-                    className="flex-1 min-h-[48px] max-h-[120px] resize-none overflow-y-auto bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0 py-[14px] px-4 pr-14 leading-5"
+                    className="flex-1 min-h-[24px] max-h-[200px] resize-none overflow-y-auto bg-transparent border-none outline-none py-0 px-0 leading-6 text-[16px] placeholder:text-muted-foreground/70"
                     rows={1}
                   />
-                  <Button
+                  <button
                     type="submit"
                     disabled={isLoading || !input.trim()}
-                    size="icon"
-                    className="absolute right-2 bottom-2 h-9 w-9 rounded-xl bg-primary hover:bg-primary/90 disabled:opacity-40"
+                    className="flex-shrink-0 w-9 h-9 rounded-full bg-primary text-primary-foreground disabled:opacity-40 transition-opacity grid place-items-center self-end"
                   >
                     <SendIcon className="h-4 w-4" />
-                  </Button>
+                  </button>
                 </div>
               </form>
             </div>

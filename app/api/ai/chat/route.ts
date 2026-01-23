@@ -5,6 +5,11 @@ import { anthropic, MODEL } from "@/lib/anthropic";
 import { tools } from "@/lib/ai/tools";
 import { handleToolCall } from "@/lib/ai/tool-handlers";
 import { startOfMonth, endOfMonth, format } from "date-fns";
+import {
+  validateUserMessage,
+  buildSafeSystemPrompt,
+  logSuspiciousActivity,
+} from "@/lib/ai/safety";
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,6 +20,32 @@ export async function POST(request: NextRequest) {
     }
 
     const { conversationId, message } = await request.json();
+
+    // 0. Validate user message for safety
+    const validation = validateUserMessage(message);
+    if (!validation.isValid) {
+      // Log suspicious activity
+      if (validation.riskLevel !== 'none') {
+        logSuspiciousActivity(
+          session.user.id,
+          message,
+          validation.riskLevel,
+          validation.reason || 'Unknown'
+        );
+      }
+
+      // Return a friendly redirect response
+      return new Response(
+        JSON.stringify({
+          type: "safety_block",
+          message: validation.reason,
+        }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
 
     // 1. Get or create conversation
     let conversation;
@@ -277,33 +308,15 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Helper to build system prompt with context
+// Helper to build system prompt with context (uses hardened safety prompt)
 function buildSystemPrompt(context: any): string {
-  return `You are a concise AI assistant for managing expenses. Keep responses SHORT and mobile-friendly.
-
-CRITICAL STYLE RULES:
-- Be BRIEF. No long introductions or explanations
-- Don't list all categories/features unless asked
-- Don't use excessive emojis
-- Get straight to the point
-- Use short sentences
-- For simple confirmations, use 1-2 sentences max
-
-Context (use internally, don't dump to user):
-- Categories: ${context.categories.map((c: any) => `${c.name}${c.icon ? " " + c.icon : ""}`).join(", ")}
-- Month spending: $${context.currentMonthTotal}
-- Bills this month: ${context.billCount}
-- Users: ${context.users.map((u: any) => u.name).join(", ")}
-
-Tool guidelines:
-- When creating bills, ask for category if not specified
-- If category doesn't exist, ask if user wants to create it
-- When creating category + bill together, call BOTH tools in same response
-- For deletes, call with confirmed=false first, then confirmed=true after user confirms
-- Assignments must total 100%
-- Use markdown tables for data lists (bills, analytics)
-
-Current date: ${format(new Date(), "yyyy-MM-dd")}`;
+  return buildSafeSystemPrompt({
+    categories: context.categories,
+    currentMonthTotal: context.currentMonthTotal,
+    billCount: context.billCount,
+    users: context.users,
+    currentDate: format(new Date(), "yyyy-MM-dd"),
+  });
 }
 
 // Helper to build context

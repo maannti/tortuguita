@@ -25,7 +25,7 @@ type BillWithRelations = Prisma.BillGetPayload<{
 }>;
 
 interface PageProps {
-  searchParams: Promise<{ month?: string }>;
+  searchParams: Promise<{ month?: string; category?: string }>;
 }
 
 export default async function BillsPage({ searchParams }: PageProps) {
@@ -37,6 +37,7 @@ export default async function BillsPage({ searchParams }: PageProps) {
 
   const params = await searchParams;
   const selectedMonth = params.month;
+  const selectedCategory = params.category;
 
   // Get available months (months with expenses)
   const monthsWithExpenses = await prisma.bill.findMany({
@@ -55,7 +56,23 @@ export default async function BillsPage({ searchParams }: PageProps) {
   }
   const availableMonths = Array.from(availableMonthsSet).sort().reverse();
 
-  // Build where clause with optional month filter
+  // Get all categories for the organization
+  const categories = await prisma.billType.findMany({
+    where: {
+      organizationId: session.user.organizationId,
+    },
+    select: {
+      id: true,
+      name: true,
+      icon: true,
+      color: true,
+    },
+    orderBy: {
+      name: "asc",
+    },
+  });
+
+  // Build where clause with optional filters
   const whereClause: Prisma.BillWhereInput = {
     organizationId: session.user.organizationId,
   };
@@ -66,6 +83,10 @@ export default async function BillsPage({ searchParams }: PageProps) {
       gte: startOfMonth(targetDate),
       lte: endOfMonth(targetDate),
     };
+  }
+
+  if (selectedCategory) {
+    whereClause.billTypeId = selectedCategory;
   }
 
   const bills: BillWithRelations[] = await prisma.bill.findMany({
@@ -101,7 +122,11 @@ export default async function BillsPage({ searchParams }: PageProps) {
         paymentDate: format(new Date(bill.paymentDate), "MMM d, yyyy"),
         dueDate: bill.dueDate ? format(new Date(bill.dueDate), "MMM d, yyyy") : null,
         notes: bill.notes,
+        totalInstallments: bill.totalInstallments,
+        currentInstallment: bill.currentInstallment,
+        installmentGroupId: bill.installmentGroupId,
         billType: {
+          id: bill.billType.id,
           name: bill.billType.name,
           color: bill.billType.color,
           icon: bill.billType.icon,
@@ -116,6 +141,7 @@ export default async function BillsPage({ searchParams }: PageProps) {
         })),
       }))}
       availableMonths={availableMonths}
+      categories={categories}
     />
   );
 }

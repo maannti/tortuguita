@@ -19,6 +19,7 @@ export default async function NewBillPage() {
         name: true,
         color: true,
         icon: true,
+        isCreditCard: true,
       },
       orderBy: {
         name: "asc",

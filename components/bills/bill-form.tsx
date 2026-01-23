@@ -35,6 +35,7 @@ interface BillFormProps {
     name: string;
     color: string | null;
     icon: string | null;
+    isCreditCard: boolean;
   }>;
   members: Array<{
     id: string;
@@ -51,6 +52,7 @@ export function BillForm({ initialData, categories, members, currentUserId, mode
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [cuotas, setCuotas] = useState("0");
+  const [customCuotas, setCustomCuotas] = useState("");
 
   const form = useForm<BillFormData>({
     resolver: zodResolver(billSchema),
@@ -76,16 +78,25 @@ export function BillForm({ initialData, categories, members, currentUserId, mode
     0
   ) || 0;
 
+  // Watch selected category to determine if cuotas should be shown
+  const selectedCategoryId = form.watch("billTypeId");
+  const selectedCategory = categories.find(c => c.id === selectedCategoryId);
+  const showCuotas = selectedCategory?.isCreditCard ?? false;
+
   async function onSubmit(data: BillFormData) {
     setIsLoading(true);
     setError(null);
 
     try {
-      // Add cuotas info to notes
-      const cuotasNum = parseInt(cuotas);
-      const finalNotes = cuotasNum > 0
-        ? `${data.notes ? data.notes + " - " : ""}Cuota 1 de ${cuotasNum}`
-        : data.notes;
+      // Determine final cuotas value (from dropdown or custom input)
+      let cuotasNum = 0;
+      if (showCuotas) {
+        if (cuotas === "other") {
+          cuotasNum = parseInt(customCuotas) || 0;
+        } else {
+          cuotasNum = parseInt(cuotas);
+        }
+      }
 
       const url =
         mode === "create" ? "/api/bills" : `/api/bills/${initialData?.id}`;
@@ -93,7 +104,10 @@ export function BillForm({ initialData, categories, members, currentUserId, mode
       const response = await fetch(url, {
         method: mode === "create" ? "POST" : "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...data, notes: finalNotes }),
+        body: JSON.stringify({
+          ...data,
+          totalInstallments: cuotasNum > 0 ? cuotasNum : undefined,
+        }),
       });
 
       const result = await response.json();
@@ -268,22 +282,46 @@ export function BillForm({ initialData, categories, members, currentUserId, mode
               )}
             />
 
-            {/* Cuotas */}
-            <FormItem>
-              <FormLabel>Cuotas</FormLabel>
-              <Select value={cuotas} onValueChange={setCuotas} disabled={isLoading}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Sin cuotas" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="0">Sin cuotas</SelectItem>
-                  <SelectItem value="2">2 cuotas</SelectItem>
-                  <SelectItem value="3">3 cuotas</SelectItem>
-                  <SelectItem value="6">6 cuotas</SelectItem>
-                  <SelectItem value="12">12 cuotas</SelectItem>
-                </SelectContent>
-              </Select>
-            </FormItem>
+            {/* Cuotas - only show for credit card categories */}
+            {showCuotas && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                  Cuotas
+                </label>
+                <Select value={cuotas} onValueChange={(value) => {
+                  setCuotas(value);
+                  if (value !== "other") {
+                    setCustomCuotas("");
+                  }
+                }} disabled={isLoading}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sin cuotas" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="0">Sin cuotas</SelectItem>
+                    <SelectItem value="2">2 cuotas</SelectItem>
+                    <SelectItem value="3">3 cuotas</SelectItem>
+                    <SelectItem value="6">6 cuotas</SelectItem>
+                    <SelectItem value="12">12 cuotas</SelectItem>
+                    <SelectItem value="18">18 cuotas</SelectItem>
+                    <SelectItem value="24">24 cuotas</SelectItem>
+                    <SelectItem value="other">Otro...</SelectItem>
+                  </SelectContent>
+                </Select>
+                {cuotas === "other" && (
+                  <Input
+                    type="number"
+                    min="2"
+                    max="48"
+                    placeholder="Número de cuotas"
+                    value={customCuotas}
+                    onChange={(e) => setCustomCuotas(e.target.value)}
+                    disabled={isLoading}
+                    className="mt-2"
+                  />
+                )}
+              </div>
+            )}
 
             <FormField
               control={form.control}

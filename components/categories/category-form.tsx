@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Switch } from "@/components/ui/switch"
 import { useTranslations } from "@/components/providers/language-provider"
 
 const defaultColors = [
@@ -48,6 +49,7 @@ export function CategoryForm({ initialData, mode }: CategoryFormProps) {
       description: "",
       color: defaultColors[0],
       icon: "",
+      isCreditCard: false,
     },
   })
 
@@ -182,6 +184,30 @@ export function CategoryForm({ initialData, mode }: CategoryFormProps) {
                     {t.categories.iconDescription}
                   </FormDescription>
                   <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="isCreditCard"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                  <div className="space-y-0.5">
+                    <FormLabel className="text-base">
+                      {t.categories.isCreditCard || "Tarjeta de crédito"}
+                    </FormLabel>
+                    <FormDescription>
+                      {t.categories.isCreditCardDescription || "Habilita la opción de cuotas al crear gastos con esta categoría"}
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                      disabled={isLoading}
+                    />
+                  </FormControl>
                 </FormItem>
               )}
             />

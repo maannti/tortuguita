@@ -34,6 +34,7 @@ export default async function EditBillPage({
         name: true,
         color: true,
         icon: true,
+        isCreditCard: true,
       },
       orderBy: {
         name: "asc",

@@ -175,6 +175,8 @@ export const es: Translations = {
     categoryDeleted: "Categoría eliminada exitosamente",
     confirmDelete: "Estás seguro de que quieres eliminar esta categoría?",
     cannotDeleteWithBills: "No se puede eliminar una categoría con gastos existentes",
+    isCreditCard: "Tarjeta de crédito",
+    isCreditCardDescription: "Habilita la opción de cuotas al crear gastos con esta categoría",
   },
 
   // Settings
