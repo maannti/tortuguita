@@ -6,7 +6,6 @@ import { ArrowUpIcon, ArrowDownIcon } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
 import { CategoryBreakdownChart } from "./category-breakdown-chart";
-import { MonthlyTrendChart } from "./monthly-trend-chart";
 import { UserDistributionChart } from "./user-distribution-chart";
 import { MonthFilter } from "@/components/month-filter";
 import { useTranslations } from "@/components/providers/language-provider";
@@ -29,7 +28,6 @@ interface DashboardContentProps {
   averageMonthly: number;
   categoryCount: number;
   categoryData: { name: string; value: number; color: string }[];
-  monthlyData: { month: string; amount: number }[];
   userDistributionData: { name: string; value: number; color: string }[];
   recentBills: {
     id: string;
@@ -50,7 +48,6 @@ export function DashboardContent({
   averageMonthly,
   categoryCount,
   categoryData,
-  monthlyData,
   userDistributionData,
   recentBills,
   currentMonthLabel,
@@ -117,7 +114,7 @@ export function DashboardContent({
       </div>
 
       {/* Charts */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle>{t.dashboard.spendingByCategory}</CardTitle>
@@ -130,15 +127,6 @@ export function DashboardContent({
                 {t.dashboard.noExpensesThisMonth}
               </p>
             )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>{t.dashboard.monthlyTrend}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <MonthlyTrendChart data={monthlyData} />
           </CardContent>
         </Card>
 

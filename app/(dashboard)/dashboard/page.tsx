@@ -114,35 +114,21 @@ export default async function DashboardPage({ searchParams }: PageProps) {
     };
   });
 
-  // Monthly trend (last 6 months)
-  const monthlyData = [];
-  for (let i = 5; i >= 0; i--) {
-    const monthDate = subMonths(now, i);
-    const monthStart = startOfMonth(monthDate);
-    const monthEnd = endOfMonth(monthDate);
-
-    const monthTotal = await prisma.bill.aggregate({
-      where: {
-        organizationId: session.user.organizationId,
-        paymentDate: {
-          gte: monthStart,
-          lte: monthEnd,
-        },
+  // Average monthly spending (last 6 months)
+  const sixMonthsAgo = startOfMonth(subMonths(now, 5));
+  const sixMonthTotal = await prisma.bill.aggregate({
+    where: {
+      organizationId: session.user.organizationId,
+      paymentDate: {
+        gte: sixMonthsAgo,
+        lte: endOfMonth(now),
       },
-      _sum: {
-        amount: true,
-      },
-    });
-
-    monthlyData.push({
-      month: format(monthDate, "MMM yyyy"),
-      amount: Number(monthTotal._sum.amount || 0),
-    });
-  }
-
-  // Average monthly spending
-  const totalSpent = monthlyData.reduce((sum, month) => sum + month.amount, 0);
-  const averageMonthly = totalSpent / monthlyData.length;
+    },
+    _sum: {
+      amount: true,
+    },
+  });
+  const averageMonthly = Number(sixMonthTotal._sum.amount || 0) / 6;
 
   // User distribution (bills with assignments)
   const billsWithAssignments = await prisma.bill.findMany({
@@ -250,7 +236,6 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       averageMonthly={averageMonthly}
       categoryCount={categoryBreakdown.length}
       categoryData={categoryData}
-      monthlyData={monthlyData}
       userDistributionData={userDistributionData}
       recentBills={recentBills.map((bill) => ({
         id: bill.id,
