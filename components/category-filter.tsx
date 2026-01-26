@@ -53,7 +53,7 @@ export function CategoryFilter({ categories }: CategoryFilterProps) {
             )}
             <span className="hidden sm:inline">{selectedLabel}</span>
             <span className="sm:hidden">
-              {selectedCategoryData ? selectedCategoryData.name.slice(0, 3) : "All"}
+              {selectedCategoryData ? selectedCategoryData.name : "All"}
             </span>
           </Button>
         </DropdownMenuTrigger>
