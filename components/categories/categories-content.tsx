@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { DeleteCategoryButton } from "@/components/categories/delete-category-button";
 import { useTranslations } from "@/components/providers/language-provider";
+import { Pencil } from "lucide-react";
 
 interface CategoryData {
   id: string;
@@ -43,25 +44,27 @@ export function CategoriesContent({ categories }: CategoriesContentProps) {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="space-y-3">
           {categories.map((category) => (
             <Card key={category.id}>
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-2">
-                    {category.icon && <span className="text-2xl">{category.icon}</span>}
-                    {!category.icon && category.color && (
-                      <div className="h-6 w-6 rounded-full" style={{ backgroundColor: category.color }} />
+              <CardContent className="flex items-center justify-between p-4">
+                <div className="flex items-center gap-3 min-w-0">
+                  {category.icon && <span className="text-2xl flex-shrink-0">{category.icon}</span>}
+                  {!category.icon && category.color && (
+                    <div className="h-8 w-8 rounded-full flex-shrink-0" style={{ backgroundColor: category.color }} />
+                  )}
+                  <div className="min-w-0">
+                    <p className="font-semibold text-lg truncate">{category.name}</p>
+                    {category.description && (
+                      <p className="text-sm text-muted-foreground truncate">{category.description}</p>
                     )}
-                    <CardTitle className="text-xl">{category.name}</CardTitle>
                   </div>
                 </div>
-                {category.description && <CardDescription>{category.description}</CardDescription>}
-              </CardHeader>
-              <CardContent>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" asChild>
-                    <Link href={`/categories/${category.id}/edit`}>{t.common.edit}</Link>
+                <div className="flex items-center gap-2 flex-shrink-0 ml-4">
+                  <Button variant="outline" size="icon" className="h-10 w-10" asChild>
+                    <Link href={`/categories/${category.id}/edit`}>
+                      <Pencil className="h-4 w-4" />
+                    </Link>
                   </Button>
                   <DeleteCategoryButton id={category.id} name={category.name} />
                 </div>

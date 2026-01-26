@@ -12,6 +12,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import { useTranslations } from "@/components/providers/language-provider"
+import { Trash2 } from "lucide-react"
 
 interface DeleteCategoryButtonProps {
   id: string
@@ -20,6 +22,7 @@ interface DeleteCategoryButtonProps {
 
 export function DeleteCategoryButton({ id, name }: DeleteCategoryButtonProps) {
   const router = useRouter()
+  const t = useTranslations()
   const [isOpen, setIsOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -35,14 +38,14 @@ export function DeleteCategoryButton({ id, name }: DeleteCategoryButtonProps) {
 
       if (!response.ok) {
         const data = await response.json()
-        setError(data.error || "Failed to delete category")
+        setError(data.error || t.categories.cannotDeleteWithBills)
         return
       }
 
       setIsOpen(false)
       router.refresh()
     } catch (error) {
-      setError("Failed to delete category")
+      setError(t.errors.somethingWentWrong)
     } finally {
       setIsLoading(false)
     }
@@ -51,16 +54,15 @@ export function DeleteCategoryButton({ id, name }: DeleteCategoryButtonProps) {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="destructive" size="sm">
-          Delete
+        <Button variant="destructive" size="icon" className="h-10 w-10">
+          <Trash2 className="h-4 w-4" />
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Delete Category</DialogTitle>
+          <DialogTitle>{t.common.delete}</DialogTitle>
           <DialogDescription>
-            Are you sure you want to delete the category "{name}"? This action
-            cannot be undone.
+            {t.categories.confirmDelete.replace("esta categoría", `"${name}"`)}
           </DialogDescription>
         </DialogHeader>
         {error && (
@@ -70,10 +72,10 @@ export function DeleteCategoryButton({ id, name }: DeleteCategoryButtonProps) {
         )}
         <DialogFooter>
           <Button variant="outline" onClick={() => setIsOpen(false)} disabled={isLoading}>
-            Cancel
+            {t.common.cancel}
           </Button>
           <Button variant="destructive" onClick={handleDelete} disabled={isLoading}>
-            {isLoading ? "Deleting..." : "Delete"}
+            {isLoading ? t.common.deleting : t.common.delete}
           </Button>
         </DialogFooter>
       </DialogContent>
