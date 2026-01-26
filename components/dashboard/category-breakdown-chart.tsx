@@ -33,13 +33,14 @@ export function CategoryBreakdownChart({ data }: CategoryBreakdownChartProps) {
       textStyle: {
         color: isDark ? "#9ca3af" : "#6b7280",
       },
+      itemGap: 12,
     },
     series: [
       {
         name: "Category",
         type: "pie",
-        radius: ["40%", "70%"],
-        center: ["50%", "45%"],
+        radius: ["35%", "60%"],
+        center: ["50%", "38%"],
         avoidLabelOverlap: false,
         itemStyle: {
           borderRadius: 10,
@@ -78,5 +79,5 @@ export function CategoryBreakdownChart({ data }: CategoryBreakdownChartProps) {
     ],
   };
 
-  return <ReactECharts option={option} style={{ height: "300px", width: "100%" }} />;
+  return <ReactECharts option={option} style={{ height: "350px", width: "100%" }} />;
 }
