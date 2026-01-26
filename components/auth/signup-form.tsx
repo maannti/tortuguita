@@ -9,6 +9,7 @@ import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { useTranslations } from "@/components/providers/language-provider";
 import { Eye, EyeOff, User, Home, Users, Check } from "lucide-react";
@@ -228,7 +229,7 @@ export function SignupForm() {
           />
 
           <div className="space-y-2">
-            <FormLabel>{t.settings.chooseOrganizations}</FormLabel>
+            <Label>{t.settings.chooseOrganizations}</Label>
             <div className="grid gap-2">
               {orgOptions.map((option) => {
                 const isSelected = selectedChoices.has(option.id);
