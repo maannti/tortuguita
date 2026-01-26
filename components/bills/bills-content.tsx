@@ -82,14 +82,14 @@ export function BillsContent({ bills, availableMonths, categories }: BillsConten
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4">
-        <div>
+        <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold tracking-tight">{t.bills.title}</h1>
-          <p className="text-muted-foreground">{t.bills.subtitle}</p>
+          <div className="flex items-center gap-2">
+            <CategoryFilter categories={categories} />
+            <MonthFilter availableMonths={availableMonths} />
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <CategoryFilter categories={categories} />
-          <MonthFilter availableMonths={availableMonths} />
-        </div>
+        <p className="text-muted-foreground">{t.bills.subtitle}</p>
         <Button asChild size="lg" className="w-full sm:w-auto">
           <Link href="/bills/new">{t.bills.addBill}</Link>
         </Button>
