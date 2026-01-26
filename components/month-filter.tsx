@@ -94,35 +94,35 @@ export function MonthFilter({ availableMonths }: MonthFilterProps) {
           <span>{formatSelectedLabel()}</span>
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[280px] p-0" align="end">
+      <PopoverContent className="w-[320px] p-0" align="end">
         {/* Year selector */}
-        <div className="flex items-center justify-between px-4 py-3 border-b">
-          <span className="font-medium text-lg">{viewYear}</span>
+        <div className="flex items-center justify-between px-4 py-4 border-b">
+          <span className="font-semibold text-xl">{viewYear}</span>
           <div className="flex gap-1">
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8"
+              className="h-10 w-10"
               onClick={() => setViewYear(y => Math.min(y + 1, maxYear))}
               disabled={viewYear >= maxYear}
             >
-              <ChevronUp className="h-4 w-4" />
+              <ChevronUp className="h-5 w-5" />
             </Button>
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8"
+              className="h-10 w-10"
               onClick={() => setViewYear(y => Math.max(y - 1, minYear))}
               disabled={viewYear <= minYear}
             >
-              <ChevronDown className="h-4 w-4" />
+              <ChevronDown className="h-5 w-5" />
             </Button>
           </div>
         </div>
 
         {/* Month grid 4x3 */}
         <div className="p-4">
-          <div className="grid grid-cols-4 gap-y-4 gap-x-2">
+          <div className="grid grid-cols-4 gap-3">
             {MONTHS_ES.map((month, index) => {
               const selected = isSelected(viewYear, index)
               const withData = hasData(viewYear, index)
@@ -131,7 +131,7 @@ export function MonthFilter({ availableMonths }: MonthFilterProps) {
                 <button
                   key={month}
                   className={cn(
-                    "flex items-center justify-center h-10 rounded-full text-sm transition-colors",
+                    "flex items-center justify-center h-12 rounded-full text-base transition-colors",
                     selected
                       ? "bg-primary text-primary-foreground font-medium"
                       : "hover:bg-muted",
