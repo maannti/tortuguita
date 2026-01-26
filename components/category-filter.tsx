@@ -53,11 +53,11 @@ export function CategoryFilter({ categories }: CategoryFilterProps) {
             )}
             <span className="hidden sm:inline">{selectedLabel}</span>
             <span className="sm:hidden">
-              {selectedCategoryData ? (selectedCategoryData.icon || selectedCategoryData.name.slice(0, 3)) : "All"}
+              {selectedCategoryData ? selectedCategoryData.name.slice(0, 3) : "All"}
             </span>
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="max-h-64 overflow-y-auto">
+        <DropdownMenuContent align="start" className="max-h-64 overflow-y-auto">
           <DropdownMenuItem
             onClick={() => handleSelectCategory(null)}
             className={!selectedCategory ? "bg-muted" : ""}
