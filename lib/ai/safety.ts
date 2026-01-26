@@ -83,6 +83,19 @@ export interface ValidationResult {
   riskLevel: 'none' | 'low' | 'medium' | 'high';
 }
 
+export interface OutputValidationResult {
+  isValid: boolean;
+  issues: OutputIssue[];
+  sanitizedContent?: string;
+}
+
+export interface OutputIssue {
+  type: 'prompt_leak' | 'off_topic' | 'pii_exposure' | 'harmful_content' | 'too_long';
+  severity: 'low' | 'medium' | 'high';
+  description: string;
+  match?: string;
+}
+
 /**
  * Validates a user message for safety concerns
  */
@@ -233,4 +246,219 @@ export function logSuspiciousActivity(
     reason,
     messagePreview: message.slice(0, 100) + (message.length > 100 ? '...' : ''),
   });
+}
+
+// ============================================
+// OUTPUT VALIDATION (Response-side guardrails)
+// ============================================
+
+// Patterns that indicate system prompt leakage
+const PROMPT_LEAK_PATTERNS = [
+  /my system (prompt|instructions?) (say|are|is|tell)/i,
+  /i('m| am) (programmed|instructed|told) to/i,
+  /my (instructions?|rules?|guidelines?) (are|include|say)/i,
+  /SECURITY RULES/i,
+  /FORBIDDEN ACTIONS/i,
+  /SCOPE RESTRICTION/i,
+  /## (SECURITY|RESPONSE STYLE|CURRENT CONTEXT|TOOL GUIDELINES)/i,
+  /here('s| is| are) my (system )?(prompt|instructions?)/i,
+  /as (per|stated in) my instructions?/i,
+];
+
+// Patterns for PII that shouldn't appear in responses
+const PII_PATTERNS = [
+  // Credit card numbers (basic pattern)
+  /\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b/,
+  // SSN
+  /\b\d{3}[-\s]?\d{2}[-\s]?\d{4}\b/,
+  // Email addresses (shouldn't be echoed back unnecessarily)
+  /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/,
+  // Phone numbers
+  /\b(\+\d{1,3}[-\s]?)?\(?\d{3}\)?[-\s]?\d{3}[-\s]?\d{4}\b/,
+  // API keys or tokens (generic patterns)
+  /\b(sk|pk|api)[-_][a-zA-Z0-9]{20,}\b/i,
+  /\btoken[:\s]+[a-zA-Z0-9]{20,}\b/i,
+];
+
+// Off-topic content the AI shouldn't be generating
+const OFF_TOPIC_OUTPUT_PATTERNS = [
+  // Code generation (unless it's about the app)
+  /```(python|javascript|java|c\+\+|ruby|go|rust|php|swift|kotlin)[\s\S]*?```/i,
+  // Stories/creative writing markers
+  /once upon a time/i,
+  /chapter \d+/i,
+  /the end\./i,
+  // General knowledge dumps
+  /the (president|capital|population) (of|is)/i,
+  /was born in \d{4}/i,
+  /founded in \d{4}/i,
+  // Medical/legal advice
+  /consult (a|your) (doctor|lawyer|physician|attorney)/i,
+  /this is not (medical|legal) advice/i,
+];
+
+// Harmful content patterns for output
+const HARMFUL_OUTPUT_PATTERNS = [
+  /how to (hack|exploit|attack|ddos)/i,
+  /here('s| is| are) (the|a) (password|credential|secret)/i,
+  /(kill|hurt|harm) (yourself|themselves|himself|herself)/i,
+  /step[s]? to (make|build|create) (a )?(bomb|weapon|explosive)/i,
+];
+
+// Maximum response length (characters)
+const MAX_RESPONSE_LENGTH = 4000;
+
+/**
+ * Validates AI response output for safety issues
+ */
+export function validateAIOutput(response: string): OutputValidationResult {
+  const issues: OutputIssue[] = [];
+
+  // Check response length
+  if (response.length > MAX_RESPONSE_LENGTH) {
+    issues.push({
+      type: 'too_long',
+      severity: 'low',
+      description: `Response exceeds ${MAX_RESPONSE_LENGTH} characters`,
+    });
+  }
+
+  // Check for system prompt leakage
+  for (const pattern of PROMPT_LEAK_PATTERNS) {
+    const match = response.match(pattern);
+    if (match) {
+      issues.push({
+        type: 'prompt_leak',
+        severity: 'high',
+        description: 'Potential system prompt leakage detected',
+        match: match[0],
+      });
+    }
+  }
+
+  // Check for PII exposure
+  for (const pattern of PII_PATTERNS) {
+    const match = response.match(pattern);
+    if (match) {
+      issues.push({
+        type: 'pii_exposure',
+        severity: 'high',
+        description: 'Potential PII detected in response',
+        match: match[0].slice(0, 4) + '****', // Partially redact in log
+      });
+    }
+  }
+
+  // Check for off-topic content
+  for (const pattern of OFF_TOPIC_OUTPUT_PATTERNS) {
+    const match = response.match(pattern);
+    if (match) {
+      issues.push({
+        type: 'off_topic',
+        severity: 'medium',
+        description: 'Response contains off-topic content',
+        match: match[0].slice(0, 50),
+      });
+    }
+  }
+
+  // Check for harmful content
+  for (const pattern of HARMFUL_OUTPUT_PATTERNS) {
+    const match = response.match(pattern);
+    if (match) {
+      issues.push({
+        type: 'harmful_content',
+        severity: 'high',
+        description: 'Response contains potentially harmful content',
+        match: match[0],
+      });
+    }
+  }
+
+  const hasHighSeverity = issues.some(i => i.severity === 'high');
+
+  return {
+    isValid: !hasHighSeverity,
+    issues,
+    sanitizedContent: hasHighSeverity ? sanitizeOutput(response, issues) : undefined,
+  };
+}
+
+/**
+ * Sanitizes problematic content from AI output
+ */
+function sanitizeOutput(response: string, issues: OutputIssue[]): string {
+  let sanitized = response;
+
+  for (const issue of issues) {
+    if (issue.severity === 'high' && issue.match) {
+      // For prompt leaks, replace with generic message
+      if (issue.type === 'prompt_leak') {
+        return "I'm your expense tracking assistant. How can I help you with your bills or categories?";
+      }
+
+      // For PII, redact the sensitive data
+      if (issue.type === 'pii_exposure') {
+        sanitized = sanitized.replace(
+          new RegExp(escapeRegex(issue.match.replace('****', '.*')), 'g'),
+          '[REDACTED]'
+        );
+      }
+
+      // For harmful content, replace entire response
+      if (issue.type === 'harmful_content') {
+        return "I can only help with expense tracking. What would you like to do with your bills or categories?";
+      }
+    }
+  }
+
+  return sanitized;
+}
+
+/**
+ * Escapes special regex characters in a string
+ */
+function escapeRegex(string: string): string {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Logs output validation issues for monitoring
+ */
+export function logOutputIssue(
+  userId: string,
+  conversationId: string,
+  issues: OutputIssue[]
+): void {
+  if (issues.length === 0) return;
+
+  console.warn(`[AI Safety] Output validation issues:`, {
+    timestamp: new Date().toISOString(),
+    userId,
+    conversationId,
+    issues: issues.map(i => ({
+      type: i.type,
+      severity: i.severity,
+      description: i.description,
+    })),
+  });
+}
+
+/**
+ * Quick check if response needs full validation
+ * (optimization to skip validation for simple responses)
+ */
+export function needsOutputValidation(response: string): boolean {
+  // Always validate longer responses
+  if (response.length > 500) return true;
+
+  // Quick checks for suspicious patterns
+  const quickPatterns = [
+    /system|instruction|programmed|security|rules/i,
+    /\d{4}[-\s]?\d{4}/,  // Potential card/SSN
+    /```\w+/,            // Code blocks
+    /hack|exploit|kill|harm/i,
+  ];
+
+  return quickPatterns.some(p => p.test(response));
 }

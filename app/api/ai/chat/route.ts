@@ -9,6 +9,9 @@ import {
   validateUserMessage,
   buildSafeSystemPrompt,
   logSuspiciousActivity,
+  validateAIOutput,
+  logOutputIssue,
+  needsOutputValidation,
 } from "@/lib/ai/safety";
 
 export async function POST(request: NextRequest) {
@@ -122,10 +125,21 @@ export async function POST(request: NextRequest) {
           const toolUseBlocks: any[] = [];
           for (const block of response.content) {
             if (block.type === "text") {
-              assistantMessage += block.text;
+              let textContent = block.text;
+
+              // Validate output if needed
+              if (needsOutputValidation(textContent)) {
+                const outputValidation = validateAIOutput(textContent);
+                if (!outputValidation.isValid) {
+                  logOutputIssue(session.user.id, conversation.id, outputValidation.issues);
+                  textContent = outputValidation.sanitizedContent || textContent;
+                }
+              }
+
+              assistantMessage += textContent;
               controller.enqueue(
                 new TextEncoder().encode(
-                  `data: ${JSON.stringify({ type: "text", content: block.text })}\n\n`
+                  `data: ${JSON.stringify({ type: "text", content: textContent })}\n\n`
                 )
               );
             } else if (block.type === "tool_use") {
@@ -230,12 +244,23 @@ export async function POST(request: NextRequest) {
               // Stream follow-up response
               for (const followBlock of followUpResponse.content) {
                 if (followBlock.type === "text") {
-                  assistantMessage += followBlock.text;
+                  let textContent = followBlock.text;
+
+                  // Validate output if needed
+                  if (needsOutputValidation(textContent)) {
+                    const outputValidation = validateAIOutput(textContent);
+                    if (!outputValidation.isValid) {
+                      logOutputIssue(session.user.id, conversation.id, outputValidation.issues);
+                      textContent = outputValidation.sanitizedContent || textContent;
+                    }
+                  }
+
+                  assistantMessage += textContent;
                   controller.enqueue(
                     new TextEncoder().encode(
                       `data: ${JSON.stringify({
                         type: "text",
-                        content: followBlock.text,
+                        content: textContent,
                       })}\n\n`
                     )
                   );
