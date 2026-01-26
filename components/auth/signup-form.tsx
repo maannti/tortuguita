@@ -207,7 +207,7 @@ export function SignupForm() {
             />
           )}
 
-          <Button type="submit" className="w-full" disabled={isLoading}>
+          <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
             {isLoading ? t.auth.signingUp : t.auth.signUp}
           </Button>
         </form>
