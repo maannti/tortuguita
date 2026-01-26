@@ -57,10 +57,10 @@ export function CategoryFilter({ categories }: CategoryFilterProps) {
             </span>
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="max-h-64 overflow-y-auto">
+        <DropdownMenuContent align="end" className="w-56 max-h-80 overflow-y-auto">
           <DropdownMenuItem
             onClick={() => handleSelectCategory(null)}
-            className={!selectedCategory ? "bg-muted" : ""}
+            className={`py-3 text-base ${!selectedCategory ? "bg-muted" : ""}`}
           >
             All categories
           </DropdownMenuItem>
@@ -68,7 +68,7 @@ export function CategoryFilter({ categories }: CategoryFilterProps) {
             <DropdownMenuItem
               key={category.id}
               onClick={() => handleSelectCategory(category.id)}
-              className={selectedCategory === category.id ? "bg-muted" : ""}
+              className={`py-3 text-base ${selectedCategory === category.id ? "bg-muted" : ""}`}
             >
               <span className="flex items-center gap-2">
                 {category.icon && <span>{category.icon}</span>}
