@@ -11,13 +11,16 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import { useTranslations } from "@/components/providers/language-provider";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, User, Home, Users, Check } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+type OrgChoice = "personal" | "create" | "join";
 
 export function SignupForm() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [mode, setMode] = useState<"create" | "join">("create");
+  const [selectedChoices, setSelectedChoices] = useState<Set<OrgChoice>>(new Set(["personal"]));
   const [showPassword, setShowPassword] = useState(false);
   const t = useTranslations();
 
@@ -25,7 +28,7 @@ export function SignupForm() {
     name: z.string().min(1, t.auth.nameRequired),
     email: z.string().email(t.validation.invalidEmail),
     password: z.string().min(6, t.auth.passwordMinLength),
-    organizationName: z.string().optional(),
+    sharedOrgName: z.string().optional(),
     joinCode: z.string().optional(),
   });
 
@@ -35,10 +38,23 @@ export function SignupForm() {
       name: "",
       email: "",
       password: "",
-      organizationName: "",
+      sharedOrgName: "",
       joinCode: "",
     },
   });
+
+  function toggleChoice(choice: OrgChoice) {
+    const newChoices = new Set(selectedChoices);
+    if (newChoices.has(choice)) {
+      // Don't allow removing if it's the last choice
+      if (newChoices.size > 1) {
+        newChoices.delete(choice);
+      }
+    } else {
+      newChoices.add(choice);
+    }
+    setSelectedChoices(newChoices);
+  }
 
   function translateError(error: string): string {
     const errorMap: Record<string, string> = {
@@ -46,6 +62,9 @@ export function SignupForm() {
       "Invalid join code. Please check and try again.": t.errors.invalidJoinCode,
       "Either home name or join code is required": t.errors.homeNameOrJoinCodeRequired,
       "Something went wrong": t.errors.somethingWentWrong,
+      "At least one organization choice is required": t.errors.homeNameOrJoinCodeRequired,
+      "Organization name is required": t.errors.homeNameOrJoinCodeRequired,
+      "Join code is required": t.errors.invalidJoinCode,
     };
     return errorMap[error] || error;
   }
@@ -54,13 +73,41 @@ export function SignupForm() {
     setIsLoading(true);
     setError(null);
 
-    try {
-      const payload = mode === "create" ? { ...values, joinCode: undefined } : { ...values, organizationName: undefined };
+    // Build organization choices array
+    const organizationChoices: Array<
+      { type: "personal" } | { type: "create"; name: string } | { type: "join"; joinCode: string }
+    > = [];
 
+    if (selectedChoices.has("personal")) {
+      organizationChoices.push({ type: "personal" });
+    }
+    if (selectedChoices.has("create")) {
+      if (!values.sharedOrgName?.trim()) {
+        setError(t.errors.homeNameOrJoinCodeRequired);
+        setIsLoading(false);
+        return;
+      }
+      organizationChoices.push({ type: "create", name: values.sharedOrgName.trim() });
+    }
+    if (selectedChoices.has("join")) {
+      if (!values.joinCode?.trim()) {
+        setError(t.errors.invalidJoinCode);
+        setIsLoading(false);
+        return;
+      }
+      organizationChoices.push({ type: "join", joinCode: values.joinCode.trim().toUpperCase() });
+    }
+
+    try {
       const response = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          name: values.name,
+          email: values.email,
+          password: values.password,
+          organizationChoices,
+        }),
       });
 
       const data = await response.json();
@@ -91,17 +138,29 @@ export function SignupForm() {
     }
   }
 
+  const orgOptions = [
+    {
+      id: "personal" as const,
+      icon: User,
+      title: t.settings.personalFinances,
+      description: t.settings.personalFinancesDesc,
+    },
+    {
+      id: "create" as const,
+      icon: Home,
+      title: t.settings.createSharedHome,
+      description: t.settings.createSharedHomeDesc,
+    },
+    {
+      id: "join" as const,
+      icon: Users,
+      title: t.settings.joinExistingHome,
+      description: t.settings.joinExistingHomeDesc,
+    },
+  ];
+
   return (
     <div className="space-y-6">
-      <div className="flex gap-2 p-1 bg-muted rounded-lg">
-        <Button type="button" variant={mode === "create" ? "default" : "ghost"} className="flex-1 text-xs sm:text-sm truncate" onClick={() => setMode("create")}>
-          {t.settings.createOrganization}
-        </Button>
-        <Button type="button" variant={mode === "join" ? "default" : "ghost"} className="flex-1 text-xs sm:text-sm truncate" onClick={() => setMode("join")}>
-          {t.settings.joinOrganization}
-        </Button>
-      </div>
-
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           {error && (
@@ -159,11 +218,7 @@ export function SignupForm() {
                       onClick={() => setShowPassword(!showPassword)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                     >
-                      {showPassword ? (
-                        <EyeOff className="h-4 w-4" />
-                      ) : (
-                        <Eye className="h-4 w-4" />
-                      )}
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
                 </FormControl>
@@ -172,10 +227,52 @@ export function SignupForm() {
             )}
           />
 
-          {mode === "create" ? (
+          <div className="space-y-2">
+            <FormLabel>{t.settings.chooseOrganizations}</FormLabel>
+            <div className="grid gap-2">
+              {orgOptions.map((option) => {
+                const isSelected = selectedChoices.has(option.id);
+                const Icon = option.icon;
+                return (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() => toggleChoice(option.id)}
+                    disabled={isLoading}
+                    className={cn(
+                      "relative flex items-start gap-3 p-3 rounded-lg border-2 text-left transition-all",
+                      isSelected
+                        ? "border-primary bg-primary/5"
+                        : "border-muted hover:border-muted-foreground/50"
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        "flex h-8 w-8 shrink-0 items-center justify-center rounded-full",
+                        isSelected ? "bg-primary text-primary-foreground" : "bg-muted"
+                      )}
+                    >
+                      <Icon className="h-4 w-4" />
+                    </div>
+                    <div className="flex-1 space-y-0.5">
+                      <p className="text-sm font-medium">{option.title}</p>
+                      <p className="text-xs text-muted-foreground">{option.description}</p>
+                    </div>
+                    {isSelected && (
+                      <div className="absolute top-2 right-2">
+                        <Check className="h-4 w-4 text-primary" />
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {selectedChoices.has("create") && (
             <FormField
               control={form.control}
-              name="organizationName"
+              name="sharedOrgName"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>{t.settings.organizationName}</FormLabel>
@@ -186,7 +283,9 @@ export function SignupForm() {
                 </FormItem>
               )}
             />
-          ) : (
+          )}
+
+          {selectedChoices.has("join") && (
             <FormField
               control={form.control}
               name="joinCode"

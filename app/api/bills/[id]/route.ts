@@ -11,7 +11,7 @@ export async function GET(
   try {
     const session = await auth()
 
-    if (!session?.user?.organizationId) {
+    if (!session?.user?.currentOrganizationId) {
       return NextResponse.json(
         { error: "Unauthorized" },
         { status: 401 }
@@ -23,7 +23,7 @@ export async function GET(
     const bill = await prisma.bill.findFirst({
       where: {
         id,
-        organizationId: session.user.organizationId,
+        organizationId: session.user.currentOrganizationId,
       },
       include: {
         billType: true,
@@ -72,7 +72,7 @@ export async function PATCH(
   try {
     const session = await auth()
 
-    if (!session?.user?.organizationId) {
+    if (!session?.user?.currentOrganizationId) {
       return NextResponse.json(
         { error: "Unauthorized" },
         { status: 401 }
@@ -86,7 +86,7 @@ export async function PATCH(
     const bill = await prisma.bill.findFirst({
       where: {
         id,
-        organizationId: session.user.organizationId,
+        organizationId: session.user.currentOrganizationId,
       },
     })
 
@@ -101,7 +101,7 @@ export async function PATCH(
     const billType = await prisma.billType.findFirst({
       where: {
         id: data.billTypeId,
-        organizationId: session.user.organizationId,
+        organizationId: session.user.currentOrganizationId,
       },
     })
 
@@ -112,17 +112,17 @@ export async function PATCH(
       )
     }
 
-    // Verify all assigned users belong to organization
+    // Verify all assigned users belong to organization via UserOrganization
     if (data.assignments && data.assignments.length > 0) {
       const userIds = data.assignments.map((a) => a.userId)
-      const users = await prisma.user.findMany({
+      const memberships = await prisma.userOrganization.findMany({
         where: {
-          id: { in: userIds },
-          organizationId: session.user.organizationId,
+          userId: { in: userIds },
+          organizationId: session.user.currentOrganizationId,
         },
       })
 
-      if (users.length !== userIds.length) {
+      if (memberships.length !== userIds.length) {
         return NextResponse.json(
           { error: "Invalid user assignments" },
           { status: 400 }
@@ -194,7 +194,7 @@ export async function DELETE(
   try {
     const session = await auth()
 
-    if (!session?.user?.organizationId) {
+    if (!session?.user?.currentOrganizationId) {
       return NextResponse.json(
         { error: "Unauthorized" },
         { status: 401 }
@@ -206,7 +206,7 @@ export async function DELETE(
     const bill = await prisma.bill.findFirst({
       where: {
         id,
-        organizationId: session.user.organizationId,
+        organizationId: session.user.currentOrganizationId,
       },
     })
 

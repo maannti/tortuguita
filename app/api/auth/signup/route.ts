@@ -1,82 +1,179 @@
-import { NextRequest, NextResponse } from "next/server"
-import { hash } from "bcryptjs"
-import { prisma } from "@/lib/prisma"
-import { z } from "zod"
-import { generateJoinCode } from "@/lib/join-code"
+import { NextRequest, NextResponse } from "next/server";
+import { hash } from "bcryptjs";
+import { prisma } from "@/lib/prisma";
+import { z } from "zod";
+import { generateJoinCode } from "@/lib/organization-utils";
+
+const organizationChoiceSchema = z.discriminatedUnion("type", [
+  z.object({
+    type: z.literal("personal"),
+  }),
+  z.object({
+    type: z.literal("create"),
+    name: z.string().min(1, "Organization name is required"),
+  }),
+  z.object({
+    type: z.literal("join"),
+    joinCode: z.string().min(1, "Join code is required"),
+  }),
+]);
 
 const signupSchema = z.object({
   name: z.string().min(1, "Name is required"),
   email: z.string().email("Invalid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
-  organizationName: z.string().optional(),
-  joinCode: z.string().optional(),
-}).refine(
-  (data) => (data.organizationName && data.organizationName.trim()) || (data.joinCode && data.joinCode.trim()),
-  {
-    message: "Either home name or join code is required",
-    path: ["organizationName"],
-  }
-)
+  organizationChoices: z.array(organizationChoiceSchema).min(1, "At least one organization choice is required"),
+});
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    const { name, email, password, organizationName, joinCode } = signupSchema.parse(body)
+    const body = await request.json();
+    const { name, email, password, organizationChoices } = signupSchema.parse(body);
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
       where: { email },
-    })
+    });
 
     if (existingUser) {
       return NextResponse.json(
         { error: "User with this email already exists" },
         { status: 400 }
-      )
+      );
+    }
+
+    // Validate join codes before creating anything
+    for (const choice of organizationChoices) {
+      if (choice.type === "join") {
+        const org = await prisma.organization.findUnique({
+          where: { joinCode: choice.joinCode.toUpperCase() },
+        });
+        if (!org) {
+          return NextResponse.json(
+            { error: "Invalid join code. Please check and try again." },
+            { status: 400 }
+          );
+        }
+        if (org.isPersonal) {
+          return NextResponse.json(
+            { error: "Cannot join a personal organization" },
+            { status: 400 }
+          );
+        }
+      }
     }
 
     // Hash password
-    const hashedPassword = await hash(password, 12)
+    const hashedPassword = await hash(password, 12);
 
-    // Create or join organization and user in a transaction
+    // Create user and organizations in a transaction
     const result = await prisma.$transaction(async (tx) => {
-      let organization
-
-      if (joinCode && joinCode.trim()) {
-        // Join existing organization
-        organization = await tx.organization.findUnique({
-          where: { joinCode: joinCode.trim() },
-        })
-
-        if (!organization) {
-          throw new Error("Invalid join code")
-        }
-      } else if (organizationName && organizationName.trim()) {
-        // Create new organization with a join code
-        const newJoinCode = generateJoinCode()
-
-        organization = await tx.organization.create({
-          data: {
-            name: organizationName.trim(),
-            joinCode: newJoinCode,
-          },
-        })
-      } else {
-        throw new Error("Either home name or join code is required")
-      }
-
-      // Create user
+      // Create user first (without organization)
       const user = await tx.user.create({
         data: {
           name,
           email,
           password: hashedPassword,
-          organizationId: organization.id,
         },
-      })
+      });
 
-      return { user, organization }
-    })
+      let firstOrgId: string | null = null;
+
+      // Process each organization choice
+      for (const choice of organizationChoices) {
+        let orgId: string;
+
+        if (choice.type === "personal") {
+          // Create personal organization
+          const org = await tx.organization.create({
+            data: {
+              name: `${name} Personal`,
+              isPersonal: true,
+              // No joinCode for personal orgs
+            },
+          });
+          orgId = org.id;
+
+          // Create membership as owner
+          await tx.userOrganization.create({
+            data: {
+              userId: user.id,
+              organizationId: orgId,
+              role: "owner",
+            },
+          });
+        } else if (choice.type === "create") {
+          // Generate unique join code
+          let joinCode = generateJoinCode();
+          let attempts = 0;
+          while (attempts < 10) {
+            const existing = await tx.organization.findUnique({
+              where: { joinCode },
+            });
+            if (!existing) break;
+            joinCode = generateJoinCode();
+            attempts++;
+          }
+
+          // Create shared organization
+          const org = await tx.organization.create({
+            data: {
+              name: choice.name,
+              isPersonal: false,
+              joinCode,
+            },
+          });
+          orgId = org.id;
+
+          // Create membership as owner
+          await tx.userOrganization.create({
+            data: {
+              userId: user.id,
+              organizationId: orgId,
+              role: "owner",
+            },
+          });
+        } else {
+          // Join existing organization
+          const org = await tx.organization.findUnique({
+            where: { joinCode: choice.joinCode.toUpperCase() },
+          });
+
+          if (!org) {
+            throw new Error("Invalid join code");
+          }
+
+          orgId = org.id;
+
+          // Create membership as member
+          await tx.userOrganization.create({
+            data: {
+              userId: user.id,
+              organizationId: orgId,
+              role: "member",
+            },
+          });
+        }
+
+        // Set first org as current
+        if (!firstOrgId) {
+          firstOrgId = orgId;
+        }
+      }
+
+      // Update user with current organization
+      if (firstOrgId) {
+        await tx.user.update({
+          where: { id: user.id },
+          data: {
+            currentOrganizationId: firstOrgId,
+            organizationId: firstOrgId, // Keep legacy field for compatibility
+          },
+        });
+      }
+
+      return { user };
+    });
 
     return NextResponse.json(
       {
@@ -88,26 +185,26 @@ export async function POST(request: NextRequest) {
         },
       },
       { status: 201 }
-    )
+    );
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: error.issues[0].message },
         { status: 400 }
-      )
+      );
     }
 
     if (error instanceof Error && error.message === "Invalid join code") {
       return NextResponse.json(
         { error: "Invalid join code. Please check and try again." },
         { status: 400 }
-      )
+      );
     }
 
-    console.error("Signup error:", error)
+    console.error("Signup error:", error);
     return NextResponse.json(
       { error: "Something went wrong" },
       { status: 500 }
-    )
+    );
   }
 }

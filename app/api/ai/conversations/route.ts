@@ -6,14 +6,14 @@ export async function GET(request: NextRequest) {
   try {
     const session = await auth();
 
-    if (!session?.user?.id || !session?.user?.organizationId) {
+    if (!session?.user?.id || !session?.user?.currentOrganizationId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const conversations = await prisma.conversation.findMany({
       where: {
         userId: session.user.id,
-        organizationId: session.user.organizationId,
+        organizationId: session.user.currentOrganizationId,
       },
       include: {
         messages: {

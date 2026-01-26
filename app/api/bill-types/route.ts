@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await auth()
 
-    if (!session?.user?.organizationId) {
+    if (!session?.user?.currentOrganizationId) {
       return NextResponse.json(
         { error: "Unauthorized" },
         { status: 401 }
@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
 
     const billTypes = await prisma.billType.findMany({
       where: {
-        organizationId: session.user.organizationId,
+        organizationId: session.user.currentOrganizationId,
       },
       orderBy: {
         name: "asc",
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await auth()
 
-    if (!session?.user?.organizationId) {
+    if (!session?.user?.currentOrganizationId) {
       return NextResponse.json(
         { error: "Unauthorized" },
         { status: 401 }
@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
     const billType = await prisma.billType.create({
       data: {
         ...data,
-        organizationId: session.user.organizationId,
+        organizationId: session.user.currentOrganizationId,
       },
     })
 

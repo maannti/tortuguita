@@ -5,13 +5,13 @@ import { CategoriesContent } from "@/components/categories/categories-content";
 export default async function CategoriesPage() {
   const session = await auth();
 
-  if (!session?.user?.organizationId) {
+  if (!session?.user?.currentOrganizationId) {
     return <div>Unauthorized</div>;
   }
 
   const categories = await prisma.billType.findMany({
     where: {
-      organizationId: session.user.organizationId,
+      organizationId: session.user.currentOrganizationId,
     },
     orderBy: {
       name: "asc",

@@ -5,14 +5,14 @@ import { BillForm } from "@/components/bills/bill-form"
 export default async function NewBillPage() {
   const session = await auth()
 
-  if (!session?.user?.organizationId) {
+  if (!session?.user?.currentOrganizationId) {
     return <div>Unauthorized</div>
   }
 
-  const [categories, members] = await Promise.all([
+  const [categories, memberships] = await Promise.all([
     prisma.billType.findMany({
       where: {
-        organizationId: session.user.organizationId,
+        organizationId: session.user.currentOrganizationId,
       },
       select: {
         id: true,
@@ -25,20 +25,28 @@ export default async function NewBillPage() {
         name: "asc",
       },
     }),
-    prisma.user.findMany({
+    prisma.userOrganization.findMany({
       where: {
-        organizationId: session.user.organizationId,
+        organizationId: session.user.currentOrganizationId,
       },
-      select: {
-        id: true,
-        name: true,
-        email: true,
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
       },
       orderBy: {
-        name: "asc",
+        user: {
+          name: "asc",
+        },
       },
     }),
   ])
+
+  const members = memberships.map((m) => m.user)
 
   return (
     <div className="max-w-2xl">

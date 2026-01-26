@@ -11,7 +11,7 @@ export async function GET(
   try {
     const session = await auth()
 
-    if (!session?.user?.organizationId) {
+    if (!session?.user?.currentOrganizationId) {
       return NextResponse.json(
         { error: "Unauthorized" },
         { status: 401 }
@@ -23,7 +23,7 @@ export async function GET(
     const billType = await prisma.billType.findFirst({
       where: {
         id,
-        organizationId: session.user.organizationId,
+        organizationId: session.user.currentOrganizationId,
       },
     })
 
@@ -51,7 +51,7 @@ export async function PATCH(
   try {
     const session = await auth()
 
-    if (!session?.user?.organizationId) {
+    if (!session?.user?.currentOrganizationId) {
       return NextResponse.json(
         { error: "Unauthorized" },
         { status: 401 }
@@ -65,7 +65,7 @@ export async function PATCH(
     const billType = await prisma.billType.findFirst({
       where: {
         id,
-        organizationId: session.user.organizationId,
+        organizationId: session.user.currentOrganizationId,
       },
     })
 
@@ -105,7 +105,7 @@ export async function DELETE(
   try {
     const session = await auth()
 
-    if (!session?.user?.organizationId) {
+    if (!session?.user?.currentOrganizationId) {
       return NextResponse.json(
         { error: "Unauthorized" },
         { status: 401 }
@@ -117,7 +117,7 @@ export async function DELETE(
     const billType = await prisma.billType.findFirst({
       where: {
         id,
-        organizationId: session.user.organizationId,
+        organizationId: session.user.currentOrganizationId,
       },
     })
 

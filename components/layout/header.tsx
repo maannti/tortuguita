@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button"
 import { useRouter, usePathname } from "next/navigation"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
-import { LogOut, Sun, Moon } from "lucide-react"
+import { LogOut, Sun, Moon, User, Home, Check, ChevronDown } from "lucide-react"
 import { useTranslations } from "@/components/providers/language-provider"
 
 // Animated hamburger/close icon component
@@ -80,19 +80,55 @@ const navItems: { key: NavKey; href: string }[] = [
   { key: "settings", href: "/settings/organization" },
 ]
 
+interface Organization {
+  id: string
+  name: string
+  isPersonal: boolean
+  role: string
+  memberCount: number
+}
+
 export function Header() {
-  const { data: session } = useSession()
+  const { data: session, update: updateSession } = useSession()
   const router = useRouter()
   const pathname = usePathname()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [userMenuExpanded, setUserMenuExpanded] = useState(false)
+  const [orgSwitcherOpen, setOrgSwitcherOpen] = useState(false)
   const { theme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
+  const [organizations, setOrganizations] = useState<Organization[]>([])
+  const [currentOrg, setCurrentOrg] = useState<Organization | null>(null)
+  const [isSwitching, setIsSwitching] = useState(false)
   const t = useTranslations()
 
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  // Fetch organizations
+  useEffect(() => {
+    async function fetchOrganizations() {
+      try {
+        const response = await fetch("/api/organizations")
+        if (response.ok) {
+          const orgs = await response.json()
+          setOrganizations(orgs)
+          // Find current org
+          const current = orgs.find(
+            (org: Organization) => org.id === session?.user?.currentOrganizationId
+          )
+          setCurrentOrg(current || null)
+        }
+      } catch (error) {
+        console.error("Failed to fetch organizations:", error)
+      }
+    }
+
+    if (session?.user?.id) {
+      fetchOrganizations()
+    }
+  }, [session?.user?.id, session?.user?.currentOrganizationId])
 
   const getInitials = (name: string | null | undefined) => {
     if (!name) return "U"
@@ -107,12 +143,42 @@ export function Header() {
   const handleNavClick = (href: string) => {
     setMobileMenuOpen(false)
     setUserMenuExpanded(false)
+    setOrgSwitcherOpen(false)
     router.push(href)
   }
 
   const closeMobileMenu = () => {
     setMobileMenuOpen(false)
     setUserMenuExpanded(false)
+    setOrgSwitcherOpen(false)
+  }
+
+  const switchOrganization = async (orgId: string) => {
+    if (isSwitching || orgId === session?.user?.currentOrganizationId) return
+
+    setIsSwitching(true)
+    try {
+      const response = await fetch("/api/users/switch-organization", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ organizationId: orgId }),
+      })
+
+      if (response.ok) {
+        // Update session
+        await updateSession({ currentOrganizationId: orgId })
+        // Update local state
+        const newCurrentOrg = organizations.find((org) => org.id === orgId)
+        setCurrentOrg(newCurrentOrg || null)
+        setOrgSwitcherOpen(false)
+        // Refresh the page to load new organization data
+        router.refresh()
+      }
+    } catch (error) {
+      console.error("Failed to switch organization:", error)
+    } finally {
+      setIsSwitching(false)
+    }
   }
 
   return (
@@ -147,6 +213,47 @@ export function Header() {
           </div>
 
           <div className="ml-auto flex items-center gap-2">
+            {/* Desktop: Organization switcher */}
+            {organizations.length > 1 && (
+              <div className="hidden md:block mr-2">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="gap-2">
+                      {currentOrg?.isPersonal ? (
+                        <User className="h-4 w-4" />
+                      ) : (
+                        <Home className="h-4 w-4" />
+                      )}
+                      <span className="max-w-[120px] truncate">{currentOrg?.name}</span>
+                      <ChevronDown className="h-3 w-3 opacity-50" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuLabel>{t.settings.switchOrganization}</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {organizations.map((org) => (
+                      <DropdownMenuItem
+                        key={org.id}
+                        onClick={() => switchOrganization(org.id)}
+                        className="gap-2"
+                        disabled={isSwitching}
+                      >
+                        {org.isPersonal ? (
+                          <User className="h-4 w-4" />
+                        ) : (
+                          <Home className="h-4 w-4" />
+                        )}
+                        <span className="flex-1 truncate">{org.name}</span>
+                        {org.id === session?.user?.currentOrganizationId && (
+                          <Check className="h-4 w-4 text-primary" />
+                        )}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            )}
+
             {/* Desktop only: Theme toggle */}
             <div className="hidden md:block mr-2">
               <button
@@ -276,7 +383,63 @@ export function Header() {
           </nav>
 
           {/* Mobile menu footer with user info and actions */}
-          <div className="px-8 py-6">
+          <div className="px-8 py-6 space-y-4">
+            {/* Organization switcher - mobile */}
+            {organizations.length > 1 && (
+              <div className="space-y-2">
+                <button
+                  onClick={() => setOrgSwitcherOpen(!orgSwitcherOpen)}
+                  className="w-full flex items-center gap-3 p-3 -mx-3 rounded-xl transition-colors hover:bg-muted active:bg-muted"
+                >
+                  {currentOrg?.isPersonal ? (
+                    <User className="h-5 w-5 text-muted-foreground" />
+                  ) : (
+                    <Home className="h-5 w-5 text-muted-foreground" />
+                  )}
+                  <span className="flex-1 text-left font-medium">{currentOrg?.name}</span>
+                  <ChevronDown
+                    className={cn(
+                      "h-5 w-5 text-muted-foreground transition-transform",
+                      orgSwitcherOpen && "rotate-180"
+                    )}
+                  />
+                </button>
+
+                <div
+                  className={cn(
+                    "overflow-hidden transition-all duration-200",
+                    orgSwitcherOpen ? "max-h-60" : "max-h-0"
+                  )}
+                >
+                  <div className="space-y-1 pl-8">
+                    {organizations.map((org) => (
+                      <button
+                        key={org.id}
+                        onClick={() => switchOrganization(org.id)}
+                        disabled={isSwitching}
+                        className={cn(
+                          "w-full flex items-center gap-2 p-2 rounded-lg transition-colors text-sm",
+                          org.id === session?.user?.currentOrganizationId
+                            ? "bg-primary/10 text-primary"
+                            : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                        )}
+                      >
+                        {org.isPersonal ? (
+                          <User className="h-4 w-4" />
+                        ) : (
+                          <Home className="h-4 w-4" />
+                        )}
+                        <span className="flex-1 text-left truncate">{org.name}</span>
+                        {org.id === session?.user?.currentOrganizationId && (
+                          <Check className="h-4 w-4" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* User info - clickable to expand */}
             <button
               onClick={() => setUserMenuExpanded(!userMenuExpanded)}

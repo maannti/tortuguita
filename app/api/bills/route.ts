@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await auth()
 
-    if (!session?.user?.organizationId) {
+    if (!session?.user?.currentOrganizationId) {
       return NextResponse.json(
         { error: "Unauthorized" },
         { status: 401 }
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     const endDate = searchParams.get("endDate")
 
     const where: Prisma.BillWhereInput = {
-      organizationId: session.user.organizationId,
+      organizationId: session.user.currentOrganizationId,
     }
 
     if (billTypeId) {
@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await auth()
 
-    if (!session?.user?.organizationId || !session?.user?.id) {
+    if (!session?.user?.currentOrganizationId || !session?.user?.id) {
       return NextResponse.json(
         { error: "Unauthorized" },
         { status: 401 }
@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
     const billType = await prisma.billType.findFirst({
       where: {
         id: data.billTypeId,
-        organizationId: session.user.organizationId,
+        organizationId: session.user.currentOrganizationId,
       },
     })
 
@@ -112,17 +112,17 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Verify all assigned users belong to organization
+    // Verify all assigned users belong to organization via UserOrganization
     if (data.assignments && data.assignments.length > 0) {
       const userIds = data.assignments.map((a) => a.userId)
-      const users = await prisma.user.findMany({
+      const memberships = await prisma.userOrganization.findMany({
         where: {
-          id: { in: userIds },
-          organizationId: session.user.organizationId,
+          userId: { in: userIds },
+          organizationId: session.user.currentOrganizationId,
         },
       })
 
-      if (users.length !== userIds.length) {
+      if (memberships.length !== userIds.length) {
         return NextResponse.json(
           { error: "Invalid user assignments" },
           { status: 400 }
@@ -131,7 +131,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Extract session values for use in transaction (TypeScript narrowing)
-    const organizationId = session.user.organizationId
+    const organizationId = session.user.currentOrganizationId
     const userId = session.user.id
 
     // Check if creating installments

@@ -22,7 +22,7 @@ interface PageProps {
 export default async function DashboardPage({ searchParams }: PageProps) {
   const session = await auth();
 
-  if (!session?.user?.organizationId) {
+  if (!session?.user?.currentOrganizationId) {
     return <div>Unauthorized</div>;
   }
 
@@ -32,7 +32,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   // Get available months (months with expenses)
   const monthsWithExpenses = await prisma.bill.findMany({
     where: {
-      organizationId: session.user.organizationId,
+      organizationId: session.user.currentOrganizationId,
     },
     select: {
       paymentDate: true,
@@ -59,7 +59,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   // Total spent this month
   const currentMonthTotal = await prisma.bill.aggregate({
     where: {
-      organizationId: session.user.organizationId,
+      organizationId: session.user.currentOrganizationId,
       paymentDate: {
         gte: currentMonthStart,
         lte: currentMonthEnd,
@@ -73,7 +73,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   // Last month total for comparison
   const lastMonthTotal = await prisma.bill.aggregate({
     where: {
-      organizationId: session.user.organizationId,
+      organizationId: session.user.currentOrganizationId,
       paymentDate: {
         gte: lastMonthStart,
         lte: lastMonthEnd,
@@ -88,7 +88,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   const categoryBreakdown = await prisma.bill.groupBy({
     by: ["billTypeId"],
     where: {
-      organizationId: session.user.organizationId,
+      organizationId: session.user.currentOrganizationId,
       paymentDate: {
         gte: currentMonthStart,
         lte: currentMonthEnd,
@@ -101,7 +101,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
 
   const billTypes = await prisma.billType.findMany({
     where: {
-      organizationId: session.user.organizationId,
+      organizationId: session.user.currentOrganizationId,
     },
   });
 
@@ -118,7 +118,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   const sixMonthsAgo = startOfMonth(subMonths(now, 5));
   const sixMonthTotal = await prisma.bill.aggregate({
     where: {
-      organizationId: session.user.organizationId,
+      organizationId: session.user.currentOrganizationId,
       paymentDate: {
         gte: sixMonthsAgo,
         lte: endOfMonth(now),
@@ -133,7 +133,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   // User distribution (bills with assignments)
   const billsWithAssignments = await prisma.bill.findMany({
     where: {
-      organizationId: session.user.organizationId,
+      organizationId: session.user.currentOrganizationId,
       paymentDate: {
         gte: currentMonthStart,
         lte: currentMonthEnd,
@@ -208,7 +208,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   // Recent bills
   const recentBills: BillWithRelations[] = await prisma.bill.findMany({
     where: {
-      organizationId: session.user.organizationId,
+      organizationId: session.user.currentOrganizationId,
     },
     include: {
       billType: true,

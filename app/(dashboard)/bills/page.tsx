@@ -31,7 +31,7 @@ interface PageProps {
 export default async function BillsPage({ searchParams }: PageProps) {
   const session = await auth();
 
-  if (!session?.user?.organizationId) {
+  if (!session?.user?.currentOrganizationId) {
     return <div>Unauthorized</div>;
   }
 
@@ -42,7 +42,7 @@ export default async function BillsPage({ searchParams }: PageProps) {
   // Get available months (months with expenses)
   const monthsWithExpenses = await prisma.bill.findMany({
     where: {
-      organizationId: session.user.organizationId,
+      organizationId: session.user.currentOrganizationId,
     },
     select: {
       paymentDate: true,
@@ -59,7 +59,7 @@ export default async function BillsPage({ searchParams }: PageProps) {
   // Get all categories for the organization
   const categories = await prisma.billType.findMany({
     where: {
-      organizationId: session.user.organizationId,
+      organizationId: session.user.currentOrganizationId,
     },
     select: {
       id: true,
@@ -74,7 +74,7 @@ export default async function BillsPage({ searchParams }: PageProps) {
 
   // Build where clause with optional filters
   const whereClause: Prisma.BillWhereInput = {
-    organizationId: session.user.organizationId,
+    organizationId: session.user.currentOrganizationId,
   };
 
   if (selectedMonth) {

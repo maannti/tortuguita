@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await auth();
 
-    if (!session?.user?.id || !session?.user?.organizationId) {
+    if (!session?.user?.id || !session?.user?.currentOrganizationId) {
       return new Response("Unauthorized", { status: 401 });
     }
 
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
         where: {
           id: conversationId,
           userId: session.user.id,
-          organizationId: session.user.organizationId,
+          organizationId: session.user.currentOrganizationId,
         },
         include: {
           messages: {
@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
       conversation = await prisma.conversation.create({
         data: {
           userId: session.user.id,
-          organizationId: session.user.organizationId,
+          organizationId: session.user.currentOrganizationId,
           title: message.slice(0, 50),
         },
         include: { messages: true },
@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
     });
 
     // 3. Build context for Claude
-    const context = await buildContext(session.user.organizationId);
+    const context = await buildContext(session.user.currentOrganizationId);
 
     // 4. Build message history for Claude
     const messageHistory: any[] = conversation.messages.map((m) => ({
@@ -164,7 +164,7 @@ export async function POST(request: NextRequest) {
                   block.name,
                   block.input,
                   session.user.id,
-                  session.user.organizationId!
+                  session.user.currentOrganizationId!
                 );
 
                 toolCallsData.push({

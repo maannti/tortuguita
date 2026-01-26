@@ -11,15 +11,15 @@ export default async function EditBillPage({
   const session = await auth()
   const { id } = await params
 
-  if (!session?.user?.organizationId) {
+  if (!session?.user?.currentOrganizationId) {
     return <div>Unauthorized</div>
   }
 
-  const [bill, categories, members] = await Promise.all([
+  const [bill, categories, memberships] = await Promise.all([
     prisma.bill.findFirst({
       where: {
         id,
-        organizationId: session.user.organizationId,
+        organizationId: session.user.currentOrganizationId,
       },
       include: {
         assignments: true,
@@ -27,7 +27,7 @@ export default async function EditBillPage({
     }),
     prisma.billType.findMany({
       where: {
-        organizationId: session.user.organizationId,
+        organizationId: session.user.currentOrganizationId,
       },
       select: {
         id: true,
@@ -40,17 +40,23 @@ export default async function EditBillPage({
         name: "asc",
       },
     }),
-    prisma.user.findMany({
+    prisma.userOrganization.findMany({
       where: {
-        organizationId: session.user.organizationId,
+        organizationId: session.user.currentOrganizationId,
       },
-      select: {
-        id: true,
-        name: true,
-        email: true,
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
       },
       orderBy: {
-        name: "asc",
+        user: {
+          name: "asc",
+        },
       },
     }),
   ])
@@ -58,6 +64,8 @@ export default async function EditBillPage({
   if (!bill) {
     notFound()
   }
+
+  const members = memberships.map((m) => m.user)
 
   return (
     <div className="max-w-2xl">

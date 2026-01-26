@@ -11,14 +11,14 @@ export default async function EditCategoryPage({
   const session = await auth()
   const { id } = await params
 
-  if (!session?.user?.organizationId) {
+  if (!session?.user?.currentOrganizationId) {
     return <div>Unauthorized</div>
   }
 
   const category = await prisma.billType.findFirst({
     where: {
       id,
-      organizationId: session.user.organizationId,
+      organizationId: session.user.currentOrganizationId,
     },
   })
 

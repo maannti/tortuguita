@@ -59,42 +59,64 @@ model PasswordResetToken {
 
 // Application models
 model User {
-  id             String        @id @default(cuid())
-  name           String?
-  email          String?       @unique
-  emailVerified  DateTime?
-  image          String?
-  password       String?
-  organizationId String?
-  language       String        @default("es")
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  id                    String        @id @default(cuid())
+  name                  String?
+  email                 String?       @unique
+  emailVerified         DateTime?
+  image                 String?
+  password              String?
+  organizationId        String?       // Legacy field - kept for migration
+  currentOrganizationId String?       // Active organization for the user
+  language              String        @default("es")
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
 
-  organization      Organization?    @relation(fields: [organizationId], references: [id], onDelete: SetNull)
-  accounts          Account[]
-  sessions          Session[]
-  bills             Bill[]
-  billAssignments   BillAssignment[]
-  conversations     Conversation[]
+  organization        Organization?      @relation("LegacyOrganization", fields: [organizationId], references: [id], onDelete: SetNull)
+  currentOrganization Organization?      @relation("CurrentOrganization", fields: [currentOrganizationId], references: [id], onDelete: SetNull)
+  userOrganizations   UserOrganization[]
+  accounts            Account[]
+  sessions            Session[]
+  bills               Bill[]
+  billAssignments     BillAssignment[]
+  conversations       Conversation[]
 
   @@index([organizationId])
+  @@index([currentOrganizationId])
   @@index([email])
 }
 
 model Organization {
-  id        String     @id @default(cuid())
-  name      String
-  joinCode  String?    @unique
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  id         String   @id @default(cuid())
+  name       String
+  joinCode   String?  @unique
+  isPersonal Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
-  users         User[]
-  billTypes     BillType[]
-  bills         Bill[]
-  conversations Conversation[]
+  legacyUsers       User[]             @relation("LegacyOrganization")
+  currentUsers      User[]             @relation("CurrentOrganization")
+  userOrganizations UserOrganization[]
+  billTypes         BillType[]
+  bills             Bill[]
+  conversations     Conversation[]
 
   @@index([name])
   @@index([joinCode])
+}
+
+model UserOrganization {
+  id             String   @id @default(cuid())
+  userId         String
+  organizationId String
+  role           String   @default("member") // "owner" | "member"
+  joinedAt       DateTime @default(now())
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, organizationId])
+  @@index([userId])
+  @@index([organizationId])
 }
 
 model BillType {
