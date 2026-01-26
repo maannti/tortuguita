@@ -111,7 +111,22 @@ async function createBill(input: any, userId: string, organizationId: string) {
       }
     }
 
-    // 3. Validate and create bill
+    // 3. Handle installments - only if category is a credit card
+    let totalInstallments: number | undefined;
+    let installmentGroupId: string | undefined;
+
+    if (input.totalInstallments && input.totalInstallments >= 2) {
+      if (!billType.isCreditCard) {
+        return {
+          success: false,
+          error: `Category "${categoryName}" is not a credit card. Installments (cuotas) can only be used with credit card categories.`,
+        };
+      }
+      totalInstallments = input.totalInstallments;
+      installmentGroupId = crypto.randomUUID();
+    }
+
+    // 4. Validate and create bill
     const billData = {
       label: input.label,
       amount: input.amount,
@@ -120,11 +135,14 @@ async function createBill(input: any, userId: string, organizationId: string) {
       dueDate: input.dueDate ? new Date(input.dueDate) : undefined,
       notes: input.notes,
       assignments: resolvedAssignments,
+      totalInstallments,
+      currentInstallment: totalInstallments ? 1 : undefined,
+      installmentGroupId,
     };
 
     const validated = billSchema.parse(billData);
 
-    // 4. Create bill with assignments
+    // 5. Create bill with assignments
     const bill = await prisma.bill.create({
       data: {
         label: validated.label,
@@ -133,6 +151,9 @@ async function createBill(input: any, userId: string, organizationId: string) {
         dueDate: validated.dueDate || null,
         billTypeId: validated.billTypeId,
         notes: validated.notes,
+        totalInstallments: validated.totalInstallments,
+        currentInstallment: validated.currentInstallment,
+        installmentGroupId: validated.installmentGroupId,
         organizationId,
         userId,
         assignments: {
@@ -154,15 +175,21 @@ async function createBill(input: any, userId: string, organizationId: string) {
 
     console.log("Bill created successfully:", bill.id);
 
+    const installmentInfo = bill.totalInstallments
+      ? ` (cuota 1/${bill.totalInstallments})`
+      : "";
+
     return {
       success: true,
-      message: `Created bill: ${bill.label}`,
+      message: `Created bill: ${bill.label}${installmentInfo}`,
       bill: {
         id: bill.id,
         label: bill.label,
         amount: Number(bill.amount),
         category: bill.billType.name,
         paymentDate: format(bill.paymentDate, "yyyy-MM-dd"),
+        totalInstallments: bill.totalInstallments,
+        currentInstallment: bill.currentInstallment,
         assignments: bill.assignments.map((a) => ({
           user: a.user.name,
           percentage: Number(a.percentage),
@@ -194,11 +221,15 @@ async function createCategory(input: any, organizationId: string) {
       };
     }
 
+    // Default icon for credit cards
+    const icon = input.icon || (input.isCreditCard ? "💳" : undefined);
+
     const validated = billTypeSchema.parse({
       name: input.name,
       description: input.description,
       color: input.color || "#3b82f6",
-      icon: input.icon,
+      icon,
+      isCreditCard: input.isCreditCard ?? false,
     });
 
     const category = await prisma.billType.create({
@@ -208,14 +239,19 @@ async function createCategory(input: any, organizationId: string) {
       },
     });
 
+    const creditCardNote = category.isCreditCard
+      ? " (tarjeta de crédito - cuotas habilitadas)"
+      : "";
+
     return {
       success: true,
-      message: `Created category: ${category.name}`,
+      message: `Created category: ${category.name}${creditCardNote}`,
       category: {
         id: category.id,
         name: category.name,
         color: category.color,
         icon: category.icon,
+        isCreditCard: category.isCreditCard,
       },
     };
   } catch (error: any) {

@@ -78,6 +78,58 @@ export function BillForm({ initialData, categories, members, currentUserId, mode
     0
   ) || 0;
 
+  // Auto-distribute percentages equally when adding a new member
+  const distributeEqually = () => {
+    if (!assignments || assignments.length === 0) return;
+    const equalShare = Math.floor(100 / assignments.length);
+    const remainder = 100 - (equalShare * assignments.length);
+
+    assignments.forEach((_, index) => {
+      // Give the remainder to the first person
+      const share = index === 0 ? equalShare + remainder : equalShare;
+      form.setValue(`assignments.${index}.percentage`, share);
+    });
+  };
+
+  // Auto-adjust other members when one is changed
+  const adjustOtherPercentages = (changedIndex: number, newValue: number) => {
+    if (!assignments || assignments.length <= 1) return;
+
+    const otherIndices = assignments
+      .map((_, i) => i)
+      .filter(i => i !== changedIndex);
+
+    const remaining = 100 - newValue;
+
+    if (otherIndices.length === 1) {
+      // Only one other person - they get the remainder
+      form.setValue(`assignments.${otherIndices[0]}.percentage`, Math.max(0, remaining));
+    } else {
+      // Multiple others - distribute remaining equally
+      const currentOtherTotal = otherIndices.reduce(
+        (sum, i) => sum + (Number(assignments[i]?.percentage) || 0),
+        0
+      );
+
+      if (currentOtherTotal > 0) {
+        // Distribute proportionally based on current values
+        otherIndices.forEach(i => {
+          const currentVal = Number(assignments[i]?.percentage) || 0;
+          const proportion = currentVal / currentOtherTotal;
+          const newVal = Math.round(remaining * proportion);
+          form.setValue(`assignments.${i}.percentage`, Math.max(0, newVal));
+        });
+      } else {
+        // All others are 0, distribute equally
+        const equalShare = Math.floor(remaining / otherIndices.length);
+        otherIndices.forEach((i, idx) => {
+          const share = idx === 0 ? remaining - (equalShare * (otherIndices.length - 1)) : equalShare;
+          form.setValue(`assignments.${i}.percentage`, Math.max(0, share));
+        });
+      }
+    }
+  };
+
   // Watch selected category to determine if cuotas should be shown
   const selectedCategoryId = form.watch("billTypeId");
   const selectedCategory = categories.find(c => c.id === selectedCategoryId);
@@ -168,14 +220,19 @@ export function BillForm({ initialData, categories, members, currentUserId, mode
                   <FormLabel>{t.bills.amount}</FormLabel>
                   <FormControl>
                     <Input
-                      type="number"
-                      step="0.01"
-                      placeholder="0.00"
+                      type="text"
+                      inputMode="decimal"
+                      placeholder="0,00"
                       disabled={isLoading}
-                      value={field.value === 0 || field.value === undefined || field.value === null ? "" : Number(field.value)}
+                      value={field.value === 0 || field.value === undefined || field.value === null ? "" : String(field.value).replace(".", ",")}
                       onChange={(e) => {
-                        const value = e.target.value === "" ? 0 : Number(e.target.value);
-                        field.onChange(value);
+                        // Allow comma as decimal separator, convert to dot for parsing
+                        const rawValue = e.target.value.replace(",", ".");
+                        // Only allow valid number characters
+                        if (rawValue === "" || /^[0-9]*\.?[0-9]*$/.test(rawValue)) {
+                          const value = rawValue === "" ? 0 : parseFloat(rawValue) || 0;
+                          field.onChange(value);
+                        }
                       }}
                       onBlur={field.onBlur}
                       name={field.name}
@@ -310,12 +367,15 @@ export function BillForm({ initialData, categories, members, currentUserId, mode
                 </Select>
                 {cuotas === "other" && (
                   <Input
-                    type="number"
-                    min="2"
-                    max="48"
+                    type="text"
+                    inputMode="numeric"
                     placeholder="Número de cuotas"
                     value={customCuotas}
-                    onChange={(e) => setCustomCuotas(e.target.value)}
+                    onChange={(e) => {
+                      // Only allow digits
+                      const value = e.target.value.replace(/[^0-9]/g, "");
+                      setCustomCuotas(value);
+                    }}
                     disabled={isLoading}
                     className="mt-2"
                   />
@@ -393,30 +453,44 @@ export function BillForm({ initialData, categories, members, currentUserId, mode
                         render={({ field }) => (
                           <FormItem className="flex-1">
                             <FormControl>
-                              <div className="flex items-center gap-3">
+                              <div className="flex items-center gap-2">
                                 <div className="flex-1 min-w-0">
                                   <Slider
                                     min={0}
                                     max={100}
-                                    step={0.01}
-                                    value={[Number(field.value) || 0]}
+                                    step={1}
+                                    value={[Math.round(Number(field.value) || 0)]}
                                     onValueChange={(values) => {
                                       field.onChange(values[0]);
+                                      adjustOtherPercentages(index, values[0]);
                                     }}
                                     disabled={isLoading}
                                     className="w-full"
                                   />
                                 </div>
-                                <span className="text-sm font-medium w-14 text-right flex-shrink-0">
-                                  {(Number(field.value) || 0).toFixed(1)}%
-                                </span>
+                                <div className="flex items-center gap-1 flex-shrink-0">
+                                  <Input
+                                    type="text"
+                                    inputMode="numeric"
+                                    value={Math.round(Number(field.value) || 0)}
+                                    onChange={(e) => {
+                                      const val = e.target.value.replace(/[^0-9]/g, "");
+                                      const num = Math.min(100, Math.max(0, parseInt(val) || 0));
+                                      field.onChange(num);
+                                      adjustOtherPercentages(index, num);
+                                    }}
+                                    disabled={isLoading}
+                                    className="w-14 h-8 text-center text-sm px-1"
+                                  />
+                                  <span className="text-sm">%</span>
+                                </div>
                                 <Button
                                   type="button"
                                   variant="ghost"
                                   size="icon"
                                   onClick={() => remove(index)}
                                   disabled={isLoading}
-                                  className="flex-shrink-0"
+                                  className="flex-shrink-0 h-8 w-8"
                                 >
                                   <X className="h-4 w-4" />
                                 </Button>
@@ -431,20 +505,43 @@ export function BillForm({ initialData, categories, members, currentUserId, mode
                 })}
 
                 {fields.length < members.length && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      const remaining = Math.max(0, 100 - totalPercentage);
-                      append({ userId: "", percentage: remaining });
-                    }}
-                    disabled={isLoading}
-                    className="mt-2 w-full md:w-auto"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    {t.bills.addMember}
-                  </Button>
+                  <div className="flex flex-col sm:flex-row gap-2 mt-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        append({ userId: "", percentage: 0 });
+                        // Auto-distribute after adding (use setTimeout to wait for state update)
+                        setTimeout(() => {
+                          const newCount = fields.length + 1;
+                          const equalShare = Math.floor(100 / newCount);
+                          const remainder = 100 - (equalShare * newCount);
+                          for (let i = 0; i < newCount; i++) {
+                            const share = i === 0 ? equalShare + remainder : equalShare;
+                            form.setValue(`assignments.${i}.percentage`, share);
+                          }
+                        }, 0);
+                      }}
+                      disabled={isLoading}
+                      className="w-full sm:w-auto"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      {t.bills.addMember}
+                    </Button>
+                    {fields.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={distributeEqually}
+                        disabled={isLoading}
+                        className="w-full sm:w-auto text-muted-foreground"
+                      >
+                        Dividir en partes iguales
+                      </Button>
+                    )}
+                  </div>
                 )}
 
                 {fields.length > 0 && (
@@ -452,12 +549,12 @@ export function BillForm({ initialData, categories, members, currentUserId, mode
                     <span className="text-muted-foreground">{t.bills.total}:</span>
                     <span
                       className={
-                        Math.abs(totalPercentage - 100) < 0.01
+                        totalPercentage === 100
                           ? "text-green-600 dark:text-green-400 font-medium"
                           : "text-destructive font-medium"
                       }
                     >
-                      {totalPercentage.toFixed(2)}%
+                      {Math.round(totalPercentage)}%
                     </span>
                   </div>
                 )}

@@ -353,7 +353,7 @@ async function buildContext(organizationId: string) {
   const [categories, currentMonthBills, users] = await Promise.all([
     prisma.billType.findMany({
       where: { organizationId },
-      select: { id: true, name: true, color: true, icon: true },
+      select: { id: true, name: true, color: true, icon: true, isCreditCard: true },
       orderBy: { name: "asc" },
     }),
     prisma.bill.aggregate({

@@ -55,6 +55,11 @@ export const tools: Tool[] = [
             required: ["userName", "percentage"],
           },
         },
+        totalInstallments: {
+          type: "number",
+          description:
+            "Number of installments/cuotas (2-24). Use this when user says 'en X cuotas' or 'X installments'. Only applicable for credit card categories.",
+        },
       },
       required: ["label", "amount", "paymentDate", "categoryName"],
     },
@@ -62,13 +67,13 @@ export const tools: Tool[] = [
   {
     name: "create_category",
     description:
-      "Create a new category/bill type. Use this when the user wants to add a new category for organizing expenses.",
+      "Create a new category/bill type. Use this when the user wants to add a new category for organizing expenses. IMPORTANT: Always ask if the category is a credit card to enable installments/cuotas feature.",
     input_schema: {
       type: "object",
       properties: {
         name: {
           type: "string",
-          description: "Category name (e.g., 'Groceries', 'Utilities')",
+          description: "Category name (e.g., 'Groceries', 'Utilities', 'VISA', 'Mastercard')",
         },
         description: {
           type: "string",
@@ -81,10 +86,15 @@ export const tools: Tool[] = [
         },
         icon: {
           type: "string",
-          description: "Optional emoji icon (e.g., '🛒', '💡')",
+          description: "Optional emoji icon (e.g., '🛒', '💡', '💳' for credit cards)",
+        },
+        isCreditCard: {
+          type: "boolean",
+          description:
+            "Whether this category represents a credit card. Set to true for credit cards (VISA, Mastercard, Amex, etc.) to enable installments/cuotas when creating bills.",
         },
       },
-      required: ["name"],
+      required: ["name", "isCreditCard"],
     },
   },
   {

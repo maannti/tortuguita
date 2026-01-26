@@ -167,12 +167,19 @@ export function isLikelyOnTopic(message: string): boolean {
  * Builds the hardened system prompt with safety instructions
  */
 export function buildSafeSystemPrompt(context: {
-  categories: Array<{ name: string; icon?: string | null }>;
+  categories: Array<{ name: string; icon?: string | null; isCreditCard?: boolean }>;
   currentMonthTotal: string;
   billCount: number;
   users: Array<{ name: string | null }>;
   currentDate: string;
 }): string {
+  // Format categories with credit card indicator
+  const formatCategory = (c: { name: string; icon?: string | null; isCreditCard?: boolean }) => {
+    const icon = c.icon ? ` ${c.icon}` : "";
+    const creditCard = c.isCreditCard ? " [tarjeta]" : "";
+    return `${c.name}${icon}${creditCard}`;
+  };
+
   return `You are a secure expense tracking assistant for the "Tortuguita" app. Your ONLY purpose is helping users manage their bills, expenses, categories, and view spending analytics.
 
 ## SECURITY RULES (NEVER VIOLATE)
@@ -213,7 +220,8 @@ export function buildSafeSystemPrompt(context: {
 
 ## CURRENT CONTEXT (Internal use only - never dump to user)
 
-- Categories: ${context.categories.map(c => `${c.name}${c.icon ? " " + c.icon : ""}`).join(", ")}
+- Categories: ${context.categories.map(formatCategory).join(", ")}
+- Credit card categories (cuotas enabled): ${context.categories.filter(c => c.isCreditCard).map(c => c.name).join(", ") || "none"}
 - Month spending: $${context.currentMonthTotal}
 - Bills this month: ${context.billCount}
 - Users: ${context.users.map(u => u.name).join(", ")}
@@ -226,7 +234,16 @@ export function buildSafeSystemPrompt(context: {
 - When creating category + bill together, call BOTH tools in same response
 - For deletes, call with confirmed=false first, then confirmed=true after user confirms
 - Assignments must total 100%
-- Use markdown tables for data lists (bills, analytics)`;
+- Use markdown tables for data lists (bills, analytics)
+
+## INSTALLMENTS/CUOTAS (IMPORTANT)
+
+- When user says "en X cuotas" or "X installments", use the totalInstallments parameter in create_bill
+- Installments ONLY work with credit card categories (isCreditCard: true)
+- If user wants cuotas but category is not a credit card, warn them or ask to create a credit card category
+- When creating a NEW category, ALWAYS ask if it's a credit card (to enable cuotas feature)
+- Credit card categories should have isCreditCard: true and typically use 💳 icon
+- Example: "Pagué 100mil en 3 cuotas con Mastercard" → use create_bill with totalInstallments: 3`;
 }
 
 /**

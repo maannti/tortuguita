@@ -4,9 +4,8 @@ const billAssignmentSchema = z.object({
   userId: z.string().min(1, "User is required"),
   percentage: z.coerce
     .number()
-    .min(0.01, "Percentage must be at least 0.01")
-    .max(100, "Percentage cannot exceed 100")
-    .multipleOf(0.01, "Percentage must have at most 2 decimal places"),
+    .min(0, "Percentage cannot be negative")
+    .max(100, "Percentage cannot exceed 100"),
 })
 
 export const billSchema = z
