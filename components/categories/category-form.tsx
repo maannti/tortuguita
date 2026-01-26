@@ -212,8 +212,8 @@ export function CategoryForm({ initialData, mode }: CategoryFormProps) {
               )}
             />
 
-            <div className="flex flex-col md:flex-row gap-3">
-              <Button type="submit" disabled={isLoading} className="w-full md:w-auto">
+            <div className="flex flex-col gap-3 pt-4">
+              <Button type="submit" disabled={isLoading} size="lg" className="w-full">
                 {isLoading ? t.categories.saving : mode === "create" ? t.categories.create : t.categories.update}
               </Button>
               <Button
@@ -221,7 +221,8 @@ export function CategoryForm({ initialData, mode }: CategoryFormProps) {
                 variant="outline"
                 onClick={() => router.push("/categories")}
                 disabled={isLoading}
-                className="w-full md:w-auto"
+                size="lg"
+                className="w-full"
               >
                 {t.common.cancel}
               </Button>

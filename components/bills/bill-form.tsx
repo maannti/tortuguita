@@ -53,6 +53,12 @@ export function BillForm({ initialData, categories, members, currentUserId, mode
   const [error, setError] = useState<string | null>(null);
   const [cuotas, setCuotas] = useState("0");
   const [customCuotas, setCustomCuotas] = useState("");
+  const [amountDisplay, setAmountDisplay] = useState(() => {
+    if (initialData?.amount && Number(initialData.amount) > 0) {
+      return String(initialData.amount).replace(".", ",");
+    }
+    return "";
+  });
 
   const form = useForm<BillFormData>({
     resolver: zodResolver(billSchema),
@@ -224,15 +230,23 @@ export function BillForm({ initialData, categories, members, currentUserId, mode
                       inputMode="decimal"
                       placeholder="0,00"
                       disabled={isLoading}
-                      value={field.value === 0 || field.value === undefined || field.value === null ? "" : String(field.value).replace(".", ",")}
+                      value={amountDisplay}
                       onChange={(e) => {
-                        // Allow comma as decimal separator, convert to dot for parsing
-                        const rawValue = e.target.value.replace(",", ".");
-                        // Only allow valid number characters
-                        if (rawValue === "" || /^[0-9]*\.?[0-9]*$/.test(rawValue)) {
-                          const value = rawValue === "" ? 0 : parseFloat(rawValue) || 0;
-                          field.onChange(value);
-                        }
+                        const input = e.target.value;
+                        // Allow digits and one comma/dot as decimal separator
+                        const cleaned = input.replace(/[^0-9,.]/g, "");
+                        // Replace dot with comma for display, but only allow one separator
+                        const withComma = cleaned.replace(".", ",");
+                        const parts = withComma.split(",");
+                        const formatted = parts.length > 2
+                          ? parts[0] + "," + parts.slice(1).join("")
+                          : withComma;
+
+                        setAmountDisplay(formatted);
+
+                        // Convert to number for form state
+                        const numericValue = parseFloat(formatted.replace(",", ".")) || 0;
+                        field.onChange(numericValue);
                       }}
                       onBlur={field.onBlur}
                       name={field.name}
@@ -567,8 +581,8 @@ export function BillForm({ initialData, categories, members, currentUserId, mode
               </div>
             </div>
 
-            <div className="flex flex-col md:flex-row gap-3">
-              <Button type="submit" disabled={isLoading} className="w-full md:w-auto">
+            <div className="flex flex-col gap-3 pt-4">
+              <Button type="submit" disabled={isLoading} size="lg" className="w-full">
                 {isLoading
                   ? t.bills.saving
                   : mode === "create"
@@ -580,7 +594,8 @@ export function BillForm({ initialData, categories, members, currentUserId, mode
                 variant="outline"
                 onClick={() => router.push("/bills")}
                 disabled={isLoading}
-                className="w-full md:w-auto"
+                size="lg"
+                className="w-full"
               >
                 {t.common.cancel}
               </Button>
