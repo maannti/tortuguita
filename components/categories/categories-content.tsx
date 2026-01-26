@@ -23,12 +23,12 @@ export function CategoriesContent({ categories }: CategoriesContentProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">{t.categories.title}</h1>
           <p className="text-muted-foreground">{t.categories.subtitle}</p>
         </div>
-        <Button asChild>
+        <Button asChild size="lg" className="w-full sm:w-auto">
           <Link href="/categories/new">{t.categories.addCategory}</Link>
         </Button>
       </div>

@@ -90,7 +90,7 @@ export function BillsContent({ bills, availableMonths, categories }: BillsConten
           </div>
         </div>
         <p className="text-muted-foreground">{t.bills.subtitle}</p>
-        <Button asChild className="w-full sm:w-auto">
+        <Button asChild size="lg" className="w-full sm:w-auto">
           <Link href="/bills/new">{t.bills.addBill}</Link>
         </Button>
       </div>
