@@ -414,7 +414,7 @@ export function BillForm({ initialData, categories, members, currentUserId, mode
               )}
             />
 
-            <div className="space-y-4 border-t pt-4">
+            <div className="space-y-4">
               <div>
                 <h3 className="text-sm font-medium mb-2">
                   {t.bills.assignToMembers}
@@ -557,7 +557,7 @@ export function BillForm({ initialData, categories, members, currentUserId, mode
                   </div>
                 )}
 
-                {fields.length > 0 && (
+                {fields.length > 1 && (
                   <div className="mt-3 flex justify-between items-center text-sm">
                     <span className="text-muted-foreground">{t.bills.total}:</span>
                     <span
