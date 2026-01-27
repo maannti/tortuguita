@@ -68,7 +68,7 @@ export default async function EditBillPage({
   const members = memberships.map((m) => m.user)
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="-mx-4 md:mx-0 md:max-w-2xl">
       <BillForm
         mode="edit"
         categories={categories}

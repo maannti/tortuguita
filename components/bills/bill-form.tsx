@@ -184,13 +184,13 @@ export function BillForm({ initialData, categories, members, currentUserId, mode
   }
 
   return (
-    <div className="md:rounded-lg md:border md:bg-card md:shadow-sm">
-      <div className="pb-2 md:p-6 md:pb-4">
+    <div className="md:rounded-lg md:border md:bg-card md:shadow-sm overflow-hidden">
+      <div className="px-4 pb-2 md:p-6 md:pb-4">
         <h1 className="text-xl font-semibold tracking-tight">
           {mode === "create" ? t.bills.newBill : t.bills.editBill}
         </h1>
       </div>
-      <div className="md:px-6 md:pb-6">
+      <div className="px-4 pb-4 md:px-6 md:pb-6">
         <Form {...form}>
           <form id="bill-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
             {error && (
