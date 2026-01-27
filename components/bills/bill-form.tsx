@@ -23,7 +23,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
 import { X, Plus } from "lucide-react";
 import { useTranslations } from "@/components/providers/language-provider";
@@ -185,15 +184,15 @@ export function BillForm({ initialData, categories, members, currentUserId, mode
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>
+    <div className="md:rounded-lg md:border md:bg-card md:shadow-sm">
+      <div className="pb-2 md:p-6 md:pb-4">
+        <h1 className="text-xl font-semibold tracking-tight">
           {mode === "create" ? t.bills.newBill : t.bills.editBill}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
+        </h1>
+      </div>
+      <div className="md:px-6 md:pb-6">
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <form id="bill-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
             {error && (
               <div className="p-3 text-sm text-red-500 bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded-md">
                 {error}
@@ -581,28 +580,33 @@ export function BillForm({ initialData, categories, members, currentUserId, mode
               </div>
             </div>
 
-            <div className="flex flex-col gap-3 pt-4">
-              <Button type="submit" disabled={isLoading} size="lg" className="w-full">
-                {isLoading
-                  ? t.bills.saving
-                  : mode === "create"
-                    ? t.bills.create
-                    : t.bills.update}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => router.push("/bills")}
-                disabled={isLoading}
-                size="lg"
-                className="w-full"
-              >
-                {t.common.cancel}
-              </Button>
-            </div>
+            {/* Spacer for sticky button on mobile */}
+            <div className="h-20 md:hidden" />
           </form>
         </Form>
-      </CardContent>
-    </Card>
+      </div>
+
+      {/* Sticky submit button on mobile, inline on desktop */}
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur-sm border-t md:relative md:border-t-0 md:bg-transparent md:backdrop-blur-none md:p-6 md:pt-0">
+        <div className="flex flex-col gap-2 max-w-2xl mx-auto md:max-w-none">
+          <Button type="submit" form="bill-form" disabled={isLoading} size="lg" className="w-full">
+            {isLoading
+              ? t.bills.saving
+              : mode === "create"
+                ? t.bills.create
+                : t.bills.update}
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => router.push("/bills")}
+            disabled={isLoading}
+            className="w-full md:hidden"
+          >
+            {t.common.cancel}
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 }

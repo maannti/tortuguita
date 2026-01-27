@@ -49,7 +49,7 @@ export default async function NewBillPage() {
   const members = memberships.map((m) => m.user)
 
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-2xl mx-auto">
       <BillForm
         mode="create"
         categories={categories}
