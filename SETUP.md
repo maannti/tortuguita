@@ -103,6 +103,28 @@ If you want to enable Google sign-in:
 5. Add authorized redirect URI: `http://localhost:3000/api/auth/callback/google`
 6. Copy the Client ID and Client Secret to your `.env` file
 
+## Email Configuration (Resend)
+
+Password recovery requires email functionality. This project uses [Resend](https://resend.com) for transactional emails.
+
+### Setup Steps
+
+1. **Create a Resend account** at [resend.com](https://resend.com)
+2. **Get your API key** from the Resend dashboard
+3. **Add a domain** at [resend.com/domains](https://resend.com/domains):
+   - Add your domain (e.g., `info.yourdomain.com`)
+   - Add the DNS records Resend provides (DKIM, SPF, MX)
+   - Wait for verification (usually a few minutes)
+4. **Add to your `.env` file**:
+   ```bash
+   RESEND_API_KEY="re_xxxxxxxxxxxx"
+   RESEND_FROM_EMAIL="noreply@info.yourdomain.com"
+   ```
+
+### Testing Without a Domain
+
+If you don't have a custom domain yet, Resend provides a sandbox sender (`onboarding@resend.dev`). However, this can **only send emails to the email address registered with your Resend account**. This is useful for testing but won't work for real users.
+
 ## Production Deployment
 
 ### Deploying to Vercel
@@ -113,6 +135,7 @@ If you want to enable Google sign-in:
    - `DATABASE_URL`
    - `NEXTAUTH_SECRET`
    - `NEXTAUTH_URL` (your production URL)
+   - `RESEND_API_KEY` and `RESEND_FROM_EMAIL` (for password recovery emails)
    - `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` (if using Google OAuth)
 4. Deploy
 
@@ -188,6 +211,14 @@ If sign-in fails:
 1. Make sure NEXTAUTH_SECRET is set in .env
 2. Verify NEXTAUTH_URL matches your current URL
 3. Clear browser cookies and try again
+
+### Password Recovery Emails Not Sending
+
+If password reset emails aren't being delivered:
+1. Verify `RESEND_API_KEY` is set in your `.env` file
+2. Check that `RESEND_FROM_EMAIL` uses a verified domain (not `onboarding@resend.dev`)
+3. Confirm your domain is verified in the Resend dashboard
+4. Check server logs for Resend API errors
 
 ### Build Errors
 

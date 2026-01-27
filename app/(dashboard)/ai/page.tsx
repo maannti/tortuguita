@@ -2,8 +2,6 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { ChatMessage } from "@/components/ai/chat-message";
 import { ConversationSidebar } from "@/components/ai/conversation-sidebar";
 import { SendIcon } from "lucide-react";
@@ -443,23 +441,36 @@ export default function AIPage() {
           </div>
 
           {/* Mobile Input - At bottom */}
-          <div className="flex-shrink-0 bg-background px-5 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
+          <div className="flex-shrink-0 bg-background px-4 py-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
             <form onSubmit={handleSubmit}>
-              <div className="flex items-center gap-3 bg-muted rounded-3xl px-4 py-2 min-h-[56px]">
-                <Textarea
+              <div className="flex items-end gap-2 bg-muted rounded-3xl px-4 py-2">
+                <textarea
                   ref={textareaRef}
                   value={input}
-                  onChange={(e) => setInput(e.target.value)}
+                  onChange={(e) => {
+                    setInput(e.target.value);
+                    e.target.style.height = "auto";
+                    e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
+                  }}
                   onKeyDown={handleKeyDown}
+                  onFocus={(e) => {
+                    // Scroll input into view when keyboard opens
+                    setTimeout(() => {
+                      e.target.scrollIntoView({ behavior: "smooth", block: "center" });
+                    }, 300);
+                  }}
                   placeholder={t.ai.placeholder}
                   disabled={isLoading}
-                  className="flex-1 min-h-[24px] max-h-[120px] resize-none overflow-y-auto bg-transparent border-none shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 py-0 px-0 leading-6 text-[16px] placeholder:text-muted-foreground/70 self-center"
+                  enterKeyHint="send"
+                  autoComplete="off"
+                  autoCorrect="on"
+                  className="flex-1 min-h-[24px] max-h-[120px] resize-none overflow-y-auto bg-transparent border-none outline-none py-1 px-0 leading-6 text-[16px] placeholder:text-muted-foreground/70"
                   rows={1}
                 />
                 <button
                   type="submit"
                   disabled={isLoading || !input.trim()}
-                  className="flex-shrink-0 w-9 h-9 rounded-full bg-primary text-primary-foreground disabled:opacity-40 transition-opacity grid place-items-center self-center"
+                  className="flex-shrink-0 w-9 h-9 rounded-full bg-primary text-primary-foreground disabled:opacity-40 transition-opacity grid place-items-center mb-0.5"
                 >
                   <SendIcon className="h-4 w-4" />
                 </button>
