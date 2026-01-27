@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
     });
 
     // 3. Build context for Claude
-    const context = await buildContext(session.user.currentOrganizationId);
+    const context = await buildContext(session.user.currentOrganizationId, session.user.id);
 
     // 4. Build message history for Claude
     const messageHistory: any[] = conversation.messages.map((m) => ({
@@ -337,23 +337,30 @@ export async function POST(request: NextRequest) {
 function buildSystemPrompt(context: any): string {
   return buildSafeSystemPrompt({
     categories: context.categories,
+    incomeCategories: context.incomeCategories,
     currentMonthTotal: context.currentMonthTotal,
     billCount: context.billCount,
     users: context.users,
+    currentUserName: context.currentUserName,
     currentDate: format(new Date(), "yyyy-MM-dd"),
   });
 }
 
 // Helper to build context
-async function buildContext(organizationId: string) {
+async function buildContext(organizationId: string, currentUserId: string) {
   const now = new Date();
   const monthStart = startOfMonth(now);
   const monthEnd = endOfMonth(now);
 
-  const [categories, currentMonthBills, users] = await Promise.all([
+  const [categories, incomeCategories, currentMonthBills, users, currentUser] = await Promise.all([
     prisma.billType.findMany({
       where: { organizationId },
       select: { id: true, name: true, color: true, icon: true, isCreditCard: true },
+      orderBy: { name: "asc" },
+    }),
+    prisma.incomeType.findMany({
+      where: { organizationId },
+      select: { id: true, name: true, color: true, icon: true, isRecurring: true },
       orderBy: { name: "asc" },
     }),
     prisma.bill.aggregate({
@@ -369,12 +376,18 @@ async function buildContext(organizationId: string) {
       select: { id: true, name: true },
       orderBy: { name: "asc" },
     }),
+    prisma.user.findUnique({
+      where: { id: currentUserId },
+      select: { name: true },
+    }),
   ]);
 
   return {
     categories,
+    incomeCategories,
     currentMonthTotal: Number(currentMonthBills._sum.amount || 0).toFixed(2),
     billCount: currentMonthBills._count,
     users,
+    currentUserName: currentUser?.name || "Unknown",
   };
 }

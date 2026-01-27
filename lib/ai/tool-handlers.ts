@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { billSchema } from "@/lib/validations/bill";
 import { billTypeSchema } from "@/lib/validations/bill-type";
+import { incomeSchema } from "@/lib/validations/income";
+import { incomeTypeSchema } from "@/lib/validations/income-type";
 import { startOfMonth, endOfMonth, subMonths, startOfYear, format } from "date-fns";
 import { Prisma } from "@prisma/client";
 
@@ -34,6 +36,27 @@ export async function handleToolCall(
 
     case "delete_category":
       return await deleteCategory(toolInput, organizationId);
+
+    case "create_income":
+      return await createIncome(toolInput, userId, organizationId);
+
+    case "create_income_type":
+      return await createIncomeType(toolInput, organizationId);
+
+    case "search_incomes":
+      return await searchIncomes(toolInput, userId, organizationId);
+
+    case "update_income":
+      return await updateIncome(toolInput, organizationId);
+
+    case "delete_income":
+      return await deleteIncome(toolInput, organizationId);
+
+    case "update_income_type":
+      return await updateIncomeType(toolInput, organizationId);
+
+    case "delete_income_type":
+      return await deleteIncomeType(toolInput, organizationId);
 
     default:
       throw new Error(`Unknown tool: ${toolName}`);
@@ -886,6 +909,616 @@ async function deleteCategory(input: any, organizationId: string) {
     return {
       success: false,
       error: error.message || "Failed to delete category",
+    };
+  }
+}
+
+// Income handlers
+async function createIncome(input: any, userId: string, organizationId: string) {
+  try {
+    // 1. Find income type by name (case-insensitive)
+    const categoryName = input.categoryName;
+    const incomeType = await prisma.incomeType.findFirst({
+      where: {
+        organizationId,
+        name: { equals: categoryName, mode: "insensitive" },
+      },
+    });
+
+    if (!incomeType) {
+      const availableCategories = await prisma.incomeType.findMany({
+        where: { organizationId },
+        select: { name: true },
+        take: 10,
+      });
+
+      return {
+        success: false,
+        error: `Category "${categoryName}" doesn't exist. Available categories: ${availableCategories.map((c) => c.name).join(", ")}. Would you like me to create this category?`,
+      };
+    }
+
+    // 2. Resolve userName to userId in assignments
+    let resolvedAssignments: { userId: string; percentage: number }[] = [];
+    if (input.assignments && input.assignments.length > 0) {
+      const users = await prisma.user.findMany({
+        where: { organizationId },
+        select: { id: true, name: true },
+      });
+
+      const userMap = new Map<string, string>();
+      users.forEach((u) => {
+        if (u.name) {
+          userMap.set(u.name.toLowerCase(), u.id);
+        }
+      });
+
+      for (const assignment of input.assignments) {
+        const resolvedUserId = userMap.get(assignment.userName.toLowerCase());
+
+        if (!resolvedUserId) {
+          const availableUsers = users
+            .filter((u) => u.name)
+            .map((u) => u.name)
+            .join(", ");
+
+          return {
+            success: false,
+            error: `User "${assignment.userName}" not found. Available users: ${availableUsers}`,
+          };
+        }
+
+        resolvedAssignments.push({
+          userId: resolvedUserId,
+          percentage: assignment.percentage,
+        });
+      }
+    }
+
+    // 3. Validate and create income
+    const incomeData = {
+      label: input.label,
+      amount: input.amount,
+      incomeDate: new Date(input.incomeDate),
+      incomeTypeId: incomeType.id,
+      notes: input.notes,
+      assignments: resolvedAssignments,
+    };
+
+    const validated = incomeSchema.parse(incomeData);
+
+    const income = await prisma.income.create({
+      data: {
+        label: validated.label,
+        amount: validated.amount,
+        incomeDate: validated.incomeDate,
+        incomeTypeId: validated.incomeTypeId,
+        notes: validated.notes,
+        organizationId,
+        userId,
+        assignments: {
+          create: validated.assignments?.map((a) => ({
+            userId: a.userId,
+            percentage: a.percentage,
+          })),
+        },
+      },
+      include: {
+        incomeType: true,
+        assignments: {
+          include: {
+            user: { select: { name: true } },
+          },
+        },
+      },
+    });
+
+    return {
+      success: true,
+      message: `Created income: ${income.label}`,
+      income: {
+        id: income.id,
+        label: income.label,
+        amount: Number(income.amount),
+        category: income.incomeType.name,
+        incomeDate: format(income.incomeDate, "yyyy-MM-dd"),
+        assignments: income.assignments.map((a) => ({
+          user: a.user.name,
+          percentage: Number(a.percentage),
+        })),
+      },
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      error: error.message || "Failed to create income",
+    };
+  }
+}
+
+async function createIncomeType(input: any, organizationId: string) {
+  try {
+    const existing = await prisma.incomeType.findFirst({
+      where: {
+        organizationId,
+        name: { equals: input.name, mode: "insensitive" },
+      },
+    });
+
+    if (existing) {
+      return {
+        success: false,
+        error: `Income category "${input.name}" already exists.`,
+      };
+    }
+
+    const icon = input.icon || (input.isRecurring ? "💰" : undefined);
+
+    const validated = incomeTypeSchema.parse({
+      name: input.name,
+      description: input.description,
+      color: input.color || "#10b981",
+      icon,
+      isRecurring: input.isRecurring ?? false,
+    });
+
+    const incomeType = await prisma.incomeType.create({
+      data: {
+        ...validated,
+        organizationId,
+      },
+    });
+
+    const recurringNote = incomeType.isRecurring ? " (recurrente)" : "";
+
+    return {
+      success: true,
+      message: `Created income category: ${incomeType.name}${recurringNote}`,
+      category: {
+        id: incomeType.id,
+        name: incomeType.name,
+        color: incomeType.color,
+        icon: incomeType.icon,
+        isRecurring: incomeType.isRecurring,
+      },
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      error: error.message || "Failed to create income category",
+    };
+  }
+}
+
+async function searchIncomes(input: any, userId: string, organizationId: string) {
+  try {
+    const where: Prisma.IncomeWhereInput = {
+      organizationId,
+    };
+
+    if (input.createdByMe) {
+      where.userId = userId;
+    }
+
+    if (input.assignedToUser) {
+      const user = await prisma.user.findFirst({
+        where: {
+          organizationId,
+          name: { equals: input.assignedToUser, mode: "insensitive" },
+        },
+      });
+
+      if (!user) {
+        return {
+          success: false,
+          error: `User "${input.assignedToUser}" not found`,
+        };
+      }
+
+      where.assignments = {
+        some: {
+          userId: user.id,
+        },
+      };
+    }
+
+    if (input.categoryName) {
+      const incomeType = await prisma.incomeType.findFirst({
+        where: {
+          organizationId,
+          name: { contains: input.categoryName, mode: "insensitive" },
+        },
+      });
+      if (incomeType) {
+        where.incomeTypeId = incomeType.id;
+      } else {
+        return {
+          success: false,
+          error: `Category "${input.categoryName}" not found`,
+        };
+      }
+    }
+
+    if (input.startDate || input.endDate) {
+      where.incomeDate = {};
+      if (input.startDate) where.incomeDate.gte = new Date(input.startDate);
+      if (input.endDate) where.incomeDate.lte = new Date(input.endDate);
+    }
+
+    if (input.minAmount || input.maxAmount) {
+      where.amount = {};
+      if (input.minAmount) where.amount.gte = input.minAmount;
+      if (input.maxAmount) where.amount.lte = input.maxAmount;
+    }
+
+    if (input.searchText) {
+      where.OR = [
+        { label: { contains: input.searchText, mode: "insensitive" } },
+        { notes: { contains: input.searchText, mode: "insensitive" } },
+      ];
+    }
+
+    const incomes = await prisma.income.findMany({
+      where,
+      include: {
+        incomeType: true,
+        user: { select: { name: true } },
+        assignments: {
+          include: {
+            user: { select: { id: true, name: true } },
+          },
+        },
+      },
+      orderBy: { incomeDate: "desc" },
+      take: input.limit || 10,
+    });
+
+    return {
+      success: true,
+      incomes: incomes.map((i) => ({
+        id: i.id,
+        label: i.label,
+        amount: Number(i.amount),
+        category: i.incomeType.name,
+        incomeDate: format(i.incomeDate, "MMM d, yyyy"),
+        addedBy: i.user.name,
+        notes: i.notes,
+        assignments:
+          i.assignments.length > 0
+            ? i.assignments.map((a) => ({
+                user: a.user.name,
+                percentage: Number(a.percentage),
+              }))
+            : undefined,
+      })),
+      count: incomes.length,
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      error: error.message || "Failed to search incomes",
+    };
+  }
+}
+
+async function updateIncome(input: any, organizationId: string) {
+  try {
+    const existingIncome = await prisma.income.findFirst({
+      where: {
+        id: input.incomeId,
+        organizationId,
+      },
+      include: {
+        incomeType: true,
+      },
+    });
+
+    if (!existingIncome) {
+      return {
+        success: false,
+        error: "Income not found",
+      };
+    }
+
+    const updateData: any = {};
+
+    if (input.label) updateData.label = input.label;
+    if (input.amount) updateData.amount = input.amount;
+    if (input.incomeDate) updateData.incomeDate = new Date(input.incomeDate);
+    if (input.notes !== undefined) updateData.notes = input.notes;
+
+    if (input.categoryName) {
+      const incomeType = await prisma.incomeType.findFirst({
+        where: {
+          organizationId,
+          name: { equals: input.categoryName, mode: "insensitive" },
+        },
+      });
+
+      if (!incomeType) {
+        return {
+          success: false,
+          error: `Category "${input.categoryName}" doesn't exist`,
+        };
+      }
+
+      updateData.incomeTypeId = incomeType.id;
+    }
+
+    if (input.assignments) {
+      const users = await prisma.user.findMany({
+        where: { organizationId },
+        select: { id: true, name: true },
+      });
+
+      const userMap = new Map<string, string>();
+      users.forEach((u) => {
+        if (u.name) {
+          userMap.set(u.name.toLowerCase(), u.id);
+        }
+      });
+
+      const resolvedAssignments = [];
+
+      for (const assignment of input.assignments) {
+        const resolvedUserId = userMap.get(assignment.userName.toLowerCase());
+        if (!resolvedUserId) {
+          const availableUsers = users
+            .filter((u) => u.name)
+            .map((u) => u.name)
+            .join(", ");
+          return {
+            success: false,
+            error: `User "${assignment.userName}" not found. Available users: ${availableUsers}`,
+          };
+        }
+        resolvedAssignments.push({
+          userId: resolvedUserId,
+          percentage: assignment.percentage,
+        });
+      }
+
+      updateData.assignments = {
+        deleteMany: {},
+        create: resolvedAssignments,
+      };
+    }
+
+    const updatedIncome = await prisma.income.update({
+      where: { id: input.incomeId },
+      data: updateData,
+      include: {
+        incomeType: true,
+        assignments: {
+          include: {
+            user: { select: { name: true } },
+          },
+        },
+      },
+    });
+
+    return {
+      success: true,
+      message: `Updated income: ${updatedIncome.label}`,
+      income: {
+        id: updatedIncome.id,
+        label: updatedIncome.label,
+        amount: Number(updatedIncome.amount),
+        category: updatedIncome.incomeType.name,
+        incomeDate: format(updatedIncome.incomeDate, "yyyy-MM-dd"),
+        assignments:
+          updatedIncome.assignments.length > 0
+            ? updatedIncome.assignments.map((a) => ({
+                user: a.user.name,
+                percentage: Number(a.percentage),
+              }))
+            : undefined,
+      },
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      error: error.message || "Failed to update income",
+    };
+  }
+}
+
+async function deleteIncome(input: any, organizationId: string) {
+  try {
+    if (!input.confirmed) {
+      const income = await prisma.income.findFirst({
+        where: {
+          id: input.incomeId,
+          organizationId,
+        },
+        include: {
+          incomeType: true,
+        },
+      });
+
+      if (!income) {
+        return {
+          success: false,
+          error: "Income not found",
+        };
+      }
+
+      return {
+        success: false,
+        needsConfirmation: true,
+        message: `Are you sure you want to delete the income "${income.label}" ($${Number(income.amount)}) from ${format(income.incomeDate, "MMM d, yyyy")}? This action cannot be undone.`,
+        incomeDetails: {
+          id: income.id,
+          label: income.label,
+          amount: Number(income.amount),
+          category: income.incomeType.name,
+        },
+      };
+    }
+
+    const income = await prisma.income.findFirst({
+      where: {
+        id: input.incomeId,
+        organizationId,
+      },
+    });
+
+    if (!income) {
+      return {
+        success: false,
+        error: "Income not found",
+      };
+    }
+
+    await prisma.income.delete({
+      where: { id: input.incomeId },
+    });
+
+    return {
+      success: true,
+      message: `Successfully deleted income: ${income.label}`,
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      error: error.message || "Failed to delete income",
+    };
+  }
+}
+
+async function updateIncomeType(input: any, organizationId: string) {
+  try {
+    let incomeType;
+    if (input.categoryId) {
+      incomeType = await prisma.incomeType.findFirst({
+        where: {
+          id: input.categoryId,
+          organizationId,
+        },
+      });
+    } else if (input.categoryName) {
+      incomeType = await prisma.incomeType.findFirst({
+        where: {
+          organizationId,
+          name: { equals: input.categoryName, mode: "insensitive" },
+        },
+      });
+    } else {
+      return {
+        success: false,
+        error: "Either categoryId or categoryName is required",
+      };
+    }
+
+    if (!incomeType) {
+      return {
+        success: false,
+        error: "Income category not found",
+      };
+    }
+
+    const updateData: any = {};
+    if (input.name) updateData.name = input.name;
+    if (input.description !== undefined) updateData.description = input.description;
+    if (input.color) updateData.color = input.color;
+    if (input.icon !== undefined) updateData.icon = input.icon;
+
+    const updatedIncomeType = await prisma.incomeType.update({
+      where: { id: incomeType.id },
+      data: updateData,
+    });
+
+    return {
+      success: true,
+      message: `Updated income category: ${updatedIncomeType.name}`,
+      category: {
+        id: updatedIncomeType.id,
+        name: updatedIncomeType.name,
+        color: updatedIncomeType.color,
+        icon: updatedIncomeType.icon,
+      },
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      error: error.message || "Failed to update income category",
+    };
+  }
+}
+
+async function deleteIncomeType(input: any, organizationId: string) {
+  try {
+    let incomeType;
+    if (input.categoryId) {
+      incomeType = await prisma.incomeType.findFirst({
+        where: {
+          id: input.categoryId,
+          organizationId,
+        },
+      });
+    } else if (input.categoryName) {
+      incomeType = await prisma.incomeType.findFirst({
+        where: {
+          organizationId,
+          name: { equals: input.categoryName, mode: "insensitive" },
+        },
+      });
+    } else {
+      return {
+        success: false,
+        error: "Either categoryId or categoryName is required",
+      };
+    }
+
+    if (!incomeType) {
+      return {
+        success: false,
+        error: "Income category not found",
+      };
+    }
+
+    if (!input.confirmed) {
+      const incomeCount = await prisma.income.count({
+        where: {
+          incomeTypeId: incomeType.id,
+          organizationId,
+        },
+      });
+
+      return {
+        success: false,
+        needsConfirmation: true,
+        message: `Are you sure you want to delete the income category "${incomeType.name}"? ${incomeCount > 0 ? `This category is used by ${incomeCount} income(s). ` : ""}This action cannot be undone.`,
+        categoryDetails: {
+          id: incomeType.id,
+          name: incomeType.name,
+          incomeCount,
+        },
+      };
+    }
+
+    try {
+      await prisma.incomeType.delete({
+        where: { id: incomeType.id },
+      });
+
+      return {
+        success: true,
+        message: `Successfully deleted income category: ${incomeType.name}`,
+      };
+    } catch (dbError: any) {
+      if (dbError.code === "P2003") {
+        return {
+          success: false,
+          error: `Cannot delete income category "${incomeType.name}" because it is being used by existing incomes. Please reassign or delete those incomes first.`,
+        };
+      }
+      throw dbError;
+    }
+  } catch (error: any) {
+    return {
+      success: false,
+      error: error.message || "Failed to delete income category",
     };
   }
 }

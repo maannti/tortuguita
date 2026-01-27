@@ -54,10 +54,24 @@ export function BillForm({ initialData, categories, members, currentUserId, mode
   const [customCuotas, setCustomCuotas] = useState("");
   const [amountDisplay, setAmountDisplay] = useState(() => {
     if (initialData?.amount && Number(initialData.amount) > 0) {
-      return String(initialData.amount).replace(".", ",");
+      return formatAmountDisplay(Number(initialData.amount));
     }
     return "";
   });
+
+  // Format number with thousands separator (.) and decimal separator (,)
+  function formatAmountDisplay(value: number): string {
+    const [intPart, decPart] = value.toString().split(".");
+    const formattedInt = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    return decPart ? `${formattedInt},${decPart}` : formattedInt;
+  }
+
+  // Parse display string back to number
+  function parseAmountDisplay(display: string): number {
+    // Remove thousands separators, replace decimal comma with dot
+    const normalized = display.replace(/\./g, "").replace(",", ".");
+    return parseFloat(normalized) || 0;
+  }
 
   const form = useForm<BillFormData>({
     resolver: zodResolver(billSchema),
@@ -224,33 +238,39 @@ export function BillForm({ initialData, categories, members, currentUserId, mode
                 <FormItem>
                   <FormLabel>{t.bills.amount}</FormLabel>
                   <FormControl>
-                    <Input
-                      type="text"
-                      inputMode="decimal"
-                      placeholder="0,00"
-                      disabled={isLoading}
-                      value={amountDisplay}
-                      onChange={(e) => {
-                        const input = e.target.value;
-                        // Allow digits and one comma/dot as decimal separator
-                        const cleaned = input.replace(/[^0-9,.]/g, "");
-                        // Replace dot with comma for display, but only allow one separator
-                        const withComma = cleaned.replace(".", ",");
-                        const parts = withComma.split(",");
-                        const formatted = parts.length > 2
-                          ? parts[0] + "," + parts.slice(1).join("")
-                          : withComma;
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                      <Input
+                        type="text"
+                        inputMode="decimal"
+                        placeholder="0,00"
+                        disabled={isLoading}
+                        value={amountDisplay}
+                        onChange={(e) => {
+                          const input = e.target.value;
+                          // Remove everything except digits and comma (decimal separator)
+                          const cleaned = input.replace(/[^0-9,]/g, "");
+                          // Only allow one comma
+                          const parts = cleaned.split(",");
+                          const intPart = parts[0].replace(/^0+(?=\d)/, ""); // Remove leading zeros
+                          const decPart = parts[1]?.slice(0, 2); // Max 2 decimal places
 
-                        setAmountDisplay(formatted);
+                          // Format with thousands separator
+                          const formattedInt = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+                          const formatted = decPart !== undefined ? `${formattedInt},${decPart}` : formattedInt;
 
-                        // Convert to number for form state
-                        const numericValue = parseFloat(formatted.replace(",", ".")) || 0;
-                        field.onChange(numericValue);
-                      }}
-                      onBlur={field.onBlur}
-                      name={field.name}
-                      ref={field.ref}
-                    />
+                          setAmountDisplay(formatted);
+
+                          // Convert to number for form state
+                          const numericValue = parseAmountDisplay(formatted);
+                          field.onChange(numericValue);
+                        }}
+                        onBlur={field.onBlur}
+                        name={field.name}
+                        ref={field.ref}
+                        className="pl-7"
+                      />
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>

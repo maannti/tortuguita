@@ -70,12 +70,13 @@ function MenuIcon({ isOpen, className }: { isOpen: boolean; className?: string }
   )
 }
 
-type NavKey = "aiAssistant" | "dashboard" | "bills" | "categories" | "settings"
+type NavKey = "aiAssistant" | "dashboard" | "bills" | "incomes" | "categories" | "settings"
 
 const navItems: { key: NavKey; href: string }[] = [
   { key: "aiAssistant", href: "/ai" },
   { key: "dashboard", href: "/dashboard" },
   { key: "bills", href: "/bills" },
+  { key: "incomes", href: "/incomes" },
   { key: "categories", href: "/categories" },
   { key: "settings", href: "/settings/organization" },
 ]

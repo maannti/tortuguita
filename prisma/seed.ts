@@ -5,8 +5,8 @@ const prisma = new PrismaClient()
 async function main() {
   console.log('Starting seed...')
 
-  // Default categories
-  const defaultCategories = [
+  // Default bill categories
+  const defaultBillCategories = [
     { name: 'Groceries', description: 'Food and household items', color: '#10b981', icon: '🛒' },
     { name: 'Utilities', description: 'Electric, water, gas, internet', color: '#3b82f6', icon: '💡' },
     { name: 'Rent', description: 'Monthly rent or mortgage', color: '#ef4444', icon: '🏠' },
@@ -17,9 +17,19 @@ async function main() {
     { name: 'Shopping', description: 'Clothing and personal items', color: '#f97316', icon: '🛍️' },
   ]
 
+  // Default income categories
+  const defaultIncomeCategories = [
+    { name: 'Salario', description: 'Salario mensual o nómina', color: '#10b981', icon: '💰', isRecurring: true },
+    { name: 'Freelance', description: 'Trabajo independiente o proyectos', color: '#3b82f6', icon: '💼', isRecurring: false },
+    { name: 'Inversiones', description: 'Dividendos, intereses, ganancias', color: '#8b5cf6', icon: '📈', isRecurring: false },
+    { name: 'Alquiler', description: 'Ingresos por alquiler de propiedades', color: '#f59e0b', icon: '🏠', isRecurring: true },
+    { name: 'Otros', description: 'Otros ingresos', color: '#6b7280', icon: '💵', isRecurring: false },
+  ]
+
   console.log('Seed completed successfully!')
   console.log('\nNote: Categories will be created when users sign up.')
-  console.log('Default categories available:', defaultCategories.map(c => c.name).join(', '))
+  console.log('Default bill categories available:', defaultBillCategories.map(c => c.name).join(', '))
+  console.log('Default income categories available:', defaultIncomeCategories.map(c => c.name).join(', '))
 }
 
 main()
