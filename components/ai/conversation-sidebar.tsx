@@ -68,14 +68,14 @@ export function ConversationSidebar({
     const currentX = e.touches[0].clientX;
     const deltaX = currentX - swipeRef.current.startX;
 
-    // Only allow left swipe
-    if (deltaX < -10) {
+    // Only allow right swipe (to reveal delete on left side)
+    if (deltaX > 10) {
       swipeRef.current.swiping = true;
       swipeRef.current.currentX = currentX;
 
       // Update the element transform directly for smooth animation
       const element = e.currentTarget as HTMLElement;
-      const translateX = Math.max(deltaX, -80); // Limit swipe distance
+      const translateX = Math.min(deltaX, 80); // Limit swipe distance
       element.style.transform = `translateX(${translateX}px)`;
     }
   };
@@ -87,8 +87,8 @@ export function ConversationSidebar({
     const deltaX = swipeRef.current.currentX - swipeRef.current.startX;
 
     // If swiped far enough, keep it open
-    if (deltaX < -40) {
-      element.style.transform = "translateX(-72px)";
+    if (deltaX > 40) {
+      element.style.transform = "translateX(72px)";
       setSwipedId(id);
     } else {
       element.style.transform = "translateX(0)";
@@ -130,8 +130,8 @@ export function ConversationSidebar({
         ) : (
           conversations.map((conv) => (
             <div key={conv.id} className="relative overflow-hidden rounded-lg">
-              {/* Delete button behind */}
-              <div className="absolute inset-y-0 right-0 w-20 flex items-center justify-center bg-destructive rounded-r-lg">
+              {/* Delete button behind (on the left) */}
+              <div className="absolute inset-y-0 left-0 w-20 flex items-center justify-center bg-destructive rounded-l-lg">
                 <button
                   onClick={(e) => handleDelete(conv.id, e)}
                   className="w-full h-full flex items-center justify-center"
@@ -147,7 +147,7 @@ export function ConversationSidebar({
                 onTouchMove={(e) => handleTouchMove(e, conv.id)}
                 onTouchEnd={(e) => handleTouchEnd(e, conv.id)}
                 style={{
-                  transform: swipedId === conv.id ? "translateX(-72px)" : "translateX(0)",
+                  transform: swipedId === conv.id ? "translateX(72px)" : "translateX(0)",
                 }}
                 className={cn(
                   "relative w-full text-left p-3 rounded-lg transition-colors group cursor-pointer bg-background",
