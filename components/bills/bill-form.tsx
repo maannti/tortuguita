@@ -41,11 +41,12 @@ interface BillFormProps {
     name: string | null;
     email: string | null;
   }>;
+  memberIncomes?: Record<string, number>; // userId -> total income for current month
   currentUserId: string;
   mode: "create" | "edit";
 }
 
-export function BillForm({ initialData, categories, members, currentUserId, mode }: BillFormProps) {
+export function BillForm({ initialData, categories, members, memberIncomes = {}, currentUserId, mode }: BillFormProps) {
   const router = useRouter();
   const t = useTranslations();
   const [isLoading, setIsLoading] = useState(false);
@@ -82,14 +83,25 @@ export function BillForm({ initialData, categories, members, currentUserId, mode
       dueDate: null,
       billTypeId: "",
       notes: "",
-      assignments: mode === "create" ? [{ userId: currentUserId, percentage: 100 }] : [],
+      assignments: [],
     },
   });
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append, remove: removeField } = useFieldArray({
     control: form.control,
     name: "assignments",
   });
+
+  // Custom remove that sets remaining member to 100% if only one left
+  const remove = (index: number) => {
+    removeField(index);
+    // If only 1 member will remain, set their percentage to 100
+    if (fields.length === 2) {
+      setTimeout(() => {
+        form.setValue(`assignments.0.percentage`, 100);
+      }, 0);
+    }
+  };
 
   const assignments = form.watch("assignments");
   const totalPercentage = assignments?.reduce(
@@ -109,6 +121,40 @@ export function BillForm({ initialData, categories, members, currentUserId, mode
       form.setValue(`assignments.${index}.percentage`, share);
     });
   };
+
+  // Distribute percentages based on income ratio
+  const distributeByIncome = () => {
+    if (!assignments || assignments.length === 0) return;
+
+    // Calculate total income of assigned members
+    const totalIncome = assignments.reduce((sum, a) => {
+      return sum + (memberIncomes[a.userId] || 0);
+    }, 0);
+
+    if (totalIncome === 0) {
+      // No income data, fall back to equal distribution
+      distributeEqually();
+      return;
+    }
+
+    // Calculate percentage for each member based on their income ratio
+    let distributedTotal = 0;
+    assignments.forEach((assignment, index) => {
+      const income = memberIncomes[assignment.userId] || 0;
+      const percentage = Math.round((income / totalIncome) * 100);
+      distributedTotal += percentage;
+      form.setValue(`assignments.${index}.percentage`, percentage);
+    });
+
+    // Handle rounding errors - adjust first member to ensure total is 100
+    if (distributedTotal !== 100 && assignments.length > 0) {
+      const firstPercentage = Number(form.getValues(`assignments.0.percentage`)) || 0;
+      form.setValue(`assignments.0.percentage`, firstPercentage + (100 - distributedTotal));
+    }
+  };
+
+  // Check if we have income data for the current assignments
+  const hasIncomeData = assignments?.some(a => memberIncomes[a.userId] && memberIncomes[a.userId] > 0) ?? false;
 
   // Auto-adjust other members when one is changed
   const adjustOtherPercentages = (changedIndex: number, newValue: number) => {
@@ -436,12 +482,16 @@ export function BillForm({ initialData, categories, members, currentUserId, mode
 
             <div className="space-y-4">
               <div>
-                <h3 className="text-sm font-medium mb-2">
-                  {t.bills.assignToMembers}
-                </h3>
-                <p className="text-xs text-muted-foreground mb-4">
-                  {t.bills.splitBillDescription}
-                </p>
+                {fields.length > 0 && (
+                  <>
+                    <h3 className="text-sm font-medium mb-2">
+                      {t.bills.assignToMembers}
+                    </h3>
+                    <p className="text-xs text-muted-foreground mb-4">
+                      {t.bills.splitBillDescription}
+                    </p>
+                  </>
+                )}
 
                 {fields.map((field, index) => {
                   const assignedUserIds = assignments
@@ -450,14 +500,15 @@ export function BillForm({ initialData, categories, members, currentUserId, mode
                   const availableMembers = members.filter(
                     (m) => !assignedUserIds?.includes(m.id)
                   );
+                  const showPercentageControls = fields.length > 1;
 
                   return (
-                    <div key={field.id} className="flex flex-col md:flex-row gap-3 mb-4 p-3 bg-muted/30 rounded-lg">
+                    <div key={field.id} className="flex items-center gap-3 mb-3 p-3 bg-muted/30 rounded-lg">
                       <FormField
                         control={form.control}
                         name={`assignments.${index}.userId`}
                         render={({ field }) => (
-                          <FormItem className="w-full md:w-48">
+                          <FormItem className={showPercentageControls ? "w-full md:w-48" : "flex-1"}>
                             <Select
                               onValueChange={field.onChange}
                               value={field.value}
@@ -480,59 +531,61 @@ export function BillForm({ initialData, categories, members, currentUserId, mode
                           </FormItem>
                         )}
                       />
-                      <FormField
-                        control={form.control}
-                        name={`assignments.${index}.percentage`}
-                        render={({ field }) => (
-                          <FormItem className="flex-1">
-                            <FormControl>
-                              <div className="flex items-center gap-2">
-                                <div className="flex-1 min-w-0">
-                                  <Slider
-                                    min={0}
-                                    max={100}
-                                    step={1}
-                                    value={[Math.round(Number(field.value) || 0)]}
-                                    onValueChange={(values) => {
-                                      field.onChange(values[0]);
-                                      adjustOtherPercentages(index, values[0]);
-                                    }}
-                                    disabled={isLoading}
-                                    className="w-full"
-                                  />
+                      {showPercentageControls ? (
+                        <FormField
+                          control={form.control}
+                          name={`assignments.${index}.percentage`}
+                          render={({ field }) => (
+                            <FormItem className="flex-1">
+                              <FormControl>
+                                <div className="flex items-center gap-2">
+                                  <div className="flex-1 min-w-0">
+                                    <Slider
+                                      min={0}
+                                      max={100}
+                                      step={1}
+                                      value={[Math.round(Number(field.value) || 0)]}
+                                      onValueChange={(values) => {
+                                        field.onChange(values[0]);
+                                        adjustOtherPercentages(index, values[0]);
+                                      }}
+                                      disabled={isLoading}
+                                      className="w-full"
+                                    />
+                                  </div>
+                                  <div className="flex items-center gap-1 flex-shrink-0">
+                                    <Input
+                                      type="text"
+                                      inputMode="numeric"
+                                      value={Math.round(Number(field.value) || 0)}
+                                      onChange={(e) => {
+                                        const val = e.target.value.replace(/[^0-9]/g, "");
+                                        const num = Math.min(100, Math.max(0, parseInt(val) || 0));
+                                        field.onChange(num);
+                                        adjustOtherPercentages(index, num);
+                                      }}
+                                      disabled={isLoading}
+                                      className="w-14 h-8 text-center text-sm px-1"
+                                    />
+                                    <span className="text-sm">%</span>
+                                  </div>
                                 </div>
-                                <div className="flex items-center gap-1 flex-shrink-0">
-                                  <Input
-                                    type="text"
-                                    inputMode="numeric"
-                                    value={Math.round(Number(field.value) || 0)}
-                                    onChange={(e) => {
-                                      const val = e.target.value.replace(/[^0-9]/g, "");
-                                      const num = Math.min(100, Math.max(0, parseInt(val) || 0));
-                                      field.onChange(num);
-                                      adjustOtherPercentages(index, num);
-                                    }}
-                                    disabled={isLoading}
-                                    className="w-14 h-8 text-center text-sm px-1"
-                                  />
-                                  <span className="text-sm">%</span>
-                                </div>
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => remove(index)}
-                                  disabled={isLoading}
-                                  className="flex-shrink-0 h-8 w-8"
-                                >
-                                  <X className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      ) : null}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => remove(index)}
+                        disabled={isLoading}
+                        className="flex-shrink-0 h-8 w-8"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
                     </div>
                   );
                 })}
@@ -544,7 +597,7 @@ export function BillForm({ initialData, categories, members, currentUserId, mode
                       variant="outline"
                       size="sm"
                       onClick={() => {
-                        append({ userId: "", percentage: 0 });
+                        append({ userId: currentUserId, percentage: 100 });
                         // Auto-distribute after adding (use setTimeout to wait for state update)
                         setTimeout(() => {
                           const newCount = fields.length + 1;
@@ -563,16 +616,30 @@ export function BillForm({ initialData, categories, members, currentUserId, mode
                       {t.bills.addMember}
                     </Button>
                     {fields.length > 1 && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={distributeEqually}
-                        disabled={isLoading}
-                        className="w-full sm:w-auto text-muted-foreground"
-                      >
-                        Dividir en partes iguales
-                      </Button>
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={distributeEqually}
+                          disabled={isLoading}
+                          className="w-full sm:w-auto text-muted-foreground"
+                        >
+                          Dividir igual
+                        </Button>
+                        {hasIncomeData && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={distributeByIncome}
+                            disabled={isLoading}
+                            className="w-full sm:w-auto text-muted-foreground"
+                          >
+                            📊 Por ingresos
+                          </Button>
+                        )}
+                      </div>
                     )}
                   </div>
                 )}
