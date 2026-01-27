@@ -246,7 +246,7 @@ export function BillForm({ initialData, categories, members, memberIncomes = {},
   return (
     <div className="md:rounded-lg md:border md:bg-card md:shadow-sm overflow-hidden">
       <div className="px-4 pb-2 md:p-6 md:pb-4">
-        <h1 className="text-xl font-semibold tracking-tight">
+        <h1 className="text-2xl font-semibold tracking-tight">
           {mode === "create" ? t.bills.newBill : t.bills.editBill}
         </h1>
       </div>
@@ -384,82 +384,83 @@ export function BillForm({ initialData, categories, members, memberIncomes = {},
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="dueDate"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t.bills.dueDate}</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="date"
-                      disabled={isLoading}
-                      value={
-                        field.value && (field.value instanceof Date || typeof field.value === 'string')
-                          ? (field.value instanceof Date
-                              ? field.value
-                              : new Date(field.value)
-                            ).toISOString().split("T")[0]
-                          : ""
-                      }
-                      onChange={(e) => {
-                        const date = e.target.value
-                          ? new Date(e.target.value + "T00:00:00")
-                          : null;
-                        field.onChange(date);
-                      }}
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    {t.bills.dueDateDescription}
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Cuotas - only show for credit card categories */}
+            {/* Due date and Cuotas - only show for credit card categories */}
             {showCuotas && (
+              <>
+                <FormField
+                  control={form.control}
+                  name="dueDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t.bills.dueDate}</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="date"
+                          disabled={isLoading}
+                          value={
+                            field.value && (field.value instanceof Date || typeof field.value === 'string')
+                              ? (field.value instanceof Date
+                                  ? field.value
+                                  : new Date(field.value)
+                                ).toISOString().split("T")[0]
+                              : ""
+                          }
+                          onChange={(e) => {
+                            const date = e.target.value
+                              ? new Date(e.target.value + "T00:00:00")
+                              : null;
+                            field.onChange(date);
+                          }}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        {t.bills.dueDateDescription}
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               <div className="space-y-2">
-                <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                  Cuotas
-                </label>
-                <Select value={cuotas} onValueChange={(value) => {
-                  setCuotas(value);
-                  if (value !== "other") {
-                    setCustomCuotas("");
-                  }
-                }} disabled={isLoading}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sin cuotas" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="0">Sin cuotas</SelectItem>
-                    <SelectItem value="2">2 cuotas</SelectItem>
-                    <SelectItem value="3">3 cuotas</SelectItem>
-                    <SelectItem value="6">6 cuotas</SelectItem>
-                    <SelectItem value="12">12 cuotas</SelectItem>
-                    <SelectItem value="18">18 cuotas</SelectItem>
-                    <SelectItem value="24">24 cuotas</SelectItem>
-                    <SelectItem value="other">Otro...</SelectItem>
-                  </SelectContent>
-                </Select>
-                {cuotas === "other" && (
-                  <Input
-                    type="text"
-                    inputMode="numeric"
-                    placeholder="Número de cuotas"
-                    value={customCuotas}
-                    onChange={(e) => {
-                      // Only allow digits
-                      const value = e.target.value.replace(/[^0-9]/g, "");
-                      setCustomCuotas(value);
-                    }}
-                    disabled={isLoading}
-                    className="mt-2"
-                  />
-                )}
-              </div>
+                  <label className="text-sm font-semibold leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                    Cuotas
+                  </label>
+                  <Select value={cuotas} onValueChange={(value) => {
+                    setCuotas(value);
+                    if (value !== "other") {
+                      setCustomCuotas("");
+                    }
+                  }} disabled={isLoading}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Sin cuotas" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="0">Sin cuotas</SelectItem>
+                      <SelectItem value="2">2 cuotas</SelectItem>
+                      <SelectItem value="3">3 cuotas</SelectItem>
+                      <SelectItem value="6">6 cuotas</SelectItem>
+                      <SelectItem value="12">12 cuotas</SelectItem>
+                      <SelectItem value="18">18 cuotas</SelectItem>
+                      <SelectItem value="24">24 cuotas</SelectItem>
+                      <SelectItem value="other">Otro...</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {cuotas === "other" && (
+                    <Input
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="Número de cuotas"
+                      value={customCuotas}
+                      onChange={(e) => {
+                        // Only allow digits
+                        const value = e.target.value.replace(/[^0-9]/g, "");
+                        setCustomCuotas(value);
+                      }}
+                      disabled={isLoading}
+                      className="mt-2"
+                    />
+                  )}
+                </div>
+              </>
             )}
 
             <FormField
@@ -480,7 +481,7 @@ export function BillForm({ initialData, categories, members, memberIncomes = {},
               )}
             />
 
-            <div className="space-y-4">
+            <div className="space-y-4 pt-2">
               <div>
                 {fields.length > 0 && (
                   <>
@@ -503,43 +504,55 @@ export function BillForm({ initialData, categories, members, memberIncomes = {},
                   const showPercentageControls = fields.length > 1;
 
                   return (
-                    <div key={field.id} className="flex items-center gap-3 mb-3 p-3 bg-muted/30 rounded-lg">
-                      <FormField
-                        control={form.control}
-                        name={`assignments.${index}.userId`}
-                        render={({ field }) => (
-                          <FormItem className={showPercentageControls ? "w-full md:w-48" : "flex-1"}>
-                            <Select
-                              onValueChange={field.onChange}
-                              value={field.value}
-                              disabled={isLoading}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder={t.bills.selectMember} />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {availableMembers.map((member) => (
-                                  <SelectItem key={member.id} value={member.id}>
-                                    {member.name || member.email}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      {showPercentageControls ? (
+                    <div key={field.id} className="mb-3 p-3 bg-muted/30 rounded-lg space-y-3">
+                      <div className="flex items-center gap-3">
+                        <FormField
+                          control={form.control}
+                          name={`assignments.${index}.userId`}
+                          render={({ field }) => (
+                            <FormItem className="flex-1">
+                              <Select
+                                onValueChange={field.onChange}
+                                value={field.value}
+                                disabled={isLoading}
+                              >
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder={t.bills.selectMember} />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {availableMembers.map((member) => (
+                                    <SelectItem key={member.id} value={member.id}>
+                                      {member.name || member.email}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => remove(index)}
+                          disabled={isLoading}
+                          className="flex-shrink-0 h-8 w-8"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      {showPercentageControls && (
                         <FormField
                           control={form.control}
                           name={`assignments.${index}.percentage`}
                           render={({ field }) => (
-                            <FormItem className="flex-1">
+                            <FormItem>
                               <FormControl>
-                                <div className="flex items-center gap-2">
-                                  <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-3">
+                                  <div className="flex-1">
                                     <Slider
                                       min={0}
                                       max={100}
@@ -550,7 +563,6 @@ export function BillForm({ initialData, categories, members, memberIncomes = {},
                                         adjustOtherPercentages(index, values[0]);
                                       }}
                                       disabled={isLoading}
-                                      className="w-full"
                                     />
                                   </div>
                                   <div className="flex items-center gap-1 flex-shrink-0">
@@ -575,17 +587,7 @@ export function BillForm({ initialData, categories, members, memberIncomes = {},
                             </FormItem>
                           )}
                         />
-                      ) : null}
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => remove(index)}
-                        disabled={isLoading}
-                        className="flex-shrink-0 h-8 w-8"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
+                      )}
                     </div>
                   );
                 })}
@@ -644,21 +646,6 @@ export function BillForm({ initialData, categories, members, memberIncomes = {},
                   </div>
                 )}
 
-                {fields.length > 1 && (
-                  <div className="mt-3 flex justify-between items-center text-sm">
-                    <span className="text-muted-foreground">{t.bills.total}:</span>
-                    <span
-                      className={
-                        totalPercentage === 100
-                          ? "text-green-600 dark:text-green-400 font-medium"
-                          : "text-destructive font-medium"
-                      }
-                    >
-                      {Math.round(totalPercentage)}%
-                    </span>
-                  </div>
-                )}
-
                 {form.formState.errors.assignments?.message && (
                   <p className="text-sm text-destructive mt-2">
                     {form.formState.errors.assignments.message}
@@ -674,7 +661,7 @@ export function BillForm({ initialData, categories, members, memberIncomes = {},
       </div>
 
       {/* Sticky submit button on mobile, inline on desktop */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur-sm border-t md:relative md:border-t-0 md:bg-transparent md:backdrop-blur-none md:p-6 md:pt-0">
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur-sm md:relative md:bg-transparent md:backdrop-blur-none md:p-6 md:pt-0">
         <div className="flex flex-col gap-2 max-w-2xl mx-auto md:max-w-none">
           <Button type="submit" form="bill-form" disabled={isLoading} size="lg" className="w-full">
             {isLoading

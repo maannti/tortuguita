@@ -3,6 +3,7 @@ import { hash } from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { generateJoinCode } from "@/lib/organization-utils";
+import { createDefaultCategories } from "@/lib/default-categories";
 
 const organizationChoiceSchema = z.discriminatedUnion("type", [
   z.object({
@@ -102,6 +103,9 @@ export async function POST(request: NextRequest) {
               role: "owner",
             },
           });
+
+          // Create default categories for this organization
+          await createDefaultCategories(tx, orgId);
         } else if (choice.type === "create") {
           // Generate unique join code
           let joinCode = generateJoinCode();
@@ -133,6 +137,9 @@ export async function POST(request: NextRequest) {
               role: "owner",
             },
           });
+
+          // Create default categories for this organization
+          await createDefaultCategories(tx, orgId);
         } else {
           // Join existing organization
           const org = await tx.organization.findUnique({

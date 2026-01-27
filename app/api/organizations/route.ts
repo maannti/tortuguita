@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getUserOrganizations, generateJoinCode } from "@/lib/organization-utils";
+import { createDefaultCategories } from "@/lib/default-categories";
 import { z } from "zod";
 
 const createOrgSchema = z.object({
@@ -72,6 +73,9 @@ export async function POST(request: NextRequest) {
           role: "owner",
         },
       });
+
+      // Create default categories for this organization
+      await createDefaultCategories(tx, org.id);
 
       return org;
     });

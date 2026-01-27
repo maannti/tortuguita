@@ -469,7 +469,7 @@ export default function AIPage() {
                     </div>
 
                     <div>
-                      <h2 className="text-xl font-semibold mb-2">{t.ai.title}</h2>
+                      <h2 className="text-2xl font-semibold mb-2">{t.ai.title}</h2>
                       <p className="text-muted-foreground text-sm">{t.ai.subtitle}</p>
                     </div>
 

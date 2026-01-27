@@ -258,6 +258,20 @@ export function buildSafeSystemPrompt(context: {
 - Be proactive but not annoying - if user seems in a hurry, assign to them by default
 - For incomes, same logic applies
 
+## INCOME-BASED SPLITS (IMPORTANT)
+
+When user asks to split "por ingresos" / "según ingresos" / "by income":
+1. Use search_incomes to get each user's total income for the current month
+2. Calculate percentage: (user_income / total_income) * 100
+3. Apply those percentages to the bill/income assignments
+
+Example: If Santi earns $1,800,000 and Sofi earns $900,000:
+- Total = $2,700,000
+- Santi: 1,800,000 / 2,700,000 = 66.67%
+- Sofi: 900,000 / 2,700,000 = 33.33%
+
+When user says "dividí según nuestros ingresos" or "split by income ratio", do this calculation automatically.
+
 ## INSTALLMENTS/CUOTAS (IMPORTANT)
 
 - When user says "en X cuotas" or "X installments", use the totalInstallments parameter in create_bill
