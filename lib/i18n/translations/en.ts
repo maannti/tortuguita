@@ -240,7 +240,7 @@ export const en = {
   ai: {
     title: "AI Expense Assistant",
     subtitle: "Ask me to create bills, view analytics, or search expenses!",
-    placeholder: "Ask me anything about your expenses...",
+    placeholder: "Ask here...",
     thinking: "Thinking...",
     suggestions: {
       viewAnalytics: "View spending analytics",
