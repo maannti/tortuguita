@@ -389,13 +389,15 @@ export function Header() {
               <div className="space-y-2">
                 <button
                   onClick={() => setOrgSwitcherOpen(!orgSwitcherOpen)}
-                  className="w-full flex items-center gap-3 p-3 -mx-3 rounded-xl transition-colors hover:bg-muted active:bg-muted"
+                  className="w-full flex items-center gap-3 py-3 rounded-xl transition-colors hover:bg-muted active:bg-muted"
                 >
-                  {currentOrg?.isPersonal ? (
-                    <User className="h-5 w-5 text-muted-foreground" />
-                  ) : (
-                    <Home className="h-5 w-5 text-muted-foreground" />
-                  )}
+                  <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+                    {currentOrg?.isPersonal ? (
+                      <User className="h-5 w-5 text-muted-foreground" />
+                    ) : (
+                      <Home className="h-5 w-5 text-muted-foreground" />
+                    )}
+                  </div>
                   <span className="flex-1 text-left font-medium">{currentOrg?.name}</span>
                   <ChevronDown
                     className={cn(
@@ -443,7 +445,7 @@ export function Header() {
             {/* User info - clickable to expand */}
             <button
               onClick={() => setUserMenuExpanded(!userMenuExpanded)}
-              className="w-full flex items-center gap-3 p-3 -m-3 rounded-xl transition-colors hover:bg-muted active:bg-muted"
+              className="w-full flex items-center gap-3 py-3 rounded-xl transition-colors hover:bg-muted active:bg-muted"
             >
               <Avatar className="h-12 w-12">
                 <AvatarImage src={session?.user?.image || ""} alt={session?.user?.name || ""} />
