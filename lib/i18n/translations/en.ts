@@ -238,8 +238,8 @@ export const en = {
 
   // AI Assistant
   ai: {
-    title: "AI Expense Assistant",
-    subtitle: "Ask me to create bills, view analytics, or search expenses!",
+    title: "AI Assistant for your expenses",
+    subtitle: "Ask me to create, search, delete, or view analytics of your expenses",
     placeholder: "Ask here...",
     thinking: "Thinking...",
     suggestions: {

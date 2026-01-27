@@ -240,8 +240,8 @@ export const es: Translations = {
 
   // AI Assistant
   ai: {
-    title: "Asistente de Gastos IA",
-    subtitle: "Pídeme crear gastos, ver analíticas o buscar gastos!",
+    title: "Asistente IA para tus gastos",
+    subtitle: "Pedime crear, buscar, eliminar, o ver analíticas de tus gastos",
     placeholder: "Pregúntame aquí...",
     thinking: "Pensando...",
     suggestions: {
