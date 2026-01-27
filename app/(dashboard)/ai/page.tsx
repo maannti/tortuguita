@@ -443,7 +443,7 @@ export default function AIPage() {
           {/* Mobile Input - At bottom */}
           <div className="flex-shrink-0 bg-background px-4 py-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
             <form onSubmit={handleSubmit}>
-              <div className="flex items-end gap-2 bg-muted rounded-3xl px-4 py-2">
+              <div className="flex items-center gap-3 bg-muted rounded-3xl px-4 py-3">
                 <textarea
                   ref={textareaRef}
                   value={input}
@@ -464,13 +464,13 @@ export default function AIPage() {
                   enterKeyHint="send"
                   autoComplete="off"
                   autoCorrect="on"
-                  className="flex-1 min-h-[24px] max-h-[120px] resize-none overflow-y-auto bg-transparent border-none outline-none py-1 px-0 leading-6 text-[16px] placeholder:text-muted-foreground/70"
+                  className="flex-1 min-w-0 min-h-[24px] max-h-[120px] resize-none overflow-y-auto bg-transparent border-none outline-none py-0 px-0 leading-6 text-[16px] placeholder:text-muted-foreground/70"
                   rows={1}
                 />
                 <button
                   type="submit"
                   disabled={isLoading || !input.trim()}
-                  className="flex-shrink-0 w-9 h-9 rounded-full bg-primary text-primary-foreground disabled:opacity-40 transition-opacity grid place-items-center mb-0.5"
+                  className="flex-shrink-0 w-9 h-9 rounded-full bg-primary text-primary-foreground disabled:opacity-40 transition-opacity grid place-items-center"
                 >
                   <SendIcon className="h-4 w-4" />
                 </button>
