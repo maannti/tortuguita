@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { ChatMessage } from "@/components/ai/chat-message";
 import { ConversationSidebar } from "@/components/ai/conversation-sidebar";
-import { SendIcon } from "lucide-react";
+import { SendIcon, XIcon } from "lucide-react";
 import { TurtleIcon } from "@/components/ai/turtle-icon";
 import { useTranslations, useLanguage } from "@/components/providers/language-provider";
 import useSWR from "swr";
@@ -23,12 +23,45 @@ export default function AIPage() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const touchStartX = useRef<number | null>(null);
+  const touchStartY = useRef<number | null>(null);
   const t = useTranslations();
   const { language } = useLanguage();
 
   const { data: conversations, mutate: refreshConversations } = useSWR("/api/ai/conversations", fetcher);
+
+  // Swipe gesture handlers for mobile sidebar
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+  }, []);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (touchStartX.current === null || touchStartY.current === null) return;
+
+    const touchEndX = e.changedTouches[0].clientX;
+    const touchEndY = e.changedTouches[0].clientY;
+    const deltaX = touchEndX - touchStartX.current;
+    const deltaY = touchEndY - touchStartY.current;
+
+    // Only trigger if horizontal swipe is dominant and significant
+    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 50) {
+      // Swipe right from left edge to open sidebar
+      if (deltaX > 0 && touchStartX.current < 30 && !isMobileSidebarOpen) {
+        setIsMobileSidebarOpen(true);
+      }
+      // Swipe left to close sidebar
+      if (deltaX < 0 && isMobileSidebarOpen) {
+        setIsMobileSidebarOpen(false);
+      }
+    }
+
+    touchStartX.current = null;
+    touchStartY.current = null;
+  }, [isMobileSidebarOpen]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -201,6 +234,7 @@ export default function AIPage() {
   const handleNewConversation = () => {
     setMessages([]);
     setConversationId(null);
+    setIsMobileSidebarOpen(false); // Close mobile sidebar
   };
 
   const handleSelectConversation = async (id: string) => {
@@ -209,6 +243,7 @@ export default function AIPage() {
       setConversationId(id);
       setMessages([]); // Clear current messages
       setIsLoading(true);
+      setIsMobileSidebarOpen(false); // Close mobile sidebar
 
       const response = await fetch(`/api/ai/conversations/${id}`);
       if (!response.ok) throw new Error("Failed to load conversation");
@@ -373,109 +408,150 @@ export default function AIPage() {
           </Card>
         </div>
 
+        {/* Mobile sidebar drawer */}
+        <div
+          className={`md:hidden fixed inset-0 z-50 transition-opacity duration-300 ${
+            isMobileSidebarOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+          }`}
+        >
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => setIsMobileSidebarOpen(false)}
+          />
+          {/* Sidebar panel */}
+          <div
+            className={`absolute left-0 top-0 h-full w-72 bg-background transform transition-transform duration-300 ease-out ${
+              isMobileSidebarOpen ? "translate-x-0" : "-translate-x-full"
+            }`}
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+          >
+            <div className="flex items-center justify-between p-4 border-b">
+              <h2 className="font-semibold">{t.ai.history}</h2>
+              <button
+                onClick={() => setIsMobileSidebarOpen(false)}
+                className="p-2 -mr-2 rounded-full hover:bg-muted"
+              >
+                <XIcon className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="p-3 h-[calc(100%-57px)] overflow-hidden">
+              <ConversationSidebar
+                conversations={Array.isArray(conversations) ? conversations : []}
+                currentConversationId={conversationId}
+                onSelectConversation={handleSelectConversation}
+                onNewConversation={handleNewConversation}
+                onDeleteConversation={handleDeleteConversation}
+              />
+            </div>
+          </div>
+        </div>
+
         {/* Mobile: Full-screen app-like layout */}
-        <div className="flex md:hidden flex-col h-full bg-background overflow-hidden">
-          {/* Mobile Messages area */}
-          <div className="flex-1 overflow-y-auto min-h-0">
-            {messages.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full text-center px-6 pb-4">
-                <div className="space-y-8">
-                  {/* Turtle icon */}
-                  <div className="flex justify-center">
-                    <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-                      <TurtleIcon className="h-10 w-10 text-primary" />
+        <div
+          className="flex md:hidden flex-col h-full bg-background"
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+        >
+          {/* Mobile scrollable container with sticky input */}
+          <div className="flex-1 overflow-y-auto min-h-0 flex flex-col">
+            {/* Mobile Messages area */}
+            <div className="flex-1">
+              {messages.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full text-center px-6 pb-4">
+                  <div className="space-y-8">
+                    {/* Turtle icon */}
+                    <div className="flex justify-center">
+                      <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                        <TurtleIcon className="h-10 w-10 text-primary" />
+                      </div>
                     </div>
-                  </div>
 
-                  <div>
-                    <h2 className="text-xl font-semibold mb-2">{t.ai.title}</h2>
-                    <p className="text-muted-foreground text-sm">{t.ai.subtitle}</p>
-                  </div>
+                    <div>
+                      <h2 className="text-xl font-semibold mb-2">{t.ai.title}</h2>
+                      <p className="text-muted-foreground text-sm">{t.ai.subtitle}</p>
+                    </div>
 
-                  {/* Suggestion chips - vertical stack on mobile */}
-                  <div className="flex flex-col gap-2 w-full max-w-xs mx-auto">
-                    <button
-                      onClick={() => handleSuggestionClick(suggestions.analytics)}
-                      className="w-full px-4 py-3 text-sm text-left rounded-2xl bg-muted/50 hover:bg-muted active:scale-[0.98] transition-all"
-                    >
-                      {t.ai.suggestions.viewAnalytics}
-                    </button>
+                    {/* Suggestion chips - vertical stack on mobile */}
+                    <div className="flex flex-col gap-2 w-full max-w-xs mx-auto">
+                      <button
+                        onClick={() => handleSuggestionClick(suggestions.analytics)}
+                        className="w-full px-4 py-3 text-sm text-left rounded-2xl bg-muted/50 hover:bg-muted active:scale-[0.98] transition-all"
+                      >
+                        {t.ai.suggestions.viewAnalytics}
+                      </button>
 
-                    <button
-                      onClick={() => handleSuggestionClick(suggestions.createBill)}
-                      className="w-full px-4 py-3 text-sm text-left rounded-2xl bg-muted/50 hover:bg-muted active:scale-[0.98] transition-all"
-                    >
-                      {t.ai.suggestions.createBill}
-                    </button>
+                      <button
+                        onClick={() => handleSuggestionClick(suggestions.createBill)}
+                        className="w-full px-4 py-3 text-sm text-left rounded-2xl bg-muted/50 hover:bg-muted active:scale-[0.98] transition-all"
+                      >
+                        {t.ai.suggestions.createBill}
+                      </button>
 
-                    <button
-                      onClick={() => handleSuggestionClick(suggestions.showBills)}
-                      className="w-full px-4 py-3 text-sm text-left rounded-2xl bg-muted/50 hover:bg-muted active:scale-[0.98] transition-all"
-                    >
-                      {t.ai.suggestions.showBills}
-                    </button>
+                      <button
+                        onClick={() => handleSuggestionClick(suggestions.showBills)}
+                        className="w-full px-4 py-3 text-sm text-left rounded-2xl bg-muted/50 hover:bg-muted active:scale-[0.98] transition-all"
+                      >
+                        {t.ai.suggestions.showBills}
+                      </button>
 
-                    <button
-                      onClick={() => handleSuggestionClick(suggestions.createCategory)}
-                      className="w-full px-4 py-3 text-sm text-left rounded-2xl bg-muted/50 hover:bg-muted active:scale-[0.98] transition-all"
-                    >
-                      {t.ai.suggestions.createCategory}
-                    </button>
+                      <button
+                        onClick={() => handleSuggestionClick(suggestions.createCategory)}
+                        className="w-full px-4 py-3 text-sm text-left rounded-2xl bg-muted/50 hover:bg-muted active:scale-[0.98] transition-all"
+                      >
+                        {t.ai.suggestions.createCategory}
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ) : (
-              <div className="px-4 py-4 space-y-4">
-                {messages.map((msg, idx) => <ChatMessage key={idx} message={msg} isMobile />)}
-                {isLoading && messages.length > 0 && messages[messages.length - 1]?.role === "user" && (
-                  <div className="flex items-center gap-3 text-muted-foreground py-2">
-                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-                      <TurtleIcon className="h-5 w-5" isThinking />
+              ) : (
+                <div className="px-4 py-4 space-y-4">
+                  {messages.map((msg, idx) => <ChatMessage key={idx} message={msg} isMobile />)}
+                  {isLoading && messages.length > 0 && messages[messages.length - 1]?.role === "user" && (
+                    <div className="flex items-center gap-3 text-muted-foreground py-2">
+                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary flex items-center justify-center">
+                        <TurtleIcon className="h-5 w-5" isThinking />
+                      </div>
+                      <span className="text-sm">{t.ai.thinking}</span>
                     </div>
-                    <span className="text-sm">{t.ai.thinking}</span>
-                  </div>
-                )}
-                <div ref={messagesEndRef} />
-              </div>
-            )}
-          </div>
+                  )}
+                  <div ref={messagesEndRef} />
+                </div>
+              )}
+            </div>
 
-          {/* Mobile Input - At bottom */}
-          <div className="flex-shrink-0 bg-background px-4 py-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
-            <form onSubmit={handleSubmit}>
-              <div className="flex items-center gap-3 bg-muted rounded-3xl px-4 py-3">
-                <textarea
-                  ref={textareaRef}
-                  value={input}
-                  onChange={(e) => {
-                    setInput(e.target.value);
-                    e.target.style.height = "auto";
-                    e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
-                  }}
-                  onKeyDown={handleKeyDown}
-                  onFocus={(e) => {
-                    // Scroll input into view when keyboard opens
-                    setTimeout(() => {
-                      e.target.scrollIntoView({ behavior: "smooth", block: "center" });
-                    }, 300);
-                  }}
-                  placeholder={t.ai.placeholder}
-                  disabled={isLoading}
-                  enterKeyHint="send"
-                  autoComplete="off"
-                  autoCorrect="on"
-                  className="flex-1 min-w-0 min-h-[24px] max-h-[120px] resize-none overflow-y-auto bg-transparent border-none outline-none py-0 px-0 leading-6 text-[16px] placeholder:text-muted-foreground/70"
-                  rows={1}
-                />
-                <button
-                  type="submit"
-                  disabled={isLoading || !input.trim()}
-                  className="flex-shrink-0 w-9 h-9 rounded-full bg-primary text-primary-foreground disabled:opacity-40 transition-opacity grid place-items-center"
-                >
-                  <SendIcon className="h-4 w-4" />
-                </button>
-              </div>
-            </form>
+            {/* Mobile Input - Sticky to bottom of scroll container */}
+            <div className="sticky bottom-0 bg-background px-4 py-2">
+              <form onSubmit={handleSubmit}>
+                <div className="flex items-center gap-3 bg-muted rounded-3xl px-4 py-3">
+                  <textarea
+                    ref={textareaRef}
+                    value={input}
+                    onChange={(e) => {
+                      setInput(e.target.value);
+                      e.target.style.height = "auto";
+                      e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
+                    }}
+                    onKeyDown={handleKeyDown}
+                    placeholder={t.ai.placeholder}
+                    disabled={isLoading}
+                    enterKeyHint="send"
+                    autoComplete="off"
+                    autoCorrect="on"
+                    className="flex-1 min-w-0 min-h-[24px] max-h-[120px] resize-none overflow-y-auto bg-transparent border-none outline-none py-0 px-0 leading-6 text-[16px] placeholder:text-muted-foreground/70"
+                    rows={1}
+                  />
+                  <button
+                    type="submit"
+                    disabled={isLoading || !input.trim()}
+                    className="flex-shrink-0 w-9 h-9 rounded-full bg-primary text-primary-foreground disabled:opacity-40 transition-opacity grid place-items-center"
+                  >
+                    <SendIcon className="h-4 w-4" />
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       </div>

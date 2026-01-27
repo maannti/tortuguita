@@ -242,6 +242,7 @@ export const en = {
     subtitle: "Ask me to create, search, delete, or view analytics of your expenses",
     placeholder: "Ask here...",
     thinking: "Thinking...",
+    history: "Chat History",
     suggestions: {
       viewAnalytics: "View spending analytics",
       viewAnalyticsDesc: "See your expenses broken down by category",

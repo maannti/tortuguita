@@ -244,6 +244,7 @@ export const es: Translations = {
     subtitle: "Pedime crear, buscar, eliminar, o ver analíticas de tus gastos",
     placeholder: "Pregúntame aquí...",
     thinking: "Pensando...",
+    history: "Historial de Chats",
     suggestions: {
       viewAnalytics: "Ver analíticas de gastos",
       viewAnalyticsDesc: "Mira tus gastos desglosados por categoría",
