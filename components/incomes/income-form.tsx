@@ -619,7 +619,7 @@ export function IncomeForm({ initialData, categories, members, memberIncomes = {
                                   <span className="text-sm">%</span>
                                 </div>
                               </div>
-                              <p className="text-xs text-muted-foreground text-right">
+                              <p className="text-sm font-medium text-muted-foreground">
                                 ${formatAmountDisplay(calculatedAmount)}
                               </p>
                             </div>
