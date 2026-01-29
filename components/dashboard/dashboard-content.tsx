@@ -2,11 +2,12 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowUpIcon, ArrowDownIcon } from "lucide-react";
+import { ArrowUpIcon, ArrowDownIcon, TrendingUpIcon, TrendingDownIcon, WalletIcon } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
 import { CategoryBreakdownChart } from "./category-breakdown-chart";
 import { UserDistributionChart } from "./user-distribution-chart";
+import { BalanceComparisonChart } from "./balance-comparison-chart";
 import { MonthFilter } from "@/components/month-filter";
 import { useTranslations } from "@/components/providers/language-provider";
 
@@ -39,6 +40,19 @@ interface DashboardContentProps {
   }[];
   currentMonthLabel: string;
   availableMonths: string[];
+  currentUserBalance: {
+    name: string;
+    income: number;
+    expenses: number;
+    balance: number;
+  };
+  balanceComparisonData: {
+    name: string;
+    income: number;
+    expenses: number;
+    balance: number;
+    color: string;
+  }[];
 }
 
 export function DashboardContent({
@@ -52,6 +66,8 @@ export function DashboardContent({
   recentBills,
   currentMonthLabel,
   availableMonths,
+  currentUserBalance,
+  balanceComparisonData,
 }: DashboardContentProps) {
   const t = useTranslations();
 
@@ -62,6 +78,94 @@ export function DashboardContent({
           <h1 className="text-3xl font-bold tracking-tight">{t.dashboard.title}</h1>
           <MonthFilter availableMonths={availableMonths} />
         </div>
+      </div>
+
+      {/* Personal Balance Card - Prominent */}
+      <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+        <CardContent className="p-4 md:p-6">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                <WalletIcon className="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">{t.dashboard.yourBalance}</p>
+                <p className={`text-2xl md:text-3xl font-bold ${currentUserBalance.balance >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
+                  {currentUserBalance.balance >= 0 ? "+" : "-"}${Math.abs(currentUserBalance.balance).toFixed(2)}
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-6 md:gap-8">
+              <div className="flex items-center gap-2">
+                <TrendingUpIcon className="h-4 w-4 text-green-600 dark:text-green-400" />
+                <div>
+                  <p className="text-xs text-muted-foreground">{t.dashboard.yourIncome}</p>
+                  <p className="text-lg font-semibold text-green-600 dark:text-green-400">
+                    ${currentUserBalance.income.toFixed(2)}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <TrendingDownIcon className="h-4 w-4 text-red-600 dark:text-red-400" />
+                <div>
+                  <p className="text-xs text-muted-foreground">{t.dashboard.yourExpenses}</p>
+                  <p className="text-lg font-semibold text-red-600 dark:text-red-400">
+                    ${currentUserBalance.expenses.toFixed(2)}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Balance Comparison Chart */}
+      <Card>
+        <CardHeader>
+          <CardTitle>{t.dashboard.balanceComparison}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {balanceComparisonData.length > 0 ? (
+            <BalanceComparisonChart data={balanceComparisonData} />
+          ) : (
+            <p className="text-sm text-muted-foreground text-center py-8">
+              {t.dashboard.noBalanceData}
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Pie Charts */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>{t.dashboard.spendingByCategory}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {categoryData.length > 0 ? (
+              <CategoryBreakdownChart data={categoryData} />
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                {t.dashboard.noExpensesThisMonth}
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>{t.dashboard.userDistribution}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {userDistributionData.length > 0 ? (
+              <UserDistributionChart data={userDistributionData} />
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                {t.dashboard.noAssignedBills}
+              </p>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       {/* KPI Cards */}
@@ -109,39 +213,6 @@ export function DashboardContent({
             <div className="text-xl md:text-2xl font-bold">{categoryCount}</div>
             <p className="text-sm md:text-sm font-medium text-muted-foreground mt-2">{t.dashboard.totalCategories}</p>
             <p className="text-xs text-muted-foreground/70 mt-1 hidden md:block">{t.dashboard.activeThisMonth}</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Charts */}
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>{t.dashboard.spendingByCategory}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {categoryData.length > 0 ? (
-              <CategoryBreakdownChart data={categoryData} />
-            ) : (
-              <p className="text-sm text-muted-foreground text-center py-8">
-                {t.dashboard.noExpensesThisMonth}
-              </p>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>{t.dashboard.userDistribution}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {userDistributionData.length > 0 ? (
-              <UserDistributionChart data={userDistributionData} />
-            ) : (
-              <p className="text-sm text-muted-foreground text-center py-8">
-                {t.dashboard.noAssignedBills}
-              </p>
-            )}
           </CardContent>
         </Card>
       </div>

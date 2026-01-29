@@ -104,6 +104,8 @@ export default async function EditIncomePage({
         memberIncomes={incomeByMember}
         currentUserId={session.user.id}
         isPersonalOrg={organization?.isPersonal ?? true}
+        userOrganizations={[]}
+        currentOrganizationId={session.user.currentOrganizationId}
         initialData={{
           id: income.id,
           label: income.label,

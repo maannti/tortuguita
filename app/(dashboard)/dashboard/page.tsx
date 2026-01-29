@@ -22,27 +22,42 @@ interface PageProps {
 export default async function DashboardPage({ searchParams }: PageProps) {
   const session = await auth();
 
-  if (!session?.user?.currentOrganizationId) {
+  if (!session?.user?.currentOrganizationId || !session?.user?.id) {
     return <div>Unauthorized</div>;
   }
 
+  const currentUserId = session.user.id;
   const params = await searchParams;
   const selectedMonth = params.month;
 
-  // Get available months (months with expenses)
-  const monthsWithExpenses = await prisma.bill.findMany({
-    where: {
-      organizationId: session.user.currentOrganizationId,
-    },
-    select: {
-      paymentDate: true,
-    },
-    distinct: ["paymentDate"],
-  });
+  // Get available months (months with expenses or incomes)
+  const [monthsWithExpenses, monthsWithIncomes] = await Promise.all([
+    prisma.bill.findMany({
+      where: {
+        organizationId: session.user.currentOrganizationId,
+      },
+      select: {
+        paymentDate: true,
+      },
+      distinct: ["paymentDate"],
+    }),
+    prisma.income.findMany({
+      where: {
+        organizationId: session.user.currentOrganizationId,
+      },
+      select: {
+        incomeDate: true,
+      },
+      distinct: ["incomeDate"],
+    }),
+  ]);
 
   const availableMonthsSet = new Set<string>();
   for (const bill of monthsWithExpenses) {
     availableMonthsSet.add(format(new Date(bill.paymentDate), "yyyy-MM"));
+  }
+  for (const income of monthsWithIncomes) {
+    availableMonthsSet.add(format(new Date(income.incomeDate), "yyyy-MM"));
   }
   const availableMonths = Array.from(availableMonthsSet).sort().reverse();
 
@@ -205,6 +220,89 @@ export default async function DashboardPage({ searchParams }: PageProps) {
     });
   }
 
+  // Fetch incomes with assignments for the current month
+  const incomesWithAssignments = await prisma.income.findMany({
+    where: {
+      organizationId: session.user.currentOrganizationId,
+      incomeDate: {
+        gte: currentMonthStart,
+        lte: currentMonthEnd,
+      },
+    },
+    include: {
+      assignments: {
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  // Calculate income distribution by user
+  const userIncomeTotals = new Map<string, { name: string; total: number }>();
+  let unassignedIncomeTotal = 0;
+
+  for (const income of incomesWithAssignments) {
+    const incomeAmount = Number(income.amount);
+
+    if (income.assignments.length === 0) {
+      unassignedIncomeTotal += incomeAmount;
+    } else {
+      for (const assignment of income.assignments) {
+        const userShare = (incomeAmount * Number(assignment.percentage)) / 100;
+        const usrId = assignment.user.id;
+        const userName = assignment.user.name || "Unknown";
+
+        if (userIncomeTotals.has(usrId)) {
+          userIncomeTotals.get(usrId)!.total += userShare;
+        } else {
+          userIncomeTotals.set(usrId, { name: userName, total: userShare });
+        }
+      }
+    }
+  }
+
+  // Calculate balance for each user (income - expenses)
+  const allUserIds = new Set<string>();
+  for (const [userId] of userTotals) allUserIds.add(userId);
+  for (const [userId] of userIncomeTotals) allUserIds.add(userId);
+
+  const userBalances = new Map<string, { name: string; income: number; expenses: number; balance: number }>();
+
+  for (const userId of allUserIds) {
+    const expenseData = userTotals.get(userId);
+    const incomeData = userIncomeTotals.get(userId);
+
+    const name = expenseData?.name || incomeData?.name || "Unknown";
+    const expenses = expenseData?.total || 0;
+    const income = incomeData?.total || 0;
+    const balance = income - expenses;
+
+    userBalances.set(userId, { name, income, expenses, balance });
+  }
+
+  // Current user's balance data
+  const currentUserBalance = userBalances.get(currentUserId) || {
+    name: session.user.name || "You",
+    income: 0,
+    expenses: 0,
+    balance: 0,
+  };
+
+  // Balance comparison data for all users
+  const balanceComparisonData = Array.from(userBalances.entries()).map(([, data], index) => ({
+    name: data.name,
+    income: data.income,
+    expenses: data.expenses,
+    balance: data.balance,
+    color: userColors[index % userColors.length],
+  }));
+
   // Recent bills
   const recentBills: BillWithRelations[] = await prisma.bill.findMany({
     where: {
@@ -251,6 +349,8 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       }))}
       currentMonthLabel={format(currentMonthStart, "MMM yyyy")}
       availableMonths={availableMonths}
+      currentUserBalance={currentUserBalance}
+      balanceComparisonData={balanceComparisonData}
     />
   );
 }

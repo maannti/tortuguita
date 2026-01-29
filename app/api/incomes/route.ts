@@ -96,7 +96,13 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const data = incomeSchema.parse(body)
 
-    // Verify incomeType belongs to organization
+    // Check for multi-home distribution
+    const multiHomeDistribution = body.multiHomeDistribution as Array<{
+      organizationId: string
+      percentage: number
+    }> | undefined
+
+    // Verify incomeType belongs to current organization
     const incomeType = await prisma.incomeType.findFirst({
       where: {
         id: data.incomeTypeId,
@@ -130,9 +136,127 @@ export async function POST(request: NextRequest) {
     }
 
     // Extract session values for use in transaction (TypeScript narrowing)
-    const organizationId = session.user.currentOrganizationId
+    const currentOrganizationId = session.user.currentOrganizationId
     const userId = session.user.id
 
+    // Handle multi-home distribution
+    if (multiHomeDistribution && multiHomeDistribution.length > 1) {
+      // Verify user has access to all specified organizations
+      const orgIds = multiHomeDistribution.map(d => d.organizationId)
+      const memberships = await prisma.userOrganization.findMany({
+        where: {
+          userId,
+          organizationId: { in: orgIds },
+        },
+      })
+
+      if (memberships.length !== orgIds.length) {
+        return NextResponse.json(
+          { error: "You don't have access to all specified organizations" },
+          { status: 403 }
+        )
+      }
+
+      // Validate percentages sum to 100
+      const totalPercentage = multiHomeDistribution.reduce((sum, d) => sum + d.percentage, 0)
+      if (Math.abs(totalPercentage - 100) > 0.01) {
+        return NextResponse.json(
+          { error: "Multi-home percentages must total 100%" },
+          { status: 400 }
+        )
+      }
+
+      // Create incomes in each organization within a transaction
+      const createdIncomes = await prisma.$transaction(async (tx) => {
+        const incomes = []
+
+        for (const distribution of multiHomeDistribution) {
+          const orgId = distribution.organizationId
+          const percentage = distribution.percentage
+          const proportionalAmount = Math.round((data.amount * percentage) / 100 * 100) / 100
+
+          // Find or create a matching income type in the target organization
+          let targetIncomeTypeId = data.incomeTypeId
+
+          if (orgId !== currentOrganizationId) {
+            // Try to find an income type with the same name in the target org
+            let targetIncomeType = await tx.incomeType.findFirst({
+              where: {
+                organizationId: orgId,
+                name: incomeType.name,
+              },
+            })
+
+            // If not found, create one with the same properties
+            if (!targetIncomeType) {
+              targetIncomeType = await tx.incomeType.create({
+                data: {
+                  name: incomeType.name,
+                  description: incomeType.description,
+                  color: incomeType.color,
+                  icon: incomeType.icon,
+                  isRecurring: incomeType.isRecurring,
+                  organizationId: orgId,
+                },
+              })
+            }
+
+            targetIncomeTypeId = targetIncomeType.id
+          }
+
+          // Create the income (without member assignments for non-current orgs)
+          const income = await tx.income.create({
+            data: {
+              label: data.label,
+              amount: proportionalAmount,
+              incomeDate: data.incomeDate,
+              incomeTypeId: targetIncomeTypeId,
+              notes: data.notes ? `${data.notes} (${percentage}% of shared income)` : `${percentage}% of shared income`,
+              organizationId: orgId,
+              userId,
+              // Only include assignments for the current organization
+              assignments: orgId === currentOrganizationId && data.assignments ? {
+                create: data.assignments.map((assignment) => ({
+                  userId: assignment.userId,
+                  percentage: assignment.percentage,
+                })),
+              } : undefined,
+            },
+            include: {
+              incomeType: true,
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                },
+              },
+              assignments: {
+                include: {
+                  user: {
+                    select: {
+                      id: true,
+                      name: true,
+                      email: true,
+                    },
+                  },
+                },
+              },
+            },
+          })
+
+          incomes.push(income)
+        }
+
+        return incomes
+      })
+
+      // Return the income from the current organization
+      const currentOrgIncome = createdIncomes.find(i => i.organizationId === currentOrganizationId)
+      return NextResponse.json(currentOrgIncome || createdIncomes[0], { status: 201 })
+    }
+
+    // Single organization income (original behavior)
     const income = await prisma.income.create({
       data: {
         label: data.label,
@@ -140,7 +264,7 @@ export async function POST(request: NextRequest) {
         incomeDate: data.incomeDate,
         incomeTypeId: data.incomeTypeId,
         notes: data.notes,
-        organizationId,
+        organizationId: currentOrganizationId,
         userId,
         assignments: {
           create: data.assignments?.map((assignment) => ({

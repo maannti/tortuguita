@@ -104,6 +104,13 @@ export const es: Translations = {
     noExpensesThisMonth: "Sin gastos este mes",
     noAssignedBills: "Sin gastos asignados este mes",
     recentBills: "Gastos Recientes",
+    yourBalance: "Tu Balance",
+    yourIncome: "Tus Ingresos",
+    yourExpenses: "Tus Gastos",
+    balanceComparison: "Balance por Miembro",
+    noBalanceData: "Sin datos de balance este mes",
+    totalIncome: "Ingresos Totales",
+    totalExpenses: "Gastos Totales",
   },
 
   // Bills
@@ -292,6 +299,11 @@ export const es: Translations = {
     saving: "Guardando...",
     create: "Crear",
     update: "Actualizar",
+    multiHome: "Compartir con varios hogares",
+    multiHomeDescription: "Registrar este ingreso en más de un hogar",
+    selectHomes: "Seleccionar hogares",
+    homePercentage: "Porcentaje por hogar",
+    homesSelected: "hogares seleccionados",
   },
 
   // Income Types

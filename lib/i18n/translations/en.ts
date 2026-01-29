@@ -102,6 +102,13 @@ export const en = {
     noExpensesThisMonth: "No expenses this month",
     noAssignedBills: "No assigned bills this month",
     recentBills: "Recent Bills",
+    yourBalance: "Your Balance",
+    yourIncome: "Your Income",
+    yourExpenses: "Your Expenses",
+    balanceComparison: "Balance by Member",
+    noBalanceData: "No balance data this month",
+    totalIncome: "Total Income",
+    totalExpenses: "Total Expenses",
   },
 
   // Bills
@@ -290,6 +297,11 @@ export const en = {
     saving: "Saving...",
     create: "Create",
     update: "Update",
+    multiHome: "Share with multiple homes",
+    multiHomeDescription: "Register this income in more than one home",
+    selectHomes: "Select homes",
+    homePercentage: "Percentage per home",
+    homesSelected: "homes selected",
   },
 
   // Income Types

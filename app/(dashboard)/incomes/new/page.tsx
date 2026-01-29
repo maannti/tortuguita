@@ -2,11 +2,12 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { IncomeForm } from "@/components/incomes/income-form"
 import { startOfMonth, endOfMonth } from "date-fns"
+import { getUserOrganizations } from "@/lib/organization-utils"
 
 export default async function NewIncomePage() {
   const session = await auth()
 
-  if (!session?.user?.currentOrganizationId) {
+  if (!session?.user?.currentOrganizationId || !session?.user?.id) {
     return <div>Unauthorized</div>
   }
 
@@ -14,7 +15,7 @@ export default async function NewIncomePage() {
   const monthStart = startOfMonth(now)
   const monthEnd = endOfMonth(now)
 
-  const [categories, memberships, organization, memberIncomes] = await Promise.all([
+  const [categories, memberships, organization, memberIncomes, userOrganizations] = await Promise.all([
     prisma.incomeType.findMany({
       where: {
         organizationId: session.user.currentOrganizationId,
@@ -66,6 +67,8 @@ export default async function NewIncomePage() {
       },
       _sum: { amount: true },
     }),
+    // Get all organizations the user belongs to
+    getUserOrganizations(session.user.id),
   ])
 
   const members = memberships.map((m) => m.user)
@@ -85,6 +88,8 @@ export default async function NewIncomePage() {
         memberIncomes={incomeByMember}
         currentUserId={session.user.id}
         isPersonalOrg={organization?.isPersonal ?? true}
+        userOrganizations={userOrganizations}
+        currentOrganizationId={session.user.currentOrganizationId}
       />
     </div>
   )

@@ -24,8 +24,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { X, Plus } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { X, Plus, Check, Home } from "lucide-react";
 import { useTranslations } from "@/components/providers/language-provider";
+
+interface UserOrganization {
+  id: string;
+  name: string;
+  isPersonal: boolean;
+  role: string;
+  memberCount: number;
+}
 
 interface IncomeFormProps {
   initialData?: IncomeFormData & { id: string };
@@ -45,9 +54,11 @@ interface IncomeFormProps {
   currentUserId: string;
   mode: "create" | "edit";
   isPersonalOrg: boolean;
+  userOrganizations: UserOrganization[];
+  currentOrganizationId: string;
 }
 
-export function IncomeForm({ initialData, categories, members, memberIncomes = {}, currentUserId, mode, isPersonalOrg }: IncomeFormProps) {
+export function IncomeForm({ initialData, categories, members, memberIncomes = {}, currentUserId, mode, isPersonalOrg, userOrganizations, currentOrganizationId }: IncomeFormProps) {
   const router = useRouter();
   const t = useTranslations();
   const [isLoading, setIsLoading] = useState(false);
@@ -58,6 +69,21 @@ export function IncomeForm({ initialData, categories, members, memberIncomes = {
     }
     return "";
   });
+
+  // Multi-home state
+  const [multiHomeEnabled, setMultiHomeEnabled] = useState(false);
+  const [selectedHomes, setSelectedHomes] = useState<Map<string, number>>(() => {
+    // Initialize with current organization at 100%
+    const initial = new Map<string, number>();
+    initial.set(currentOrganizationId, 100);
+    return initial;
+  });
+  const [homeDropdownOpen, setHomeDropdownOpen] = useState(false);
+
+  // Filter out current org to get other available homes
+  const otherHomes = userOrganizations.filter(org => org.id !== currentOrganizationId);
+  const hasMultipleHomes = otherHomes.length > 0;
+  const showMultiHomeOption = mode === "create" && hasMultipleHomes;
 
   // Format number with thousands separator (.) and decimal separator (,)
   function formatAmountDisplay(value: number): string {
@@ -81,7 +107,8 @@ export function IncomeForm({ initialData, categories, members, memberIncomes = {
       incomeDate: new Date(),
       incomeTypeId: "",
       notes: "",
-      assignments: [],
+      // Auto-assign to current user at 100%
+      assignments: [{ userId: currentUserId, percentage: 100 }],
     },
   });
 
@@ -154,6 +181,66 @@ export function IncomeForm({ initialData, categories, members, memberIncomes = {
   // Check if we have income data for the current assignments
   const hasIncomeData = assignments?.some(a => memberIncomes[a.userId] && memberIncomes[a.userId] > 0) ?? false;
 
+  // Multi-home helpers
+  const toggleHomeSelection = (orgId: string) => {
+    const newSelected = new Map(selectedHomes);
+    if (newSelected.has(orgId)) {
+      // Can't deselect if it's the only one or if it's the current org
+      if (newSelected.size > 1 && orgId !== currentOrganizationId) {
+        newSelected.delete(orgId);
+        // Redistribute percentages
+        redistributeHomePercentages(newSelected);
+      }
+    } else {
+      // Add with equal distribution
+      newSelected.set(orgId, 0);
+      redistributeHomePercentages(newSelected);
+    }
+    setSelectedHomes(newSelected);
+  };
+
+  const redistributeHomePercentages = (homes: Map<string, number>) => {
+    const count = homes.size;
+    const equalShare = Math.floor(100 / count);
+    const remainder = 100 - (equalShare * count);
+    let index = 0;
+    homes.forEach((_, key) => {
+      homes.set(key, index === 0 ? equalShare + remainder : equalShare);
+      index++;
+    });
+  };
+
+  const updateHomePercentage = (orgId: string, percentage: number) => {
+    const newSelected = new Map(selectedHomes);
+    const clampedPercentage = Math.min(100, Math.max(0, percentage));
+    newSelected.set(orgId, clampedPercentage);
+
+    // Auto-adjust other homes
+    const otherOrgIds = Array.from(newSelected.keys()).filter(id => id !== orgId);
+    if (otherOrgIds.length > 0) {
+      const remaining = 100 - clampedPercentage;
+      const currentOtherTotal = otherOrgIds.reduce((sum, id) => sum + (newSelected.get(id) || 0), 0);
+
+      if (currentOtherTotal > 0) {
+        otherOrgIds.forEach(id => {
+          const currentVal = newSelected.get(id) || 0;
+          const proportion = currentVal / currentOtherTotal;
+          newSelected.set(id, Math.max(0, Math.round(remaining * proportion)));
+        });
+      } else {
+        const equalShare = Math.floor(remaining / otherOrgIds.length);
+        otherOrgIds.forEach((id, idx) => {
+          const share = idx === 0 ? remaining - (equalShare * (otherOrgIds.length - 1)) : equalShare;
+          newSelected.set(id, Math.max(0, share));
+        });
+      }
+    }
+
+    setSelectedHomes(newSelected);
+  };
+
+  const totalHomePercentage = Array.from(selectedHomes.values()).reduce((sum, p) => sum + p, 0);
+
   // Auto-adjust other members when one is changed
   const adjustOtherPercentages = (changedIndex: number, newValue: number) => {
     if (!assignments || assignments.length <= 1) return;
@@ -198,13 +285,24 @@ export function IncomeForm({ initialData, categories, members, memberIncomes = {
     setError(null);
 
     try {
+      // If multi-home is enabled, include the home distributions
+      const multiHomeData = multiHomeEnabled && selectedHomes.size > 1
+        ? Array.from(selectedHomes.entries()).map(([orgId, percentage]) => ({
+            organizationId: orgId,
+            percentage,
+          }))
+        : undefined;
+
       const url =
         mode === "create" ? "/api/incomes" : `/api/incomes/${initialData?.id}`;
 
       const response = await fetch(url, {
         method: mode === "create" ? "POST" : "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          ...data,
+          multiHomeDistribution: multiHomeData,
+        }),
       });
 
       const result = await response.json();
@@ -381,6 +479,158 @@ export function IncomeForm({ initialData, categories, members, memberIncomes = {
                 </FormItem>
               )}
             />
+
+            {/* Multi-home toggle - only show in create mode with multiple homes */}
+            {showMultiHomeOption && (
+              <div className="space-y-4 pt-2">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <label className="text-sm font-medium leading-none">
+                      {t.incomes?.multiHome || "Compartir con varios hogares"}
+                    </label>
+                    <p className="text-xs text-muted-foreground">
+                      {t.incomes?.multiHomeDescription || "Registrar este ingreso en más de un hogar"}
+                    </p>
+                  </div>
+                  <Switch
+                    checked={multiHomeEnabled}
+                    onCheckedChange={(checked) => {
+                      setMultiHomeEnabled(checked);
+                      if (!checked) {
+                        // Reset to only current organization at 100%
+                        const reset = new Map<string, number>();
+                        reset.set(currentOrganizationId, 100);
+                        setSelectedHomes(reset);
+                      }
+                    }}
+                    disabled={isLoading}
+                  />
+                </div>
+
+                {multiHomeEnabled && (
+                  <div className="space-y-3">
+                    {/* Home selector dropdown */}
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setHomeDropdownOpen(!homeDropdownOpen)}
+                        className="w-full flex items-center justify-between px-3 py-2 text-sm border rounded-md bg-background hover:bg-accent/50 transition-colors"
+                        disabled={isLoading}
+                      >
+                        <span className="text-muted-foreground">
+                          {selectedHomes.size} {t.incomes?.homesSelected || "hogares seleccionados"}
+                        </span>
+                        <svg
+                          className={`h-4 w-4 transition-transform ${homeDropdownOpen ? "rotate-180" : ""}`}
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
+
+                      {homeDropdownOpen && (
+                        <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-auto">
+                          {/* Current organization (always selected) */}
+                          {userOrganizations.filter(org => org.id === currentOrganizationId).map(org => (
+                            <div
+                              key={org.id}
+                              className="flex items-center gap-3 px-3 py-2 bg-muted/30"
+                            >
+                              <div className="h-5 w-5 rounded border border-primary bg-primary flex items-center justify-center">
+                                <Check className="h-3 w-3 text-primary-foreground" />
+                              </div>
+                              <div className="flex items-center gap-2 flex-1">
+                                <Home className="h-4 w-4 text-muted-foreground" />
+                                <span className="text-sm font-medium">{org.name}</span>
+                                <span className="text-xs text-muted-foreground">(actual)</span>
+                              </div>
+                            </div>
+                          ))}
+
+                          {/* Other organizations */}
+                          {otherHomes.map(org => (
+                            <button
+                              key={org.id}
+                              type="button"
+                              onClick={() => toggleHomeSelection(org.id)}
+                              className="w-full flex items-center gap-3 px-3 py-2 hover:bg-accent/50 transition-colors"
+                            >
+                              <div className={`h-5 w-5 rounded border ${selectedHomes.has(org.id) ? "border-primary bg-primary" : "border-muted-foreground/30"} flex items-center justify-center`}>
+                                {selectedHomes.has(org.id) && (
+                                  <Check className="h-3 w-3 text-primary-foreground" />
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2 flex-1 text-left">
+                                <Home className="h-4 w-4 text-muted-foreground" />
+                                <span className="text-sm">{org.name}</span>
+                                {org.isPersonal && (
+                                  <span className="text-xs text-muted-foreground">(personal)</span>
+                                )}
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Percentage distribution for selected homes */}
+                    {selectedHomes.size > 1 && (
+                      <div className="space-y-3">
+                        <p className="text-xs text-muted-foreground">
+                          {t.incomes?.homePercentage || "Porcentaje por hogar"}
+                        </p>
+                        {Array.from(selectedHomes.entries()).map(([orgId, percentage]) => {
+                          const org = userOrganizations.find(o => o.id === orgId);
+                          if (!org) return null;
+                          return (
+                            <div key={orgId} className="p-3 bg-muted/30 rounded-lg space-y-2">
+                              <div className="flex items-center gap-2">
+                                <Home className="h-4 w-4 text-muted-foreground" />
+                                <span className="text-sm font-medium flex-1">{org.name}</span>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <div className="flex-1">
+                                  <Slider
+                                    min={0}
+                                    max={100}
+                                    step={1}
+                                    value={[percentage]}
+                                    onValueChange={(values) => updateHomePercentage(orgId, values[0])}
+                                    disabled={isLoading}
+                                  />
+                                </div>
+                                <div className="flex items-center gap-1 flex-shrink-0">
+                                  <Input
+                                    type="text"
+                                    inputMode="numeric"
+                                    value={percentage}
+                                    onChange={(e) => {
+                                      const val = e.target.value.replace(/[^0-9]/g, "");
+                                      const num = Math.min(100, Math.max(0, parseInt(val) || 0));
+                                      updateHomePercentage(orgId, num);
+                                    }}
+                                    disabled={isLoading}
+                                    className="w-14 h-8 text-center text-sm px-1"
+                                  />
+                                  <span className="text-sm">%</span>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                        {totalHomePercentage !== 100 && (
+                          <p className="text-sm text-destructive">
+                            Total: {totalHomePercentage}% (debe ser 100%)
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Only show assignments for shared organizations */}
             {!isPersonalOrg && (
