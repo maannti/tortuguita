@@ -584,6 +584,8 @@ export function IncomeForm({ initialData, categories, members, memberIncomes = {
                         {Array.from(selectedHomes.entries()).map(([orgId, percentage]) => {
                           const org = userOrganizations.find(o => o.id === orgId);
                           if (!org) return null;
+                          const currentAmount = Number(form.watch("amount")) || 0;
+                          const calculatedAmount = Math.round((currentAmount * percentage) / 100 * 100) / 100;
                           return (
                             <div key={orgId} className="p-3 bg-muted/30 rounded-lg space-y-2">
                               <div className="flex items-center gap-2">
@@ -617,6 +619,9 @@ export function IncomeForm({ initialData, categories, members, memberIncomes = {
                                   <span className="text-sm">%</span>
                                 </div>
                               </div>
+                              <p className="text-xs text-muted-foreground text-right">
+                                ${formatAmountDisplay(calculatedAmount)}
+                              </p>
                             </div>
                           );
                         })}
