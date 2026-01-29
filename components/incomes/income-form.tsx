@@ -83,7 +83,7 @@ export function IncomeForm({ initialData, categories, members, memberIncomes = {
   // Filter out current org to get other available homes
   const otherHomes = userOrganizations.filter(org => org.id !== currentOrganizationId);
   const hasMultipleHomes = otherHomes.length > 0;
-  const showMultiHomeOption = mode === "create" && hasMultipleHomes;
+  const showMultiHomeOption = hasMultipleHomes;
 
   // Format number with thousands separator (.) and decimal separator (,)
   function formatAmountDisplay(value: number): string {
