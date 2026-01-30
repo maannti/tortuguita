@@ -109,6 +109,12 @@ export const en = {
     noBalanceData: "No balance data this month",
     totalIncome: "Total Income",
     totalExpenses: "Total Expenses",
+    hideItem: "Hide",
+    showItem: "Show",
+    hiddenItems: "Hidden Items",
+    noHiddenItems: "No hidden items",
+    personalBalance: "Personal Balance",
+    kpiCards: "Statistics",
   },
 
   // Bills

@@ -111,6 +111,12 @@ export const es: Translations = {
     noBalanceData: "Sin datos de balance este mes",
     totalIncome: "Ingresos Totales",
     totalExpenses: "Gastos Totales",
+    hideItem: "Ocultar",
+    showItem: "Mostrar",
+    hiddenItems: "Items Ocultos",
+    noHiddenItems: "Sin items ocultos",
+    personalBalance: "Balance Personal",
+    kpiCards: "Estadísticas",
   },
 
   // Bills

@@ -59,9 +59,19 @@ export function BalanceComparisonChart({ data }: BalanceComparisonChartProps) {
     xAxis: {
       type: "value",
       min: 0,
+      splitNumber: 4,
       axisLabel: {
         color: isDark ? "#9ca3af" : "#6b7280",
-        formatter: (value: number) => `$${value.toFixed(0)}`,
+        rotate: 45,
+        formatter: (value: number) => {
+          if (value >= 1000000) {
+            return `$${(value / 1000000).toFixed(1)}M`;
+          }
+          if (value >= 1000) {
+            return `$${(value / 1000).toFixed(0)}K`;
+          }
+          return `$${value.toFixed(0)}`;
+        },
       },
       splitLine: {
         lineStyle: {
