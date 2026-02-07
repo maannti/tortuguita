@@ -79,24 +79,39 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token = { ...token, ...session };
       }
 
-      // Handle migration from old organizationId to currentOrganizationId
-      // Also refresh from DB if currentOrganizationId is missing
-      if (!token.currentOrganizationId && token.sub) {
+      // Always sync currentOrganizationId from database to ensure it's up-to-date
+      // This fixes issues where incomes/dashboard don't show data on initial load
+      if (token.sub) {
         try {
-          // Check if there's an old organizationId in the token
+          // Handle migration from old organizationId to currentOrganizationId
           const oldOrgId = (token as Record<string, unknown>).organizationId as string | undefined;
-
-          if (oldOrgId) {
+          if (oldOrgId && !token.currentOrganizationId) {
             token.currentOrganizationId = oldOrgId;
-          } else {
-            // Fetch from database
-            const dbUser = await prisma.user.findUnique({
+          }
+
+          // Always fetch from database to ensure we have the latest value
+          const dbUser = await prisma.user.findUnique({
+            where: { id: token.sub },
+            select: {
+              currentOrganizationId: true,
+              userOrganizations: {
+                select: { organizationId: true },
+                take: 1,
+              },
+            },
+          });
+
+          if (dbUser?.currentOrganizationId) {
+            token.currentOrganizationId = dbUser.currentOrganizationId;
+          } else if (dbUser?.userOrganizations?.[0]?.organizationId) {
+            // If user has organizations but no currentOrganizationId, set it to the first one
+            const firstOrgId = dbUser.userOrganizations[0].organizationId;
+            token.currentOrganizationId = firstOrgId;
+            // Also update the database
+            await prisma.user.update({
               where: { id: token.sub },
-              select: { currentOrganizationId: true },
+              data: { currentOrganizationId: firstOrgId },
             });
-            if (dbUser?.currentOrganizationId) {
-              token.currentOrganizationId = dbUser.currentOrganizationId;
-            }
           }
         } catch (error) {
           console.error("Error fetching user organization:", error);
@@ -113,36 +128,44 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return session;
     },
     async signIn({ user, account }) {
-      // For OAuth providers, ensure user has an organization
+      // For OAuth providers, ensure user has an organization and currentOrganizationId is set
       if (account?.provider !== "credentials") {
         const existingUser = await prisma.user.findUnique({
           where: { id: user.id },
           include: { userOrganizations: true },
         });
 
-        if (existingUser && existingUser.userOrganizations.length === 0) {
-          // Create personal organization for new OAuth users
-          const organization = await prisma.organization.create({
-            data: {
-              name: `${user.name || "My"} Personal`,
-              isPersonal: true,
-            },
-          });
+        if (existingUser) {
+          if (existingUser.userOrganizations.length === 0) {
+            // Create personal organization for new OAuth users
+            const organization = await prisma.organization.create({
+              data: {
+                name: `${user.name || "My"} Personal`,
+                isPersonal: true,
+              },
+            });
 
-          // Create membership
-          await prisma.userOrganization.create({
-            data: {
-              userId: existingUser.id,
-              organizationId: organization.id,
-              role: "owner",
-            },
-          });
+            // Create membership
+            await prisma.userOrganization.create({
+              data: {
+                userId: existingUser.id,
+                organizationId: organization.id,
+                role: "owner",
+              },
+            });
 
-          // Set as current organization
-          await prisma.user.update({
-            where: { id: existingUser.id },
-            data: { currentOrganizationId: organization.id },
-          });
+            // Set as current organization
+            await prisma.user.update({
+              where: { id: existingUser.id },
+              data: { currentOrganizationId: organization.id },
+            });
+          } else if (!existingUser.currentOrganizationId) {
+            // Existing user has organizations but no currentOrganizationId - set it to first org
+            await prisma.user.update({
+              where: { id: existingUser.id },
+              data: { currentOrganizationId: existingUser.userOrganizations[0].organizationId },
+            });
+          }
         }
       }
 
