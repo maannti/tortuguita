@@ -5,18 +5,8 @@ import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu"
 import { Check, ChevronRight, Circle } from "lucide-react"
 
 import { cn } from "@/lib/utils"
-import { haptic } from "@/lib/haptics"
 
-const DropdownMenu = ({ onOpenChange, ...props }: DropdownMenuPrimitive.DropdownMenuProps) => {
-  const handleOpenChange = (open: boolean) => {
-    if (open) {
-      haptic("light")
-    }
-    onOpenChange?.(open)
-  }
-
-  return <DropdownMenuPrimitive.Root onOpenChange={handleOpenChange} {...props} />
-}
+const DropdownMenu = DropdownMenuPrimitive.Root
 
 const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger
 
@@ -90,25 +80,17 @@ const DropdownMenuItem = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Item> & {
     inset?: boolean
   }
->(({ className, inset, onSelect, ...props }, ref) => {
-  const handleSelect = (e: Event) => {
-    haptic("selection")
-    onSelect?.(e)
-  }
-
-  return (
-    <DropdownMenuPrimitive.Item
-      ref={ref}
-      className={cn(
-        "relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&>svg]:size-4 [&>svg]:shrink-0",
-        inset && "pl-8",
-        className
-      )}
-      onSelect={handleSelect}
-      {...props}
-    />
-  )
-})
+>(({ className, inset, ...props }, ref) => (
+  <DropdownMenuPrimitive.Item
+    ref={ref}
+    className={cn(
+      "relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&>svg]:size-4 [&>svg]:shrink-0",
+      inset && "pl-8",
+      className
+    )}
+    {...props}
+  />
+))
 DropdownMenuItem.displayName = DropdownMenuPrimitive.Item.displayName
 
 const DropdownMenuCheckboxItem = React.forwardRef<
