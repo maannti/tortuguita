@@ -5,8 +5,29 @@ import * as SelectPrimitive from "@radix-ui/react-select"
 import { Check, ChevronDown, ChevronUp } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import { haptic } from "@/lib/haptics"
 
-const Select = SelectPrimitive.Root
+const Select = ({ onOpenChange, onValueChange, ...props }: SelectPrimitive.SelectProps) => {
+  const handleOpenChange = (open: boolean) => {
+    if (open) {
+      haptic("light")
+    }
+    onOpenChange?.(open)
+  }
+
+  const handleValueChange = (value: string) => {
+    haptic("selection")
+    onValueChange?.(value)
+  }
+
+  return (
+    <SelectPrimitive.Root
+      onOpenChange={handleOpenChange}
+      onValueChange={handleValueChange}
+      {...props}
+    />
+  )
+}
 
 const SelectGroup = SelectPrimitive.Group
 

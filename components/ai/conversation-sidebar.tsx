@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { PlusIcon, MessageSquareIcon, TrashIcon } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { haptic } from "@/lib/haptics";
 
 interface ConversationSidebarProps {
   conversations: any[];
@@ -20,6 +21,7 @@ interface SwipeState {
   startX: number;
   currentX: number;
   swiping: boolean;
+  thresholdReached: boolean;
 }
 
 export function ConversationSidebar({
@@ -30,10 +32,11 @@ export function ConversationSidebar({
   onDeleteConversation,
 }: ConversationSidebarProps) {
   const [swipedId, setSwipedId] = useState<string | null>(null);
-  const swipeRef = useRef<SwipeState>({ id: null, startX: 0, currentX: 0, swiping: false });
+  const swipeRef = useRef<SwipeState>({ id: null, startX: 0, currentX: 0, swiping: false, thresholdReached: false });
 
   const handleDelete = async (id: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
+    haptic("heavy");
 
     try {
       const response = await fetch(`/api/ai/conversations?id=${id}`, {
@@ -59,6 +62,7 @@ export function ConversationSidebar({
       startX: e.touches[0].clientX,
       currentX: e.touches[0].clientX,
       swiping: false,
+      thresholdReached: false,
     };
   };
 
@@ -72,6 +76,15 @@ export function ConversationSidebar({
     if (deltaX > 10) {
       swipeRef.current.swiping = true;
       swipeRef.current.currentX = currentX;
+
+      // Haptic feedback when crossing the threshold
+      if (deltaX > 40 && !swipeRef.current.thresholdReached) {
+        swipeRef.current.thresholdReached = true;
+        haptic("medium");
+      } else if (deltaX <= 40 && swipeRef.current.thresholdReached) {
+        swipeRef.current.thresholdReached = false;
+        haptic("light");
+      }
 
       // Update the element transform directly for smooth animation
       const element = e.currentTarget as HTMLElement;
@@ -95,7 +108,7 @@ export function ConversationSidebar({
       setSwipedId(null);
     }
 
-    swipeRef.current = { id: null, startX: 0, currentX: 0, swiping: false };
+    swipeRef.current = { id: null, startX: 0, currentX: 0, swiping: false, thresholdReached: false };
   };
 
   const handleClick = (id: string) => {
