@@ -9,7 +9,7 @@ const Card = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "rounded-2xl border-0 bg-card text-card-foreground shadow-sm",
+      "rounded-xl border-0 bg-card text-card-foreground shadow-[var(--shadow-ios-sm)]",
       className
     )}
     {...props}
@@ -73,4 +73,19 @@ const CardFooter = React.forwardRef<
 ))
 CardFooter.displayName = "CardFooter"
 
-export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent }
+const CardListItem = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={cn(
+      "flex min-h-11 items-center justify-between px-4 py-3 border-b border-ios-separator last:border-b-0",
+      className
+    )}
+    {...props}
+  />
+))
+CardListItem.displayName = "CardListItem"
+
+export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent, CardListItem }

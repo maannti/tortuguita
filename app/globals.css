@@ -26,6 +26,13 @@
   --chart-4: 153 20% 25%;
   --chart-5: 60 16% 75%;
   --radius: 0.5rem;
+
+  /* iOS Gray Scale */
+  --ios-gray-1: 242 242 247;
+  --ios-gray-2: 229 229 234;
+  --ios-gray-3: 209 209 214;
+  --ios-gray-4: 174 174 178;
+  --ios-separator: 60 60 67 / 0.12;
 }
 
 .dark {
@@ -53,6 +60,13 @@
   --chart-3: 60 16% 83%;
   --chart-4: 84 30% 70%;
   --chart-5: 122 30% 60%;
+
+  /* iOS Gray Scale - Dark Mode */
+  --ios-gray-1: 28 28 30;
+  --ios-gray-2: 44 44 46;
+  --ios-gray-3: 58 58 60;
+  --ios-gray-4: 72 72 74;
+  --ios-separator: 84 84 88 / 0.6;
 }
 
 @theme inline {
@@ -83,6 +97,18 @@
   --color-chart-3: hsl(var(--chart-3));
   --color-chart-4: hsl(var(--chart-4));
   --color-chart-5: hsl(var(--chart-5));
+
+  /* iOS Colors */
+  --color-ios-gray-1: rgb(var(--ios-gray-1));
+  --color-ios-gray-2: rgb(var(--ios-gray-2));
+  --color-ios-gray-3: rgb(var(--ios-gray-3));
+  --color-ios-gray-4: rgb(var(--ios-gray-4));
+  --color-ios-separator: rgba(var(--ios-separator));
+
+  /* iOS Shadows */
+  --shadow-ios-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-ios-md: 0 4px 12px rgba(0, 0, 0, 0.12);
+  --shadow-ios-lg: 0 8px 24px rgba(0, 0, 0, 0.16);
 }
 
 * {
@@ -100,6 +126,33 @@ body {
   font-family: var(--font-sans), system-ui, sans-serif;
   overflow: hidden;
   height: 100%;
+}
+
+/* Bottom sheet animations */
+@keyframes slide-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-down {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(100%);
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.animate-slide-down {
+  animation: slide-down 0.2s cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 /* Turtle thinking animation */
