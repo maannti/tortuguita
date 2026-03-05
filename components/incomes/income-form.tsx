@@ -471,7 +471,7 @@ export function IncomeForm({ initialData, categories, members, memberIncomes = {
               name="notes"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t.incomes?.notes || "Notas (Opcional)"}</FormLabel>
+                  <FormLabel>{t.incomes?.notes || "Notas - (Opcional)"}</FormLabel>
                   <FormControl>
                     <Input
                       placeholder={t.incomes?.notesPlaceholder || "Detalles adicionales sobre este ingreso..."}
@@ -648,7 +648,7 @@ export function IncomeForm({ initialData, categories, members, memberIncomes = {
                   {fields.length > 0 && (
                     <>
                       <h3 className="text-sm font-medium mb-2">
-                        {t.incomes?.assignToMembers || "Asignar a Miembros (Opcional)"}
+                        {t.incomes?.assignToMembers || "Asignar a Miembros - (Opcional)"}
                       </h3>
                       <p className="text-xs text-muted-foreground mb-4">
                         {t.incomes?.splitIncomeDescription || "Dividir este ingreso entre los miembros. El total debe ser 100%."}

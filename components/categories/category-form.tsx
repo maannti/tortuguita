@@ -199,7 +199,7 @@ export function CategoryForm({ initialData, mode }: CategoryFormProps) {
                 name="icon"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t.categories.icon} ({t.common.optional})</FormLabel>
+                    <FormLabel>{t.categories.icon} - ({t.common.optional})</FormLabel>
                     <FormControl>
                       <Input
                         placeholder={t.categories.iconPlaceholder}
@@ -277,7 +277,7 @@ export function CategoryForm({ initialData, mode }: CategoryFormProps) {
 
                 {/* Next period - optional */}
                 <div className="pt-2 border-t">
-                  <p className="text-sm font-medium mb-3">{t.billingPeriod.nextPeriod} ({t.common.optional || "Opcional"})</p>
+                  <p className="text-sm font-medium mb-3">{t.billingPeriod.nextPeriod} - ({t.common.optional})</p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="nextClosingDate">{t.billingPeriod.nextClosingDate}</Label>

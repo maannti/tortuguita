@@ -108,7 +108,7 @@ export function IncomeTypeForm({ initialData, mode }: IncomeTypeFormProps) {
                 name="description"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t.incomeTypes?.incomeTypeDescription || "Descripción (Opcional)"}</FormLabel>
+                    <FormLabel>{t.incomeTypes?.incomeTypeDescription || "Descripción - (Opcional)"}</FormLabel>
                     <FormControl>
                       <Input
                         placeholder={t.incomeTypes?.incomeTypeDescriptionPlaceholder || "Breve descripción de esta categoría"}
@@ -146,7 +146,7 @@ export function IncomeTypeForm({ initialData, mode }: IncomeTypeFormProps) {
                 name="icon"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t.categories.icon} ({t.common.optional})</FormLabel>
+                    <FormLabel>{t.categories.icon} - ({t.common.optional})</FormLabel>
                     <FormControl>
                       <Input
                         placeholder={t.incomeTypes?.iconPlaceholder || "ej., 💰"}
