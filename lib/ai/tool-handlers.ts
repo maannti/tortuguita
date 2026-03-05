@@ -5,6 +5,7 @@ import { incomeSchema } from "@/lib/validations/income";
 import { incomeTypeSchema } from "@/lib/validations/income-type";
 import { startOfMonth, endOfMonth, subMonths, startOfYear, format } from "date-fns";
 import { Prisma } from "@prisma/client";
+import { calculateBudgetDate, type BillingPeriod } from "@/lib/budget-date";
 
 export async function handleToolCall(
   toolName: string,
@@ -165,12 +166,26 @@ async function createBill(input: any, userId: string, organizationId: string) {
 
     const validated = billSchema.parse(billData);
 
-    // 5. Create bill with assignments
+    // 5. Calculate budget date
+    const billingPeriod: BillingPeriod = {
+      currentClosingDate: billType.currentClosingDate,
+      currentDueDate: billType.currentDueDate,
+      nextClosingDate: billType.nextClosingDate,
+      nextDueDate: billType.nextDueDate,
+    };
+    const budgetDateResult = calculateBudgetDate(
+      validated.paymentDate,
+      billType.isCreditCard,
+      billingPeriod
+    );
+
+    // 6. Create bill with assignments
     const bill = await prisma.bill.create({
       data: {
         label: validated.label,
         amount: validated.amount,
         paymentDate: validated.paymentDate,
+        budgetDate: budgetDateResult.budgetDate,
         dueDate: validated.dueDate || null,
         billTypeId: validated.billTypeId,
         notes: validated.notes,
@@ -314,11 +329,11 @@ async function getAnalytics(input: any, organizationId: string) {
         endDate = endOfMonth(now);
     }
 
-    // Get total spending
+    // Get total spending (using budgetDate for budget impact)
     const total = await prisma.bill.aggregate({
       where: {
         organizationId,
-        paymentDate: { gte: startDate, lte: endDate },
+        budgetDate: { gte: startDate, lte: endDate },
       },
       _sum: { amount: true },
       _count: true,
@@ -332,7 +347,7 @@ async function getAnalytics(input: any, organizationId: string) {
         by: ["billTypeId"],
         where: {
           organizationId,
-          paymentDate: { gte: startDate, lte: endDate },
+          budgetDate: { gte: startDate, lte: endDate },
         },
         _sum: { amount: true },
       });
@@ -356,7 +371,7 @@ async function getAnalytics(input: any, organizationId: string) {
       const billsWithAssignments = await prisma.bill.findMany({
         where: {
           organizationId,
-          paymentDate: { gte: startDate, lte: endDate },
+          budgetDate: { gte: startDate, lte: endDate },
         },
         include: {
           assignments: {
@@ -403,7 +418,7 @@ async function getAnalytics(input: any, organizationId: string) {
         const monthTotal = await prisma.bill.aggregate({
           where: {
             organizationId,
-            paymentDate: { gte: monthStart, lte: monthEnd },
+            budgetDate: { gte: monthStart, lte: monthEnd },
           },
           _sum: { amount: true },
         });
@@ -492,9 +507,9 @@ async function searchBills(input: any, userId: string, organizationId: string) {
     }
 
     if (input.startDate || input.endDate) {
-      where.paymentDate = {};
-      if (input.startDate) where.paymentDate.gte = new Date(input.startDate);
-      if (input.endDate) where.paymentDate.lte = new Date(input.endDate);
+      where.budgetDate = {};
+      if (input.startDate) where.budgetDate.gte = new Date(input.startDate);
+      if (input.endDate) where.budgetDate.lte = new Date(input.endDate);
     }
 
     if (input.minAmount || input.maxAmount) {
@@ -659,6 +674,31 @@ async function updateBill(input: any, organizationId: string) {
         deleteMany: {},
         create: resolvedAssignments,
       };
+    }
+
+    // Get the billType with billing period for budgetDate calculation
+    const billTypeForBudget = await prisma.billType.findFirst({
+      where: {
+        id: updateData.billTypeId || existingBill.billTypeId,
+        organizationId,
+      },
+    });
+
+    if (billTypeForBudget) {
+      const billingPeriod: BillingPeriod = {
+        currentClosingDate: billTypeForBudget.currentClosingDate,
+        currentDueDate: billTypeForBudget.currentDueDate,
+        nextClosingDate: billTypeForBudget.nextClosingDate,
+        nextDueDate: billTypeForBudget.nextDueDate,
+      };
+
+      const paymentDate = updateData.paymentDate || existingBill.paymentDate;
+      const budgetDateResult = calculateBudgetDate(
+        paymentDate,
+        billTypeForBudget.isCreditCard,
+        billingPeriod
+      );
+      updateData.budgetDate = budgetDateResult.budgetDate;
     }
 
     // Update the bill

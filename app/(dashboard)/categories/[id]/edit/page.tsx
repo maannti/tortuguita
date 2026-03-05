@@ -27,7 +27,7 @@ export default async function EditCategoryPage({
   }
 
   return (
-    <div className="max-w-2xl">
+    <div className="-mx-4 md:mx-0 md:max-w-3xl lg:mx-auto">
       <CategoryForm
         mode="edit"
         initialData={{
@@ -37,6 +37,10 @@ export default async function EditCategoryPage({
           color: category.color || "#3b82f6",
           icon: category.icon || "",
           isCreditCard: category.isCreditCard,
+          currentClosingDate: category.currentClosingDate,
+          currentDueDate: category.currentDueDate,
+          nextClosingDate: category.nextClosingDate,
+          nextDueDate: category.nextDueDate,
         }}
       />
     </div>

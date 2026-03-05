@@ -33,6 +33,7 @@ export const en = {
     yes: "Yes",
     no: "No",
     you: "You",
+    optional: "Optional",
   },
 
   // Navigation
@@ -271,6 +272,27 @@ export const en = {
     createdCategory: "Created category",
     retrievedAnalytics: "Retrieved analytics",
     foundBills: "Found bills",
+  },
+
+  // Billing Period (Credit Cards)
+  billingPeriod: {
+    title: "Billing Period Configuration",
+    description: "Set the closing and due dates for this credit card",
+    currentPeriod: "Current Period",
+    nextPeriod: "Next Period",
+    closingDate: "Closing Date",
+    closingDateDescription: "Statement closing date",
+    dueDate: "Due Date",
+    dueDateDescription: "Payment due date",
+    nextClosingDate: "Next Closing Date",
+    nextDueDate: "Next Due Date",
+    configureRequired: "Configure billing period to continue",
+    configureNextRequired: "Configure next billing period",
+    save: "Save",
+    cancel: "Cancel",
+    expenseAfterClosing: "This expense is after the current closing date. Please configure the next billing period.",
+    budgetImpact: "Budget Impact",
+    budgetImpactDescription: "This expense will affect your budget in",
   },
 
   // Incomes

@@ -40,6 +40,7 @@ interface BillData {
   label: string;
   amount: number;
   paymentDate: string;
+  budgetDate: string;
   dueDate: string | null;
   notes: string | null;
   totalInstallments: number | null;
@@ -50,6 +51,7 @@ interface BillData {
     name: string;
     color: string | null;
     icon: string | null;
+    isCreditCard?: boolean;
   };
   user: {
     name: string | null;
@@ -115,11 +117,16 @@ export function BillsContent({ bills, availableMonths, categories }: BillsConten
                 <div className="flex items-center gap-2">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 text-xs text-foreground/60 mb-0.5">
-                      <span>{bill.paymentDate}</span>
+                      <span>{bill.budgetDate}</span>
                       {bill.billType.icon && <span>{bill.billType.icon}</span>}
                       {bill.totalInstallments && bill.currentInstallment && (
                         <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-blue-600 text-white">
                           cuota {bill.currentInstallment}/{bill.totalInstallments}
+                        </span>
+                      )}
+                      {bill.billType.isCreditCard && bill.paymentDate !== bill.budgetDate && (
+                        <span className="text-foreground/40" title={`Consumo: ${bill.paymentDate}`}>
+                          ({bill.paymentDate})
                         </span>
                       )}
                     </div>
@@ -171,14 +178,20 @@ export function BillsContent({ bills, availableMonths, categories }: BillsConten
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                           <div>
-                            <p className="text-xs text-muted-foreground mb-1">{t.bills.paymentDate}</p>
-                            <p className="text-sm">{bill.paymentDate}</p>
+                            <p className="text-xs text-muted-foreground mb-1">{t.billingPeriod.budgetImpact}</p>
+                            <p className="text-sm">{bill.budgetDate}</p>
                           </div>
                           <div>
                             <p className="text-xs text-muted-foreground mb-1">{t.bills.addedBy}</p>
                             <p className="text-sm">{bill.user.name}</p>
                           </div>
                         </div>
+                        {bill.billType.isCreditCard && bill.paymentDate !== bill.budgetDate && (
+                          <div>
+                            <p className="text-xs text-muted-foreground mb-1">{t.bills.paymentDate}</p>
+                            <p className="text-sm">{bill.paymentDate}</p>
+                          </div>
+                        )}
                         {bill.totalInstallments && bill.currentInstallment && (
                           <div>
                             <p className="text-xs text-muted-foreground mb-1">Cuota</p>

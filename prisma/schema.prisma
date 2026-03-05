@@ -124,15 +124,19 @@ model UserOrganization {
 }
 
 model BillType {
-  id             String       @id @default(cuid())
-  name           String
-  description    String?
-  color          String?
-  icon           String?
-  isCreditCard   Boolean      @default(false)
-  organizationId String
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  id                 String       @id @default(cuid())
+  name               String
+  description        String?
+  color              String?
+  icon               String?
+  isCreditCard       Boolean      @default(false)
+  currentClosingDate DateTime?    // Closing date for current billing period
+  currentDueDate     DateTime?    // Due date for current billing period
+  nextClosingDate    DateTime?    // Closing date for next billing period
+  nextDueDate        DateTime?    // Due date for next billing period
+  organizationId     String
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
 
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   bills          Bill[]
@@ -146,6 +150,7 @@ model Bill {
   label               String
   amount              Decimal      @db.Decimal(10, 2)
   paymentDate         DateTime
+  budgetDate          DateTime     // Budget impact date (for credit cards: due date of billing cycle)
   dueDate             DateTime?
   billTypeId          String
   organizationId      String
@@ -163,6 +168,7 @@ model Bill {
   assignments    BillAssignment[]
 
   @@index([organizationId, paymentDate])
+  @@index([organizationId, budgetDate])
   @@index([billTypeId])
   @@index([userId])
   @@index([paymentDate])

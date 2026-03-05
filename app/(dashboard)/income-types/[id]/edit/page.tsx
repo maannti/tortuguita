@@ -27,7 +27,7 @@ export default async function EditIncomeTypePage({
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="-mx-4 md:mx-0 md:max-w-3xl lg:mx-auto">
       <IncomeTypeForm
         mode="edit"
         initialData={{

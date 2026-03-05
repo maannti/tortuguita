@@ -39,20 +39,19 @@ export default async function BillsPage({ searchParams }: PageProps) {
   const selectedMonth = params.month;
   const selectedCategory = params.category;
 
-  // Get available months (months with expenses)
+  // Get available months (months with expenses - using budgetDate for budget impact)
   const monthsWithExpenses = await prisma.bill.findMany({
     where: {
       organizationId: session.user.currentOrganizationId,
     },
     select: {
-      paymentDate: true,
+      budgetDate: true,
     },
-    distinct: ["paymentDate"],
   });
 
   const availableMonthsSet = new Set<string>();
   for (const bill of monthsWithExpenses) {
-    availableMonthsSet.add(format(new Date(bill.paymentDate), "yyyy-MM"));
+    availableMonthsSet.add(format(new Date(bill.budgetDate), "yyyy-MM"));
   }
   const availableMonths = Array.from(availableMonthsSet).sort().reverse();
 
@@ -79,7 +78,7 @@ export default async function BillsPage({ searchParams }: PageProps) {
 
   if (selectedMonth) {
     const targetDate = parse(selectedMonth, "yyyy-MM", new Date());
-    whereClause.paymentDate = {
+    whereClause.budgetDate = {
       gte: startOfMonth(targetDate),
       lte: endOfMonth(targetDate),
     };
@@ -109,7 +108,7 @@ export default async function BillsPage({ searchParams }: PageProps) {
       },
     },
     orderBy: {
-      paymentDate: "desc",
+      budgetDate: "desc",
     },
   });
 
@@ -120,6 +119,7 @@ export default async function BillsPage({ searchParams }: PageProps) {
         label: bill.label,
         amount: Number(bill.amount),
         paymentDate: format(new Date(bill.paymentDate), "MMM d, yyyy"),
+        budgetDate: format(new Date(bill.budgetDate), "MMM d, yyyy"),
         dueDate: bill.dueDate ? format(new Date(bill.dueDate), "MMM d, yyyy") : null,
         notes: bill.notes,
         totalInstallments: bill.totalInstallments,
@@ -130,6 +130,7 @@ export default async function BillsPage({ searchParams }: PageProps) {
           name: bill.billType.name,
           color: bill.billType.color,
           icon: bill.billType.icon,
+          isCreditCard: bill.billType.isCreditCard,
         },
         user: {
           name: bill.user.name,

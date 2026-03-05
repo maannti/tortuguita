@@ -37,9 +37,8 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         organizationId: session.user.currentOrganizationId,
       },
       select: {
-        paymentDate: true,
+        budgetDate: true,
       },
-      distinct: ["paymentDate"],
     }),
     prisma.income.findMany({
       where: {
@@ -48,13 +47,12 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       select: {
         incomeDate: true,
       },
-      distinct: ["incomeDate"],
     }),
   ]);
 
   const availableMonthsSet = new Set<string>();
   for (const bill of monthsWithExpenses) {
-    availableMonthsSet.add(format(new Date(bill.paymentDate), "yyyy-MM"));
+    availableMonthsSet.add(format(new Date(bill.budgetDate), "yyyy-MM"));
   }
   for (const income of monthsWithIncomes) {
     availableMonthsSet.add(format(new Date(income.incomeDate), "yyyy-MM"));
@@ -71,11 +69,11 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   const lastMonthStart = startOfMonth(subMonths(targetDate, 1));
   const lastMonthEnd = endOfMonth(subMonths(targetDate, 1));
 
-  // Total spent this month
+  // Total spent this month (using budgetDate for budget impact)
   const currentMonthTotal = await prisma.bill.aggregate({
     where: {
       organizationId: session.user.currentOrganizationId,
-      paymentDate: {
+      budgetDate: {
         gte: currentMonthStart,
         lte: currentMonthEnd,
       },
@@ -89,7 +87,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   const lastMonthTotal = await prisma.bill.aggregate({
     where: {
       organizationId: session.user.currentOrganizationId,
-      paymentDate: {
+      budgetDate: {
         gte: lastMonthStart,
         lte: lastMonthEnd,
       },
@@ -104,7 +102,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
     by: ["billTypeId"],
     where: {
       organizationId: session.user.currentOrganizationId,
-      paymentDate: {
+      budgetDate: {
         gte: currentMonthStart,
         lte: currentMonthEnd,
       },
@@ -134,7 +132,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   const sixMonthTotal = await prisma.bill.aggregate({
     where: {
       organizationId: session.user.currentOrganizationId,
-      paymentDate: {
+      budgetDate: {
         gte: sixMonthsAgo,
         lte: endOfMonth(now),
       },
@@ -149,7 +147,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   const billsWithAssignments = await prisma.bill.findMany({
     where: {
       organizationId: session.user.currentOrganizationId,
-      paymentDate: {
+      budgetDate: {
         gte: currentMonthStart,
         lte: currentMonthEnd,
       },

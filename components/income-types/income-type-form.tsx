@@ -18,18 +18,8 @@ import {
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
+import { ColorInputWithPicker } from "@/components/ui/color-picker-dialog"
 import { useTranslations } from "@/components/providers/language-provider"
-
-const defaultColors = [
-  "#10b981", // green
-  "#3b82f6", // blue
-  "#8b5cf6", // violet
-  "#f59e0b", // amber
-  "#ef4444", // red
-  "#ec4899", // pink
-  "#06b6d4", // cyan
-  "#f97316", // orange
-]
 
 interface IncomeTypeFormProps {
   initialData?: IncomeTypeFormData & { id: string }
@@ -47,7 +37,7 @@ export function IncomeTypeForm({ initialData, mode }: IncomeTypeFormProps) {
     defaultValues: initialData || {
       name: "",
       description: "",
-      color: defaultColors[0],
+      color: "#10b981",
       icon: "",
       isRecurring: false,
     },
@@ -98,95 +88,77 @@ export function IncomeTypeForm({ initialData, mode }: IncomeTypeFormProps) {
               </div>
             )}
 
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t.incomeTypes?.incomeTypeName || "Nombre"}</FormLabel>
-                  <FormControl>
-                    <Input placeholder={t.incomeTypes?.incomeTypeNamePlaceholder || "ej., Salario"} disabled={isLoading} {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t.incomeTypes?.incomeTypeName || "Nombre"}</FormLabel>
+                    <FormControl>
+                      <Input placeholder={t.incomeTypes?.incomeTypeNamePlaceholder || "ej., Salario"} disabled={isLoading} {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t.incomeTypes?.incomeTypeDescription || "Descripción (Opcional)"}</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder={t.incomeTypes?.incomeTypeDescriptionPlaceholder || "Breve descripción de esta categoría"}
-                      disabled={isLoading}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="color"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t.categories.color}</FormLabel>
-                  <FormDescription>
-                    {t.categories.colorDescription}
-                  </FormDescription>
-                  <div className="flex gap-2 flex-wrap">
-                    {defaultColors.map((color) => (
-                      <button
-                        key={color}
-                        type="button"
-                        onClick={() => field.onChange(color)}
-                        className={`h-10 w-10 rounded-full border-2 transition-all ${
-                          field.value === color
-                            ? "border-gray-900 dark:border-gray-100 scale-110"
-                            : "border-gray-300 hover:scale-105"
-                        }`}
-                        style={{ backgroundColor: color }}
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t.incomeTypes?.incomeTypeDescription || "Descripción (Opcional)"}</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder={t.incomeTypes?.incomeTypeDescriptionPlaceholder || "Breve descripción de esta categoría"}
+                        disabled={isLoading}
+                        {...field}
                       />
-                    ))}
-                  </div>
-                  <FormControl>
-                    <Input
-                      placeholder="#10b981"
-                      disabled={isLoading}
-                      {...field}
-                      className="mt-2"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
-            <FormField
-              control={form.control}
-              name="icon"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t.categories.icon}</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder={t.incomeTypes?.iconPlaceholder || "ej., 💰"}
-                      disabled={isLoading}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    {t.categories.iconDescription}
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="color"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t.categories.color}</FormLabel>
+                    <FormControl>
+                      <ColorInputWithPicker
+                        value={field.value}
+                        onChange={field.onChange}
+                        disabled={isLoading}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="icon"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t.categories.icon} ({t.common.optional})</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder={t.incomeTypes?.iconPlaceholder || "ej., 💰"}
+                        disabled={isLoading}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <FormField
               control={form.control}
@@ -212,19 +184,19 @@ export function IncomeTypeForm({ initialData, mode }: IncomeTypeFormProps) {
               )}
             />
 
-            <div className="flex flex-col gap-3 pt-4">
-              <Button type="submit" disabled={isLoading} size="lg" className="w-full">
-                {isLoading ? t.categories.saving : mode === "create" ? t.categories.create : t.categories.update}
-              </Button>
+            <div className="flex flex-col-reverse md:flex-row gap-3 pt-4">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => router.push("/income-types")}
                 disabled={isLoading}
                 size="lg"
-                className="w-full"
+                className="w-full md:w-auto"
               >
                 {t.common.cancel}
+              </Button>
+              <Button type="submit" disabled={isLoading} size="lg" className="w-full md:flex-1">
+                {isLoading ? t.categories.saving : mode === "create" ? t.categories.create : t.categories.update}
               </Button>
             </div>
           </form>

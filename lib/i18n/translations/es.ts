@@ -35,6 +35,7 @@ export const es: Translations = {
     yes: "Sí",
     no: "No",
     you: "Tú",
+    optional: "Opcional",
   },
 
   // Navigation
@@ -273,6 +274,27 @@ export const es: Translations = {
     createdCategory: "Categoría creada",
     retrievedAnalytics: "Analíticas obtenidas",
     foundBills: "Gastos encontrados",
+  },
+
+  // Billing Period (Credit Cards)
+  billingPeriod: {
+    title: "Configuración del Período de Facturación",
+    description: "Configura las fechas de cierre y vencimiento de esta tarjeta",
+    currentPeriod: "Período Actual",
+    nextPeriod: "Próximo Período",
+    closingDate: "Fecha de Cierre",
+    closingDateDescription: "Fecha de cierre del resumen",
+    dueDate: "Fecha de Vencimiento",
+    dueDateDescription: "Fecha de vencimiento del pago",
+    nextClosingDate: "Próximo Cierre",
+    nextDueDate: "Próximo Vencimiento",
+    configureRequired: "Configurá el período de facturación para continuar",
+    configureNextRequired: "Configurá el próximo período de facturación",
+    save: "Guardar",
+    cancel: "Cancelar",
+    expenseAfterClosing: "Este gasto es posterior al cierre actual. Por favor configurá el próximo período de facturación.",
+    budgetImpact: "Impacto Presupuestario",
+    budgetImpactDescription: "Este gasto impactará tu presupuesto en",
   },
 
   // Incomes

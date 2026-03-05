@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { billSchema } from "@/lib/validations/bill"
 import { z } from "zod"
+import { calculateBudgetDate, type BillingPeriod } from "@/lib/budget-date"
 
 export async function GET(
   request: NextRequest,
@@ -130,12 +131,26 @@ export async function PATCH(
       }
     }
 
+    // Calculate budget date
+    const billingPeriod: BillingPeriod = {
+      currentClosingDate: billType.currentClosingDate,
+      currentDueDate: billType.currentDueDate,
+      nextClosingDate: billType.nextClosingDate,
+      nextDueDate: billType.nextDueDate,
+    }
+
+    // Use provided budgetDate or calculate it
+    const budgetDate = data.budgetDate
+      ? new Date(data.budgetDate)
+      : calculateBudgetDate(data.paymentDate, billType.isCreditCard, billingPeriod).budgetDate
+
     const updated = await prisma.bill.update({
       where: { id },
       data: {
         label: data.label,
         amount: data.amount,
         paymentDate: data.paymentDate,
+        budgetDate,
         dueDate: data.dueDate || null,
         billTypeId: data.billTypeId,
         notes: data.notes,

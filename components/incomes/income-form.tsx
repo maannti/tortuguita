@@ -337,130 +337,134 @@ export function IncomeForm({ initialData, categories, members, memberIncomes = {
               </div>
             )}
 
-            <FormField
-              control={form.control}
-              name="label"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t.incomes?.label || "Descripción"}</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder={t.incomes?.labelPlaceholder || "ej., Salario de enero"}
-                      disabled={isLoading}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="amount"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t.incomes?.amount || "Monto"}</FormLabel>
-                  <FormControl>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                      <Input
-                        type="text"
-                        inputMode="decimal"
-                        placeholder="0,00"
-                        disabled={isLoading}
-                        value={amountDisplay}
-                        onChange={(e) => {
-                          const input = e.target.value;
-                          // Remove everything except digits and comma (decimal separator)
-                          const cleaned = input.replace(/[^0-9,]/g, "");
-                          // Only allow one comma
-                          const parts = cleaned.split(",");
-                          const intPart = parts[0].replace(/^0+(?=\d)/, ""); // Remove leading zeros
-                          const decPart = parts[1]?.slice(0, 2); // Max 2 decimal places
-
-                          // Format with thousands separator
-                          const formattedInt = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-                          const formatted = decPart !== undefined ? `${formattedInt},${decPart}` : formattedInt;
-
-                          setAmountDisplay(formatted);
-
-                          // Convert to number for form state
-                          const numericValue = parseAmountDisplay(formatted);
-                          field.onChange(numericValue);
-                        }}
-                        onBlur={field.onBlur}
-                        name={field.name}
-                        ref={field.ref}
-                        className="pl-7"
-                      />
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="incomeTypeId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t.incomes?.category || "Categoría"}</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                    disabled={isLoading}
-                  >
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="label"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t.incomes?.label || "Descripción"}</FormLabel>
                     <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder={t.incomes?.selectCategory || "Selecciona una categoría"} />
-                      </SelectTrigger>
+                      <Input
+                        placeholder={t.incomes?.labelPlaceholder || "ej., Salario de enero"}
+                        disabled={isLoading}
+                        {...field}
+                      />
                     </FormControl>
-                    <SelectContent>
-                      {categories.map((category) => (
-                        <SelectItem key={category.id} value={category.id}>
-                          <div className="flex items-center gap-2">
-                            {category.icon && <span>{category.icon}</span>}
-                            {category.name}
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            <FormField
-              control={form.control}
-              name="incomeDate"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t.incomes?.incomeDate || "Fecha de Ingreso"}</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="date"
+              <FormField
+                control={form.control}
+                name="amount"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t.incomes?.amount || "Monto"}</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                        <Input
+                          type="text"
+                          inputMode="decimal"
+                          placeholder="0,00"
+                          disabled={isLoading}
+                          value={amountDisplay}
+                          onChange={(e) => {
+                            const input = e.target.value;
+                            // Remove everything except digits and comma (decimal separator)
+                            const cleaned = input.replace(/[^0-9,]/g, "");
+                            // Only allow one comma
+                            const parts = cleaned.split(",");
+                            const intPart = parts[0].replace(/^0+(?=\d)/, ""); // Remove leading zeros
+                            const decPart = parts[1]?.slice(0, 2); // Max 2 decimal places
+
+                            // Format with thousands separator
+                            const formattedInt = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+                            const formatted = decPart !== undefined ? `${formattedInt},${decPart}` : formattedInt;
+
+                            setAmountDisplay(formatted);
+
+                            // Convert to number for form state
+                            const numericValue = parseAmountDisplay(formatted);
+                            field.onChange(numericValue);
+                          }}
+                          onBlur={field.onBlur}
+                          name={field.name}
+                          ref={field.ref}
+                          className="pl-7"
+                        />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="incomeTypeId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t.incomes?.category || "Categoría"}</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
                       disabled={isLoading}
-                      value={
-                        field.value instanceof Date
-                          ? field.value.toISOString().split("T")[0]
-                          : ""
-                      }
-                      onChange={(e) => {
-                        const date = e.target.value
-                          ? new Date(e.target.value + "T00:00:00")
-                          : new Date();
-                        field.onChange(date);
-                      }}
-                    />
-                  </FormControl>
-                  <FormDescription>{t.incomes?.incomeDateDescription || "Cuando se recibió el ingreso"}</FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder={t.incomes?.selectCategory || "Selecciona una categoría"} />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {categories.map((category) => (
+                          <SelectItem key={category.id} value={category.id}>
+                            <div className="flex items-center gap-2">
+                              {category.icon && <span>{category.icon}</span>}
+                              {category.name}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="incomeDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t.incomes?.incomeDate || "Fecha de Ingreso"}</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="date"
+                        disabled={isLoading}
+                        value={
+                          field.value instanceof Date
+                            ? field.value.toISOString().split("T")[0]
+                            : ""
+                        }
+                        onChange={(e) => {
+                          const date = e.target.value
+                            ? new Date(e.target.value + "T00:00:00")
+                            : new Date();
+                          field.onChange(date);
+                        }}
+                      />
+                    </FormControl>
+                    <FormDescription>{t.incomes?.incomeDateDescription || "Cuando se recibió el ingreso"}</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <FormField
               control={form.control}
@@ -821,22 +825,23 @@ export function IncomeForm({ initialData, categories, members, memberIncomes = {
 
       {/* Sticky submit button on mobile, inline on desktop */}
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur-sm md:relative md:bg-transparent md:backdrop-blur-none md:p-6 md:pt-0">
-        <div className="flex flex-col gap-2 max-w-2xl mx-auto md:max-w-none">
-          <Button type="submit" form="income-form" disabled={isLoading} size="lg" className="w-full">
+        <div className="flex flex-col-reverse md:flex-row gap-2 max-w-2xl mx-auto md:max-w-none">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => router.push("/incomes")}
+            disabled={isLoading}
+            size="lg"
+            className="w-full md:w-auto"
+          >
+            {t.common.cancel}
+          </Button>
+          <Button type="submit" form="income-form" disabled={isLoading} size="lg" className="w-full md:flex-1">
             {isLoading
               ? t.incomes?.saving || "Guardando..."
               : mode === "create"
                 ? t.incomes?.create || "Crear"
                 : t.incomes?.update || "Actualizar"}
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={() => router.push("/incomes")}
-            disabled={isLoading}
-            className="w-full md:hidden"
-          >
-            {t.common.cancel}
           </Button>
         </div>
       </div>

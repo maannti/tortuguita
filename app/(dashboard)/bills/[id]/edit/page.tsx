@@ -40,6 +40,10 @@ export default async function EditBillPage({
         color: true,
         icon: true,
         isCreditCard: true,
+        currentClosingDate: true,
+        currentDueDate: true,
+        nextClosingDate: true,
+        nextDueDate: true,
       },
       orderBy: {
         name: "asc",
@@ -88,7 +92,7 @@ export default async function EditBillPage({
   }, {} as Record<string, number>)
 
   return (
-    <div className="-mx-4 md:mx-0 md:max-w-2xl">
+    <div className="-mx-4 md:mx-0 md:max-w-3xl lg:mx-auto">
       <BillForm
         mode="edit"
         categories={categories}

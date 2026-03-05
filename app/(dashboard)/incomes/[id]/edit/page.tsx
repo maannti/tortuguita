@@ -99,7 +99,7 @@ export default async function EditIncomePage({
   }, {} as Record<string, number>)
 
   return (
-    <div className="-mx-4 md:mx-0 md:max-w-2xl">
+    <div className="-mx-4 md:mx-0 md:max-w-3xl lg:mx-auto">
       <IncomeForm
         mode="edit"
         categories={categories}

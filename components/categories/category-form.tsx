@@ -4,6 +4,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
+import { format } from "date-fns"
 import { billTypeSchema, type BillTypeFormData } from "@/lib/validations/bill-type"
 import { Button } from "@/components/ui/button"
 import {
@@ -16,23 +17,20 @@ import {
   FormDescription,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
+import { ColorInputWithPicker } from "@/components/ui/color-picker-dialog"
 import { useTranslations } from "@/components/providers/language-provider"
 
-const defaultColors = [
-  "#3b82f6", // blue
-  "#10b981", // green
-  "#f59e0b", // amber
-  "#ef4444", // red
-  "#8b5cf6", // violet
-  "#ec4899", // pink
-  "#06b6d4", // cyan
-  "#f97316", // orange
-]
-
 interface CategoryFormProps {
-  initialData?: BillTypeFormData & { id: string }
+  initialData?: BillTypeFormData & {
+    id: string
+    currentClosingDate?: Date | null
+    currentDueDate?: Date | null
+    nextClosingDate?: Date | null
+    nextDueDate?: Date | null
+  }
   mode: "create" | "edit"
 }
 
@@ -42,16 +40,37 @@ export function CategoryForm({ initialData, mode }: CategoryFormProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  // Billing period state
+  const formatDateForInput = (date: Date | null | undefined): string => {
+    if (!date) return ""
+    return format(new Date(date), "yyyy-MM-dd")
+  }
+
+  const [currentClosingDate, setCurrentClosingDate] = useState(
+    formatDateForInput(initialData?.currentClosingDate)
+  )
+  const [currentDueDate, setCurrentDueDate] = useState(
+    formatDateForInput(initialData?.currentDueDate)
+  )
+  const [nextClosingDate, setNextClosingDate] = useState(
+    formatDateForInput(initialData?.nextClosingDate)
+  )
+  const [nextDueDate, setNextDueDate] = useState(
+    formatDateForInput(initialData?.nextDueDate)
+  )
+
   const form = useForm<BillTypeFormData>({
     resolver: zodResolver(billTypeSchema),
     defaultValues: initialData || {
       name: "",
       description: "",
-      color: defaultColors[0],
+      color: "#3b82f6",
       icon: "",
       isCreditCard: false,
     },
   })
+
+  const isCreditCard = form.watch("isCreditCard")
 
   async function onSubmit(data: BillTypeFormData) {
     setIsLoading(true)
@@ -73,6 +92,30 @@ export function CategoryForm({ initialData, mode }: CategoryFormProps) {
       if (!response.ok) {
         setError(result.error || "Something went wrong")
         return
+      }
+
+      // If it's a credit card and we have billing period dates, save them
+      if (data.isCreditCard && (currentClosingDate || currentDueDate)) {
+        const categoryId = mode === "create" ? result.id : initialData?.id
+
+        if (categoryId && currentClosingDate && currentDueDate) {
+          const billingResponse = await fetch(`/api/bill-types/${categoryId}/billing-period`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              currentClosingDate: new Date(currentClosingDate + "T00:00:00"),
+              currentDueDate: new Date(currentDueDate + "T00:00:00"),
+              nextClosingDate: nextClosingDate ? new Date(nextClosingDate + "T00:00:00") : undefined,
+              nextDueDate: nextDueDate ? new Date(nextDueDate + "T00:00:00") : undefined,
+            }),
+          })
+
+          if (!billingResponse.ok) {
+            const billingResult = await billingResponse.json()
+            setError(billingResult.error || "Failed to save billing period")
+            return
+          }
+        }
       }
 
       router.push("/categories")
@@ -98,95 +141,77 @@ export function CategoryForm({ initialData, mode }: CategoryFormProps) {
               </div>
             )}
 
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t.categories.categoryName}</FormLabel>
-                  <FormControl>
-                    <Input placeholder={t.categories.categoryNamePlaceholder} disabled={isLoading} {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t.categories.categoryName}</FormLabel>
+                    <FormControl>
+                      <Input placeholder={t.categories.categoryNamePlaceholder} disabled={isLoading} {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t.categories.categoryDescription}</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder={t.categories.categoryDescriptionPlaceholder}
-                      disabled={isLoading}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="color"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t.categories.color}</FormLabel>
-                  <FormDescription>
-                    {t.categories.colorDescription}
-                  </FormDescription>
-                  <div className="flex gap-2 flex-wrap">
-                    {defaultColors.map((color) => (
-                      <button
-                        key={color}
-                        type="button"
-                        onClick={() => field.onChange(color)}
-                        className={`h-10 w-10 rounded-full border-2 transition-all ${
-                          field.value === color
-                            ? "border-gray-900 dark:border-gray-100 scale-110"
-                            : "border-gray-300 hover:scale-105"
-                        }`}
-                        style={{ backgroundColor: color }}
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t.categories.categoryDescription}</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder={t.categories.categoryDescriptionPlaceholder}
+                        disabled={isLoading}
+                        {...field}
                       />
-                    ))}
-                  </div>
-                  <FormControl>
-                    <Input
-                      placeholder="#3b82f6"
-                      disabled={isLoading}
-                      {...field}
-                      className="mt-2"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
-            <FormField
-              control={form.control}
-              name="icon"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t.categories.icon}</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder={t.categories.iconPlaceholder}
-                      disabled={isLoading}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    {t.categories.iconDescription}
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="color"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t.categories.color}</FormLabel>
+                    <FormControl>
+                      <ColorInputWithPicker
+                        value={field.value}
+                        onChange={field.onChange}
+                        disabled={isLoading}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="icon"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t.categories.icon} ({t.common.optional})</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder={t.categories.iconPlaceholder}
+                        disabled={isLoading}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <FormField
               control={form.control}
@@ -212,19 +237,87 @@ export function CategoryForm({ initialData, mode }: CategoryFormProps) {
               )}
             />
 
-            <div className="flex flex-col gap-3 pt-4">
-              <Button type="submit" disabled={isLoading} size="lg" className="w-full">
-                {isLoading ? t.categories.saving : mode === "create" ? t.categories.create : t.categories.update}
-              </Button>
+            {/* Billing Period Section - only show for credit cards */}
+            {isCreditCard && (
+              <div className="rounded-lg border p-4 space-y-4">
+                <div>
+                  <h3 className="text-base font-medium">{t.billingPeriod.title}</h3>
+                  <p className="text-sm text-muted-foreground">{t.billingPeriod.description}</p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="currentClosingDate">{t.billingPeriod.closingDate}</Label>
+                    <Input
+                      id="currentClosingDate"
+                      type="date"
+                      disabled={isLoading}
+                      value={currentClosingDate}
+                      onChange={(e) => setCurrentClosingDate(e.target.value)}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      {t.billingPeriod.closingDateDescription}
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="currentDueDate">{t.billingPeriod.dueDate}</Label>
+                    <Input
+                      id="currentDueDate"
+                      type="date"
+                      disabled={isLoading}
+                      value={currentDueDate}
+                      onChange={(e) => setCurrentDueDate(e.target.value)}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      {t.billingPeriod.dueDateDescription}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Next period - optional */}
+                <div className="pt-2 border-t">
+                  <p className="text-sm font-medium mb-3">{t.billingPeriod.nextPeriod} ({t.common.optional || "Opcional"})</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="nextClosingDate">{t.billingPeriod.nextClosingDate}</Label>
+                      <Input
+                        id="nextClosingDate"
+                        type="date"
+                        disabled={isLoading}
+                        value={nextClosingDate}
+                        onChange={(e) => setNextClosingDate(e.target.value)}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="nextDueDate">{t.billingPeriod.nextDueDate}</Label>
+                      <Input
+                        id="nextDueDate"
+                        type="date"
+                        disabled={isLoading}
+                        value={nextDueDate}
+                        onChange={(e) => setNextDueDate(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="flex flex-col-reverse md:flex-row gap-3 pt-4">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => router.push("/categories")}
                 disabled={isLoading}
                 size="lg"
-                className="w-full"
+                className="w-full md:w-auto"
               >
                 {t.common.cancel}
+              </Button>
+              <Button type="submit" disabled={isLoading} size="lg" className="w-full md:flex-1">
+                {isLoading ? t.categories.saving : mode === "create" ? t.categories.create : t.categories.update}
               </Button>
             </div>
           </form>

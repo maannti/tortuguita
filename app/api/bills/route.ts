@@ -5,6 +5,7 @@ import { billSchema } from "@/lib/validations/bill"
 import { z } from "zod"
 import { Prisma } from "@prisma/client"
 import { randomUUID } from "crypto"
+import { calculateBudgetDate, type BillingPeriod } from "@/lib/budget-date"
 
 export async function GET(request: NextRequest) {
   try {
@@ -137,6 +138,14 @@ export async function POST(request: NextRequest) {
     // Check if creating installments
     const totalInstallments = data.totalInstallments || 1
 
+    // Get billing period for calculating budget dates
+    const billingPeriod: BillingPeriod = {
+      currentClosingDate: billType.currentClosingDate,
+      currentDueDate: billType.currentDueDate,
+      nextClosingDate: billType.nextClosingDate,
+      nextDueDate: billType.nextDueDate,
+    }
+
     if (totalInstallments > 1) {
       // Create multiple bills for installments
       const installmentGroupId = randomUUID()
@@ -149,12 +158,20 @@ export async function POST(request: NextRequest) {
         const paymentDate = new Date(data.paymentDate)
         paymentDate.setMonth(paymentDate.getMonth() + (i - 1))
 
+        // Calculate budget date for this installment
+        const budgetDateResult = calculateBudgetDate(
+          paymentDate,
+          billType.isCreditCard,
+          billingPeriod
+        )
+
         billPromises.push(
           prisma.bill.create({
             data: {
               label: data.label,
               amount: amountPerInstallment,
               paymentDate,
+              budgetDate: budgetDateResult.budgetDate,
               dueDate: data.dueDate || null,
               billTypeId: data.billTypeId,
               notes: data.notes,
@@ -200,11 +217,17 @@ export async function POST(request: NextRequest) {
     }
 
     // Single bill (no installments)
+    // Use provided budgetDate or calculate it
+    const budgetDate = data.budgetDate
+      ? new Date(data.budgetDate)
+      : calculateBudgetDate(data.paymentDate, billType.isCreditCard, billingPeriod).budgetDate
+
     const bill = await prisma.bill.create({
       data: {
         label: data.label,
         amount: data.amount,
         paymentDate: data.paymentDate,
+        budgetDate,
         dueDate: data.dueDate || null,
         billTypeId: data.billTypeId,
         notes: data.notes,
