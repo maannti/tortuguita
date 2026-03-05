@@ -184,7 +184,7 @@ export function CategoryForm({ initialData, mode }: CategoryFormProps) {
                     <FormLabel>{t.categories.color}</FormLabel>
                     <FormControl>
                       <ColorInputWithPicker
-                        value={field.value}
+                        value={field.value || "#3b82f6"}
                         onChange={field.onChange}
                         disabled={isLoading}
                       />
