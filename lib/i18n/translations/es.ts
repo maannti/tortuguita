@@ -35,7 +35,7 @@ export const es: Translations = {
     yes: "Sí",
     no: "No",
     you: "Tú",
-    optional: "Opcional",
+    optional: "- Opcional",
   },
 
   // Navigation
@@ -182,7 +182,7 @@ export const es: Translations = {
     categoryDescriptionPlaceholder: "Breve descripción de esta categoría",
     color: "Color",
     colorDescription: "Elige un color para esta categoría",
-    icon: "Icono (Emoji)",
+    icon: "Emoji",
     iconPlaceholder: "ej., 🛒",
     iconDescription: "Agrega un emoji o caracter de icono",
     saving: "Guardando...",

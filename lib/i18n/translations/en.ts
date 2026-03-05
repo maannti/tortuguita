@@ -33,7 +33,7 @@ export const en = {
     yes: "Yes",
     no: "No",
     you: "You",
-    optional: "Optional",
+    optional: "- Optional",
   },
 
   // Navigation
@@ -180,7 +180,7 @@ export const en = {
     categoryDescriptionPlaceholder: "Brief description of this category",
     color: "Color",
     colorDescription: "Choose a color for this category",
-    icon: "Icon (Emoji)",
+    icon: "Emoji",
     iconPlaceholder: "e.g., 🛒",
     iconDescription: "Add an emoji or icon character",
     saving: "Saving...",
