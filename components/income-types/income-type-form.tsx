@@ -131,7 +131,7 @@ export function IncomeTypeForm({ initialData, mode }: IncomeTypeFormProps) {
                     <FormLabel>{t.categories.color}</FormLabel>
                     <FormControl>
                       <ColorInputWithPicker
-                        value={field.value}
+                        value={field.value || "#3b82f6"}
                         onChange={field.onChange}
                         disabled={isLoading}
                       />
