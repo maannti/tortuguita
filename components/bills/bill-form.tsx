@@ -79,6 +79,7 @@ export function BillForm({ initialData, categories, members, memberIncomes = {},
   const [billingPeriodMode, setBillingPeriodMode] = useState<"current" | "next">("current");
   const [billingPeriods, setBillingPeriods] = useState<Record<string, BillingPeriod>>({});
   const [calculatedBudgetDate, setCalculatedBudgetDate] = useState<Date | null>(null);
+  const [selectedBudgetPeriod, setSelectedBudgetPeriod] = useState<"current" | "next" | "auto">("auto");
   const [pendingFormData, setPendingFormData] = useState<BillFormData | null>(null);
 
   // Format number with thousands separator (.) and decimal separator (,)
@@ -278,6 +279,34 @@ export function BillForm({ initialData, categories, members, memberIncomes = {},
     setCalculatedBudgetDate(result.budgetDate);
   }, [paymentDate, selectedCategoryId, selectedCategory, billingPeriods]);
 
+  // Reset selected period to auto when category changes
+  useEffect(() => {
+    setSelectedBudgetPeriod("auto");
+  }, [selectedCategoryId]);
+
+  // Get the final budget date based on selection
+  const getFinalBudgetDate = (): Date | null => {
+    const payment = getPaymentDateAsDate(paymentDate);
+    if (!payment) return null;
+
+    if (!selectedCategory?.isCreditCard) {
+      return payment;
+    }
+
+    const billingPeriod = billingPeriods[selectedCategoryId];
+    if (!billingPeriod) return payment;
+
+    if (selectedBudgetPeriod === "auto") {
+      return calculatedBudgetDate;
+    } else if (selectedBudgetPeriod === "current" && billingPeriod.currentDueDate) {
+      return new Date(billingPeriod.currentDueDate);
+    } else if (selectedBudgetPeriod === "next" && billingPeriod.nextDueDate) {
+      return new Date(billingPeriod.nextDueDate);
+    }
+
+    return calculatedBudgetDate;
+  };
+
   // Check if billing period configuration is needed
   const checkBillingPeriod = (): { needsConfig: boolean; mode: "current" | "next" } => {
     if (!selectedCategory?.isCreditCard) {
@@ -353,15 +382,25 @@ export function BillForm({ initialData, categories, members, memberIncomes = {},
         }
       }
 
-      // Calculate budget date
+      // Get budget date based on user selection
       const payment = data.paymentDate instanceof Date
         ? data.paymentDate
         : new Date(data.paymentDate as string | number);
-      const budgetDateResult = calculateBudgetDate(
-        payment,
-        selectedCategory?.isCreditCard ?? false,
-        billingPeriod
-      );
+
+      let finalBudgetDate: Date;
+      if (selectedBudgetPeriod === "current" && billingPeriod?.currentDueDate) {
+        finalBudgetDate = new Date(billingPeriod.currentDueDate);
+      } else if (selectedBudgetPeriod === "next" && billingPeriod?.nextDueDate) {
+        finalBudgetDate = new Date(billingPeriod.nextDueDate);
+      } else {
+        // Auto calculation
+        const budgetDateResult = calculateBudgetDate(
+          payment,
+          selectedCategory?.isCreditCard ?? false,
+          billingPeriod
+        );
+        finalBudgetDate = budgetDateResult.budgetDate;
+      }
 
       const url =
         mode === "create" ? "/api/bills" : `/api/bills/${initialData?.id}`;
@@ -371,7 +410,7 @@ export function BillForm({ initialData, categories, members, memberIncomes = {},
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...data,
-          budgetDate: budgetDateResult.budgetDate,
+          budgetDate: finalBudgetDate,
           totalInstallments: cuotasNum > 0 ? cuotasNum : undefined,
         }),
       });
@@ -588,24 +627,79 @@ export function BillForm({ initialData, categories, members, memberIncomes = {},
                     </FormItem>
                   )}
                 />
-              {/* Budget Date Preview - only show for credit cards with configured billing period */}
-              {selectedCategory?.isCreditCard && calculatedBudgetDate && paymentDate && (
+              {/* Budget Date Selector - only show for credit cards */}
+              {selectedCategory?.isCreditCard && paymentDate && (
                 (() => {
-                  const payment = getPaymentDateAsDate(paymentDate);
-                  const budget = calculatedBudgetDate;
-                  // Only show if budget date is different from payment date
-                  if (payment && payment.toDateString() !== budget.toDateString()) {
+                  const billingPeriod = billingPeriods[selectedCategoryId];
+                  const hasCurrentPeriod = billingPeriod?.currentDueDate;
+                  const hasNextPeriodConfigured = billingPeriod?.nextDueDate;
+                  const finalBudgetDate = getFinalBudgetDate();
+
+                  // If no billing period configured, show a prompt to configure
+                  if (!hasCurrentPeriod) {
                     return (
-                      <div className="p-3 bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800 rounded-md">
-                        <div className="flex items-center gap-2 text-sm text-blue-700 dark:text-blue-300">
+                      <div className="p-3 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 rounded-md">
+                        <div className="flex items-center gap-2 text-sm text-amber-700 dark:text-amber-300">
                           <Calendar className="h-4 w-4" />
-                          <span className="font-medium">{t.billingPeriod.budgetImpact}:</span>
-                          <span>{format(budget, "MMM d, yyyy")}</span>
+                          <span>Configurá el período de facturación para ver el impacto presupuestario</span>
                         </div>
                       </div>
                     );
                   }
-                  return null;
+
+                  return (
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold leading-none">
+                        {t.billingPeriod.budgetImpact}
+                      </label>
+                      <Select
+                        value={selectedBudgetPeriod}
+                        onValueChange={(value: "auto" | "current" | "next") => setSelectedBudgetPeriod(value)}
+                        disabled={isLoading}
+                      >
+                        <SelectTrigger className="bg-blue-50 dark:bg-blue-900/10 border-blue-200 dark:border-blue-800">
+                          <SelectValue>
+                            <div className="flex items-center gap-2 text-blue-700 dark:text-blue-300">
+                              <Calendar className="h-4 w-4" />
+                              <span>
+                                {finalBudgetDate ? format(finalBudgetDate, "MMM d, yyyy") : "Seleccionar"}
+                              </span>
+                            </div>
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {hasCurrentPeriod && (
+                            <SelectItem value="current">
+                              <div className="flex flex-col">
+                                <span>Cierre actual - {format(new Date(billingPeriod.currentDueDate!), "MMM d, yyyy")}</span>
+                                <span className="text-xs text-muted-foreground">
+                                  Cierra el {format(new Date(billingPeriod.currentClosingDate!), "MMM d")}
+                                </span>
+                              </div>
+                            </SelectItem>
+                          )}
+                          {hasNextPeriodConfigured && (
+                            <SelectItem value="next">
+                              <div className="flex flex-col">
+                                <span>Próximo cierre - {format(new Date(billingPeriod.nextDueDate!), "MMM d, yyyy")}</span>
+                                <span className="text-xs text-muted-foreground">
+                                  Cierra el {format(new Date(billingPeriod.nextClosingDate!), "MMM d")}
+                                </span>
+                              </div>
+                            </SelectItem>
+                          )}
+                          <SelectItem value="auto">
+                            <div className="flex flex-col">
+                              <span>Automático</span>
+                              <span className="text-xs text-muted-foreground">
+                                Según fecha de pago y cierre
+                              </span>
+                            </div>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  );
                 })()
               )}
 
