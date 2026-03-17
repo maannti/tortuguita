@@ -169,7 +169,15 @@ export function isLikelyOnTopic(message: string): boolean {
  * Builds the hardened system prompt with safety instructions
  */
 export function buildSafeSystemPrompt(context: {
-  categories: Array<{ name: string; icon?: string | null; isCreditCard?: boolean }>;
+  categories: Array<{
+    name: string;
+    icon?: string | null;
+    isCreditCard?: boolean;
+    currentClosingDate?: Date | null;
+    currentDueDate?: Date | null;
+    nextClosingDate?: Date | null;
+    nextDueDate?: Date | null;
+  }>;
   incomeCategories: Array<{ name: string; icon?: string | null; isRecurring?: boolean }>;
   currentMonthTotal: string;
   billCount: number;
@@ -190,6 +198,33 @@ export function buildSafeSystemPrompt(context: {
     const recurring = c.isRecurring ? " [recurrente]" : "";
     return `${c.name}${icon}${recurring}`;
   };
+
+  // Format credit card billing periods
+  const formatBillingPeriod = (c: {
+    name: string;
+    currentClosingDate?: Date | null;
+    currentDueDate?: Date | null;
+    nextClosingDate?: Date | null;
+    nextDueDate?: Date | null;
+  }) => {
+    if (!c.currentClosingDate || !c.currentDueDate) {
+      return `${c.name}: no configurado`;
+    }
+    const formatDate = (d: Date) => {
+      const date = new Date(d);
+      return `${date.getDate()}/${date.getMonth() + 1}`;
+    };
+    const current = `cierre ${formatDate(c.currentClosingDate)}, vence ${formatDate(c.currentDueDate)}`;
+    const next = c.nextClosingDate && c.nextDueDate
+      ? ` | próximo: cierre ${formatDate(c.nextClosingDate)}, vence ${formatDate(c.nextDueDate)}`
+      : "";
+    return `${c.name}: ${current}${next}`;
+  };
+
+  const creditCards = context.categories.filter(c => c.isCreditCard);
+  const billingPeriodsInfo = creditCards.length > 0
+    ? creditCards.map(formatBillingPeriod).join("\n  ")
+    : "ninguna";
 
   return `You are a secure financial assistant for the "Tortuguita" app. Your ONLY purpose is helping users manage their bills/expenses, incomes, categories, and view financial analytics.
 
@@ -235,6 +270,8 @@ export function buildSafeSystemPrompt(context: {
 - Current user (you're talking to): ${context.currentUserName}
 - Expense categories: ${context.categories.map(formatCategory).join(", ") || "none"}
 - Credit card categories (cuotas enabled): ${context.categories.filter(c => c.isCreditCard).map(c => c.name).join(", ") || "none"}
+- Credit card billing periods:
+  ${billingPeriodsInfo}
 - Income categories: ${context.incomeCategories.map(formatIncomeCategory).join(", ") || "none"}
 - Month spending: $${context.currentMonthTotal}
 - Bills this month: ${context.billCount}
@@ -279,7 +316,27 @@ When user says "dividí según nuestros ingresos" or "split by income ratio", do
 - If user wants cuotas but category is not a credit card, warn them or ask to create a credit card category
 - When creating a NEW category, ALWAYS ask if it's a credit card (to enable cuotas feature)
 - Credit card categories should have isCreditCard: true and typically use 💳 icon
-- Example: "Pagué 100mil en 3 cuotas con Mastercard" → use create_bill with totalInstallments: 3`;
+- Example: "Pagué 100mil en 3 cuotas con Mastercard" → use create_bill with totalInstallments: 3
+
+## CREDIT CARD BILLING PERIODS (VERY IMPORTANT)
+
+Credit cards have billing periods with closing dates and due dates. When searching for credit card expenses:
+
+- **"Para el mes que viene" / "next month"**: Use the NEXT due date to filter. If nextDueDate is in April, search expenses where budgetDate is in April.
+- **"Para este mes" / "this month"**: Use the CURRENT due date to filter.
+- Expenses are assigned a budgetDate based on when they'll impact the budget (the due date of the billing cycle they fall into).
+
+**How to query correctly:**
+1. Look at the credit card's billing period (cierre = closing date, vence = due date)
+2. When user asks about "next month's bill", find expenses with budgetDate around the next due date
+3. Use search_bills with startDate/endDate around the due date month
+
+Example: VISA cierre 23/3, vence 10/4
+- User asks "cuánto tengo de VISA para abril?"
+- Search VISA expenses with budgetDate in April (around the 10/4 due date)
+- Use startDate: 2024-04-01, endDate: 2024-04-30 with categoryName: "VISA"
+
+If billing period is not configured, tell the user to configure it in the app settings.`;
 }
 
 /**
