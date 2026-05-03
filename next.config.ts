@@ -8,24 +8,6 @@ const withPWA = withPWAInit({
   disable: process.env.NODE_ENV === "development",
 });
 
-// Boot-time validation of critical env vars in production. Fail fast instead
-// of silently sending broken password-reset emails or generating bad redirects.
-if (process.env.NODE_ENV === "production") {
-  const required = [
-    "DATABASE_URL",
-    "NEXTAUTH_URL",
-    "NEXTAUTH_SECRET",
-    "ANTHROPIC_API_KEY",
-    "RESEND_API_KEY",
-    "RESEND_FROM_EMAIL",
-  ];
-  const missing = required.filter((k) => !process.env[k]);
-  if (missing.length > 0) {
-    throw new Error(
-      `Missing required environment variables: ${missing.join(", ")}`,
-    );
-  }
-}
 
 // Permissive baseline CSP. It's strict enough to block most XSS-via-third-party
 // scenarios without requiring per-script nonces (which would force a rewrite of
