@@ -20,14 +20,15 @@ export function TurtleLogo({ size = 36, className = "" }: { size?: number; class
       <ellipse cx="22" cy="30" rx="14" ry="10" fill="#C4A8AE" />
 
       {/* Shell */}
-      <ellipse cx="22" cy="26" rx="11" ry="9" fill="#F4ACB7" />
-
-      {/* Shell highlight */}
-      <ellipse cx="20" cy="23" rx="6" ry="5" fill="#FFCAD4" opacity="0.55" />
-
-      {/* Shell ridge */}
-      <path d="M12 26 Q22 17 32 26" stroke="#9D8189" strokeWidth="0.8" fill="none" strokeOpacity="0.35" />
-      <line x1="22" y1="17" x2="22" y2="26" stroke="#9D8189" strokeWidth="0.8" strokeOpacity="0.3" />
+      <ellipse cx="22" cy="24" rx="12" ry="9" fill="#F4ACB7" />
+      {/* Shell — hexagonal plate pattern */}
+      <polygon points="22,18 26,21 26,27 22,30 18,27 18,21" fill="#E898A8" stroke="#C87080" strokeWidth="0.7"/>
+      <line x1="22" y1="18" x2="22" y2="15"       stroke="#C87080" strokeWidth="0.7" strokeLinecap="round"/>
+      <line x1="26" y1="21" x2="30.5" y2="17.5"   stroke="#C87080" strokeWidth="0.7" strokeLinecap="round"/>
+      <line x1="26" y1="27" x2="30.5" y2="30.5"   stroke="#C87080" strokeWidth="0.7" strokeLinecap="round"/>
+      <line x1="22" y1="30" x2="22"   y2="33"      stroke="#C87080" strokeWidth="0.7" strokeLinecap="round"/>
+      <line x1="18" y1="27" x2="13.5" y2="30.5"   stroke="#C87080" strokeWidth="0.7" strokeLinecap="round"/>
+      <line x1="18" y1="21" x2="13.5" y2="17.5"   stroke="#C87080" strokeWidth="0.7" strokeLinecap="round"/>
 
       {/* Head */}
       <ellipse cx="34" cy="25" rx="5" ry="4" fill="#C4A8AE" />

@@ -2,7 +2,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Plus, CreditCard, ChevronLeft, ChevronRight } from "lucide-react"
-import { isNetworkId, NetworkLogo } from "@/components/ui/card-network"
+import { isNetworkId, CardIcon, BANKS, NetworkId } from "@/components/ui/card-network"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { MonthPicker } from "@/components/ui/month-picker"
@@ -76,11 +76,13 @@ export function CuotasView({ cards, monthLabel, monthKey, prevMonth, nextMonth }
                   ? "bg-primary text-primary-foreground shadow-sm"
                   : "bg-white/60 backdrop-blur-sm text-muted-foreground border border-white/70 hover:bg-white/80"
               )}>
-              {isNetworkId(card.typeIcon)
-                ? <NetworkLogo network={card.typeIcon} size={16} />
-                : card.typeIcon
-                  ? <span className="text-xs">{card.typeIcon}</span>
-                  : <CreditCard className="h-3.5 w-3.5" />}{card.typeName}
+              <CardIcon
+                bankId={BANKS.find(b => b.color === card.typeColor)?.id ?? null}
+                bankColor={card.typeColor}
+                bankName={card.typeName}
+                network={isNetworkId(card.typeIcon) ? card.typeIcon as NetworkId : null}
+                size="sm"
+              />{card.typeName}
             </button>
           ))}
         </div>
