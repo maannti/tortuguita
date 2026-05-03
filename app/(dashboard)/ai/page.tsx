@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { ChatMessage } from "@/components/ai/chat-message";
 import { ConversationSidebar } from "@/components/ai/conversation-sidebar";
-import { SendIcon, XIcon } from "lucide-react";
+import { SendIcon, XIcon, PaperclipIcon } from "lucide-react";
 import { TurtleIcon } from "@/components/ai/turtle-icon";
 import { useTranslations, useLanguage } from "@/components/providers/language-provider";
 import useSWR from "swr";
@@ -26,6 +26,8 @@ export default function AIPage() {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [attachedFile, setAttachedFile] = useState<{ name: string; type: string; data: string } | null>(null);
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
   const t = useTranslations();
@@ -71,6 +73,18 @@ export default function AIPage() {
     scrollToBottom();
   }, [messages]);
 
+  // Pick up file pre-loaded from action sheet
+  useEffect(() => {
+    const pending = sessionStorage.getItem("pendingImport")
+    if (pending) {
+      try {
+        const file = JSON.parse(pending)
+        sessionStorage.removeItem("pendingImport")
+        setAttachedFile(file)
+      } catch {}
+    }
+  }, []);
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -79,6 +93,21 @@ export default function AIPage() {
         form?.requestSubmit();
       }
     }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    // Max 10MB
+    if (file.size > 10 * 1024 * 1024) { alert("El archivo no puede superar 10MB"); return; }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const base64 = (ev.target?.result as string).split(",")[1];
+      setAttachedFile({ name: file.name, type: file.type, data: base64 });
+    };
+    reader.readAsDataURL(file);
+    // reset input so same file can be re-selected
+    e.target.value = "";
   };
 
   // Auto-resize textarea
@@ -92,16 +121,19 @@ export default function AIPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || isLoading) return;
+    if ((!input.trim() && !attachedFile) || isLoading) return;
 
+    const displayContent = input || (attachedFile ? `📎 ${attachedFile.name}` : "");
     const userMessage: Message = {
       role: "user",
-      content: input,
+      content: displayContent,
       timestamp: new Date(),
     };
 
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
+    const fileToSend = attachedFile;
+    setAttachedFile(null);
     setIsLoading(true);
 
     try {
@@ -111,6 +143,7 @@ export default function AIPage() {
         body: JSON.stringify({
           conversationId,
           message: input,
+          file: fileToSend,
         }),
       });
 
@@ -295,6 +328,7 @@ export default function AIPage() {
 
   return (
     <div className="flex h-full -m-4 md:-m-6">
+      <input ref={fileInputRef} type="file" accept=".pdf,.csv,.txt,image/*" onChange={handleFileChange} className="hidden" />
       {/* Sidebar with conversation history - hidden on mobile */}
       <div className="hidden md:block p-4 md:p-6">
         <ConversationSidebar
@@ -396,14 +430,32 @@ export default function AIPage() {
                     rows={1}
                   />
                   <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex-shrink-0 w-9 h-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all grid place-items-center self-end"
+                  >
+                    <PaperclipIcon className="h-4 w-4" />
+                  </button>
+                  <button
                     type="submit"
-                    disabled={isLoading || !input.trim()}
+                    disabled={isLoading || (!input.trim() && !attachedFile)}
                     className="flex-shrink-0 w-9 h-9 rounded-full bg-primary text-primary-foreground disabled:opacity-40 transition-opacity grid place-items-center self-end"
                   >
                     <SendIcon className="h-4 w-4" />
                   </button>
                 </div>
               </form>
+              {attachedFile && (
+                <div className="flex items-center gap-2 px-1 pb-2">
+                  <div className="flex items-center gap-2 rounded-xl bg-primary/10 border border-primary/20 px-3 py-1.5 text-xs text-primary font-medium">
+                    <PaperclipIcon className="h-3 w-3 flex-shrink-0" />
+                    <span className="truncate max-w-[200px]">{attachedFile.name}</span>
+                    <button type="button" onClick={() => setAttachedFile(null)} className="ml-1 opacity-60 hover:opacity-100">
+                      <XIcon className="h-3 w-3" />
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </Card>
         </div>
@@ -543,14 +595,33 @@ export default function AIPage() {
                     rows={1}
                   />
                   <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex-shrink-0 w-9 h-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all grid place-items-center"
+                  >
+                    <PaperclipIcon className="h-4 w-4" />
+                  </button>
+                  <button
                     type="submit"
-                    disabled={isLoading || !input.trim()}
+                    disabled={isLoading || (!input.trim() && !attachedFile)}
                     className="flex-shrink-0 w-9 h-9 rounded-full bg-primary text-primary-foreground disabled:opacity-40 transition-opacity grid place-items-center"
                   >
                     <SendIcon className="h-4 w-4" />
                   </button>
                 </div>
               </form>
+              {/* File chip */}
+              {attachedFile && (
+                <div className="flex items-center gap-2 px-1 py-1">
+                  <div className="flex items-center gap-2 rounded-xl bg-primary/10 border border-primary/20 px-3 py-1.5 text-xs text-primary font-medium max-w-full">
+                    <PaperclipIcon className="h-3 w-3 flex-shrink-0" />
+                    <span className="truncate">{attachedFile.name}</span>
+                    <button type="button" onClick={() => setAttachedFile(null)} className="ml-1 opacity-60 hover:opacity-100">
+                      <XIcon className="h-3 w-3" />
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
