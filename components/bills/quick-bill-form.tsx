@@ -2,6 +2,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { ChevronLeft, Check } from "lucide-react"
+import { CardIcon, isNetworkId, BANKS, NetworkId } from "@/components/ui/card-network"
 
 interface Category { id: string; name: string; color: string | null; icon: string | null; isCreditCard: boolean }
 interface Member { id: string; name: string | null; email: string | null }
@@ -29,6 +30,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
   const [installments, setInstallments] = useState(defaultInstallments ?? 1)
   const [customInstallments, setCustomInstallments] = useState("")
   const [splitMode, setSplitMode] = useState<string>("mine")
+  const [paymentDate, setPaymentDate] = useState<string>(new Date().toISOString().split("T")[0])
 
   const isCreditCardForm = categories.length > 0 && categories.every((c) => c.isCreditCard)
   const selectedCategory = categories.find((c) => c.id === categoryId)
@@ -63,7 +65,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
     if (!label.trim() || amount <= 0 || !categoryId) { setError("Completá descripción, monto y categoría"); return }
     setError(null); setIsLoading(true)
     try {
-      const res = await fetch("/api/bills", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ label: label.trim(), amount, paymentDate: new Date().toISOString(), billTypeId: categoryId, totalInstallments: installments, assignments: buildAssignments(), notes: "" }) })
+      const res = await fetch("/api/bills", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ label: label.trim(), amount, paymentDate: new Date(paymentDate + "T12:00:00").toISOString(), billTypeId: categoryId, totalInstallments: installments, assignments: buildAssignments(), notes: "" }) })
       if (!res.ok) { const err = await res.json(); throw new Error(err.error || "Error al guardar") }
       router.push("/dashboard"); router.refresh()
     } catch (err) { setError(err instanceof Error ? err.message : "Error inesperado") } finally { setIsLoading(false) }
@@ -76,7 +78,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
       <div className="flex items-center justify-between px-4 py-3 border-b">
         <button type="button" onClick={() => backHref ? router.push(backHref) : router.back()} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"><ChevronLeft className="h-4 w-4" />Volver</button>
         <h1 className="text-base font-semibold">{isCreditCardForm ? "Nueva cuota" : "Nuevo gasto"}</h1>
-        <button type="submit" disabled={isLoading || !label || amount <= 0 || !categoryId} className="text-sm font-semibold text-primary disabled:opacity-40 disabled:cursor-not-allowed">{isLoading ? "..." : "Guardar"}</button>
+        <button type="submit" disabled={isLoading || !label || amount <= 0 || !categoryId} className="px-4 py-1.5 rounded-full bg-primary text-primary-foreground text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 transition-all">{isLoading ? "..." : "Guardar"}</button>
       </div>
       <div className="flex-1 overflow-y-auto">
         <div className="px-4 py-5 space-y-5">
@@ -97,13 +99,21 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
             <div className="grid grid-cols-2 gap-2">
               {categories.map((cat) => (
                 <button key={cat.id} type="button" onClick={() => { setCategoryId(cat.id); if (!cat.isCreditCard) setInstallments(1) }} className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 text-sm text-left transition-colors ${categoryId === cat.id ? "border-primary bg-primary/5 font-medium" : "border-border bg-background text-muted-foreground hover:border-foreground/30"}`}>
-                  {cat.icon && <span className="text-base">{cat.icon}</span>}
-                  <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: cat.color || "#6b7280" }} />
+                  {cat.isCreditCard
+                    ? <CardIcon bankId={BANKS.find(b => b.color === cat.color)?.id ?? null} bankColor={cat.color || "#9D8189"} bankName={cat.name} network={isNetworkId(cat.icon) ? cat.icon as NetworkId : null} size="sm" />
+                    : cat.icon
+                      ? <span className="text-base">{cat.icon}</span>
+                      : <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: cat.color || "#6b7280" }} />}
                   <span className="truncate">{cat.name}</span>
                   {categoryId === cat.id && <Check className="h-3.5 w-3.5 ml-auto text-primary flex-shrink-0" />}
                 </button>
               ))}
             </div>
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{isCreditCard ? "Fecha de compra" : "Fecha"}</label>
+            <input type="date" value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)}
+              className="w-full rounded-xl border bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
           </div>
           {(isCreditCard || isCreditCardForm) && (
             <div className="space-y-1.5">
@@ -158,9 +168,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
           )}
         </div>
       </div>
-      <div className="px-4 py-4 border-t bg-background">
-        <button type="submit" disabled={isLoading || !label.trim() || amount <= 0 || !categoryId} className="w-full rounded-xl bg-primary text-primary-foreground py-3.5 text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.98] transition-transform">{isLoading ? "Guardando..." : isCreditCardForm ? `Guardar cuota${installments > 1 ? ` (${installments}x)` : ""}` : `Guardar gasto${installments > 1 ? ` (${installments} cuotas)` : ""}`}</button>
-      </div>
+
     </form>
   )
 }
