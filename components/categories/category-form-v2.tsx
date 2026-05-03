@@ -63,7 +63,7 @@ export function CategoryFormV2({ mode, initialData }: Props) {
           {mode === "create" ? "Nueva categoría" : "Editar categoría"}
         </h1>
         <button type="submit" disabled={isLoading || !name.trim()}
-          className="text-sm font-semibold text-primary disabled:opacity-40">
+          className="px-4 py-1.5 rounded-full bg-primary text-primary-foreground text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 transition-all">
           {isLoading ? "…" : "Guardar"}
         </button>
       </div>
@@ -122,13 +122,6 @@ export function CategoryFormV2({ mode, initialData }: Props) {
             </div>
           </div>
         </div>
-      </div>
-
-      <div className="px-4 py-4 border-t bg-background/95 backdrop-blur-sm">
-        <button type="submit" disabled={isLoading || !name.trim()}
-          className="w-full rounded-2xl bg-primary text-primary-foreground py-3.5 text-sm font-semibold disabled:opacity-40 active:scale-[0.98] transition-transform">
-          {isLoading ? "Guardando…" : mode === "create" ? "Crear categoría" : "Guardar cambios"}
-        </button>
       </div>
     </form>
   )
