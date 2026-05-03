@@ -73,14 +73,93 @@ export default function AIPage() {
     scrollToBottom();
   }, [messages]);
 
-  // Pick up file pre-loaded from action sheet
+  // Auto-submit a file (used for pendingImport from action sheet)
+  const autoSubmitImport = async (file: { name: string; type: string; data: string }) => {
+    const defaultMessage = "Analizá este resumen de tarjeta y mostrá las transacciones encontradas antes de importar.";
+    const userMessage: Message = {
+      role: "user",
+      content: `📎 ${file.name}`,
+      timestamp: new Date(),
+    };
+    setMessages([userMessage]);
+    setIsLoading(true);
+
+    try {
+      const response = await fetch("/api/ai/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ conversationId: null, message: defaultMessage, file }),
+      });
+
+      if (!response.ok) throw new Error("Failed to send");
+
+      const contentType = response.headers.get("content-type");
+      if (contentType?.includes("application/json")) {
+        const data = await response.json();
+        if (data.type === "safety_block") {
+          setMessages((prev) => [...prev, { role: "assistant", content: data.message, timestamp: new Date() }]);
+          setIsLoading(false);
+          return;
+        }
+      }
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let assistantMessage = "";
+      let currentToolCalls: any[] = [];
+
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          const chunk = decoder.decode(value);
+          for (const line of chunk.split("\n")) {
+            if (line.startsWith("data: ")) {
+              try {
+                const data = JSON.parse(line.slice(6));
+                if (data.type === "text") {
+                  assistantMessage += data.content;
+                  setMessages((prev) => {
+                    const last = prev[prev.length - 1];
+                    if (last?.role === "assistant") return [...prev.slice(0, -1), { ...last, content: assistantMessage }];
+                    return [...prev, { role: "assistant", content: assistantMessage, timestamp: new Date() }];
+                  });
+                } else if (data.type === "tool_result") {
+                  currentToolCalls.push(data);
+                } else if (data.type === "done") {
+                  if (currentToolCalls.length > 0) {
+                    setMessages((prev) => {
+                      const last = prev[prev.length - 1];
+                      if (last?.role === "assistant") return [...prev.slice(0, -1), { ...last, toolCalls: { calls: currentToolCalls.map((tc) => ({ tool: tc.tool, result: tc.result })) } }];
+                      return prev;
+                    });
+                  }
+                  setConversationId(data.conversationId);
+                  refreshConversations();
+                } else if (data.type === "error") {
+                  setMessages((prev) => [...prev, { role: "assistant", content: data.error || "Error", timestamp: new Date() }]);
+                }
+              } catch {}
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Auto-import error:", error);
+      setMessages((prev) => [...prev, { role: "assistant", content: "Error procesando el archivo. Intentá de nuevo.", timestamp: new Date() }]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Pick up file pre-loaded from action sheet and auto-submit
   useEffect(() => {
     const pending = sessionStorage.getItem("pendingImport")
     if (pending) {
       try {
         const file = JSON.parse(pending)
         sessionStorage.removeItem("pendingImport")
-        setAttachedFile(file)
+        autoSubmitImport(file)
       } catch {}
     }
   }, []);
