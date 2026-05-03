@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { format, parse, startOfMonth, endOfMonth } from "date-fns"
+import { es } from "date-fns/locale"
 import { BillsView } from "@/components/bills/bills-view"
 
 interface PageProps {
@@ -85,7 +86,7 @@ export default async function BillsPage({ searchParams }: PageProps) {
 
   return (
     <BillsView
-      month={format(monthStart, "MMMM yyyy")}
+      month={format(monthStart, "MMMM yyyy", { locale: es })}
       monthKey={format(monthStart, "yyyy-MM")}
       availableMonths={availableMonths}
       regularBills={regularBills}

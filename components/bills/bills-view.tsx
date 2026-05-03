@@ -4,6 +4,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { ChevronLeft, ChevronRight, Plus, CreditCard, ChevronRight as Arrow } from "lucide-react"
+import { isNetworkId, NetworkLogo } from "@/components/ui/card-network"
 import { MonthPicker } from "@/components/ui/month-picker"
 
 interface RegularBill {
@@ -87,9 +88,11 @@ export function BillsView({ month, monthKey, availableMonths, regularBills, cred
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0"
                       style={{ backgroundColor: `${group.color}22` }}>
-                      {group.icon
-                        ? <span className="text-xl">{group.icon}</span>
-                        : <CreditCard className="h-5 w-5" style={{ color: group.color }} />}
+                      {isNetworkId(group.icon)
+                        ? <NetworkLogo network={group.icon} size={28} />
+                        : group.icon
+                          ? <span className="text-xl">{group.icon}</span>
+                          : <CreditCard className="h-5 w-5" style={{ color: group.color }} />}
                     </div>
                     <div>
                       <p className="text-sm font-semibold">{group.name}</p>

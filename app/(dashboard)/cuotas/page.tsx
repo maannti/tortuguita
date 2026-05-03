@@ -11,7 +11,7 @@ type InstallmentGroup = {
   groupId: string; label: string; totalInstallments: number; bills: InstallmentBillSummary[]; memberNames: string[]
 }
 type CardEntry = {
-  typeName: string; typeColor: string
+  typeName: string; typeColor: string; typeIcon: string | null
   installmentGroups: InstallmentGroup[]
   singleBills: Array<{ id: string; label: string; amount: number; budgetDate: string }>
   monthTotal: number
@@ -108,7 +108,7 @@ export default async function CuotasPage({ searchParams }: PageProps) {
 
   const byCard = new Map<string, CardEntry>()
   for (const ct of creditCardTypes) {
-    byCard.set(ct.id, { typeName: ct.name, typeColor: ct.color || "#f59e0b", installmentGroups: [], singleBills: [], monthTotal: 0 })
+    byCard.set(ct.id, { typeName: ct.name, typeColor: ct.color || "#f59e0b", typeIcon: ct.icon || null, installmentGroups: [], singleBills: [], monthTotal: 0 })
   }
 
   for (const bill of installmentBills) {
