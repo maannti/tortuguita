@@ -7,35 +7,25 @@
     </linearGradient>
   </defs>
   <rect width="512" height="512" fill="url(#bg)"/>
-  <g transform="translate(-36.8 -44.8) scale(3.2)">
-    <!-- Back legs -->
+  <g transform="translate(27.25 21) scale(2.5)">
     <ellipse cx="53" cy="70" rx="13" ry="7" fill="#9A8080" transform="rotate(38 53 70)"/>
     <ellipse cx="53" cy="130" rx="13" ry="7" fill="#9A8080" transform="rotate(-28 53 130)"/>
-    <!-- Tail -->
     <ellipse cx="33" cy="100" rx="11" ry="7" fill="#9A8080"/>
-    <!-- Body -->
     <ellipse cx="90" cy="100" rx="58" ry="36" fill="#9A8080"/>
-    <!-- Front legs -->
     <ellipse cx="128" cy="68" rx="13" ry="7" fill="#9A8080" transform="rotate(-38 128 68)"/>
     <ellipse cx="130" cy="130" rx="13" ry="7" fill="#9A8080" transform="rotate(28 130 130)"/>
-    <!-- Shell -->
     <ellipse cx="84" cy="80" rx="48" ry="30" fill="#D49090"/>
-    <!-- Hexagonal center -->
     <polygon points="84,65 97,72 97,88 84,95 71,88 71,72" fill="#BF7878" stroke="#A86060" stroke-width="1.2"/>
-    <!-- Lines from hex to shell edge -->
     <line x1="84" y1="65" x2="84" y2="52" stroke="#A86060" stroke-width="1.2" stroke-linecap="round"/>
     <line x1="97" y1="72" x2="120" y2="61" stroke="#A86060" stroke-width="1.2" stroke-linecap="round"/>
     <line x1="97" y1="88" x2="120" y2="99" stroke="#A86060" stroke-width="1.2" stroke-linecap="round"/>
     <line x1="84" y1="95" x2="84" y2="108" stroke="#A86060" stroke-width="1.2" stroke-linecap="round"/>
     <line x1="71" y1="88" x2="48" y2="99" stroke="#A86060" stroke-width="1.2" stroke-linecap="round"/>
     <line x1="71" y1="72" x2="48" y2="61" stroke="#A86060" stroke-width="1.2" stroke-linecap="round"/>
-    <!-- Head -->
     <circle cx="143" cy="98" r="18" fill="#9A8080"/>
-    <!-- Eye -->
     <circle cx="150" cy="93" r="5" fill="white"/>
     <circle cx="152" cy="92" r="2.8" fill="#3D2B2B"/>
     <circle cx="151" cy="91" r="1.1" fill="white"/>
-    <!-- Mouth -->
     <path d="M 154 101 Q 158 105 162 101" stroke="#3D2B2B" stroke-width="1.5" fill="none" stroke-linecap="round"/>
   </g>
 </svg>

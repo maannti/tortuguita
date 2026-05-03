@@ -1,4 +1,5 @@
 "use client"
+import { CardIcon, isNetworkId, NetworkId, BANKS } from "@/components/ui/card-network"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
@@ -134,8 +135,14 @@ export function HomeDashboard({ month, monthKey, availableMonths, totalAmount, m
         {creditCardGroups.map((group) => (
           <section key={group.name}>
             <div className="flex items-center justify-between mb-2.5 px-1">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full shadow-sm" style={{ backgroundColor: group.color }} />
+              <div className="flex items-center gap-3">
+                <CardIcon
+                  bankId={BANKS.find(b => b.color === group.color)?.id ?? null}
+                  bankColor={group.color}
+                  bankName={group.name}
+                  network={isNetworkId(group.icon) ? group.icon as NetworkId : null}
+                  size="sm"
+                />
                 <h2
                   className="text-base font-medium text-foreground"
                   style={{ fontFamily: "var(--font-fraunces, serif)" }}
