@@ -81,7 +81,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
         <button type="submit" disabled={isLoading || !label || amount <= 0 || !categoryId} className="px-4 py-1.5 rounded-full bg-primary text-primary-foreground text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 transition-all">{isLoading ? "..." : "Guardar"}</button>
       </div>
       <div className="flex-1 overflow-y-auto">
-        <div className="px-4 py-5 space-y-5">
+        <div className="px-4 py-5 pb-28 space-y-5">
           {error && <div className="rounded-xl bg-destructive/10 text-destructive text-sm px-4 py-3">{error}</div>}
           <div className="space-y-1.5">
             <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Descripción</label>
@@ -94,22 +94,38 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
               <input type="text" inputMode="numeric" value={amountDisplay} onChange={(e) => setAmountDisplay(e.target.value.replace(/[^0-9,.]/g, ""))} onBlur={() => { const n = parseAmount(amountDisplay); if (n > 0) setAmountDisplay(formatDisplay(n)) }} placeholder="0" className="flex-1 bg-transparent text-sm focus:outline-none" />
             </div>
           </div>
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Categoría / Tarjeta</label>
-            <div className="grid grid-cols-2 gap-2">
-              {categories.map((cat) => (
-                <button key={cat.id} type="button" onClick={() => { setCategoryId(cat.id); if (!cat.isCreditCard) setInstallments(1) }} className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 text-sm text-left transition-colors ${categoryId === cat.id ? "border-primary bg-primary/5 font-medium" : "border-border bg-background text-muted-foreground hover:border-foreground/30"}`}>
-                  {cat.isCreditCard
-                    ? <CardIcon bankId={BANKS.find(b => b.color === cat.color)?.id ?? null} bankColor={cat.color || "#9D8189"} bankName={cat.name} network={isNetworkId(cat.icon) ? cat.icon as NetworkId : null} size="sm" />
-                    : cat.icon
+          {/* Non-CC categories */}
+          {categories.filter(c => !c.isCreditCard).length > 0 && (
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Categoría</label>
+              <div className="grid grid-cols-2 gap-2">
+                {categories.filter(c => !c.isCreditCard).map((cat) => (
+                  <button key={cat.id} type="button" onClick={() => { setCategoryId(cat.id); setInstallments(1) }} className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 text-sm text-left transition-colors ${categoryId === cat.id ? "border-primary bg-primary/5 font-medium" : "border-border bg-background text-muted-foreground hover:border-foreground/30"}`}>
+                    {cat.icon
                       ? <span className="text-base">{cat.icon}</span>
                       : <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: cat.color || "#6b7280" }} />}
-                  <span className="truncate">{cat.name}</span>
-                  {categoryId === cat.id && <Check className="h-3.5 w-3.5 ml-auto text-primary flex-shrink-0" />}
-                </button>
-              ))}
+                    <span className="truncate">{cat.name}</span>
+                    {categoryId === cat.id && <Check className="h-3.5 w-3.5 ml-auto text-primary flex-shrink-0" />}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
+          {/* CC cards */}
+          {categories.filter(c => c.isCreditCard).length > 0 && (
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Tarjeta de crédito</label>
+              <div className="grid grid-cols-2 gap-2">
+                {categories.filter(c => c.isCreditCard).map((cat) => (
+                  <button key={cat.id} type="button" onClick={() => setCategoryId(cat.id)} className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 text-sm text-left transition-colors ${categoryId === cat.id ? "border-primary bg-primary/5 font-medium" : "border-border bg-background text-muted-foreground hover:border-foreground/30"}`}>
+                    <CardIcon bankId={BANKS.find(b => b.color === cat.color)?.id ?? null} bankColor={cat.color || "#9D8189"} bankName={cat.name} network={isNetworkId(cat.icon) ? cat.icon as NetworkId : null} size="sm" />
+                    <span className="truncate">{cat.name}</span>
+                    {categoryId === cat.id && <Check className="h-3.5 w-3.5 ml-auto text-primary flex-shrink-0" />}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           <div className="space-y-1.5">
             <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{isCreditCard ? "Fecha de compra" : "Fecha"}</label>
             <input type="date" value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)}
