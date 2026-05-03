@@ -126,48 +126,35 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
           {normalCats.length > 0 && (
             <div className="space-y-2">
               <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Categoría</label>
-              {/* Fila principal: primeras 4 + expandir + nueva */}
-              <div className="grid grid-cols-6 gap-2">
-                {normalCats.slice(0, 4).map((cat) => (
+              {/* Grid 2 columnas con nombre visible — primeras 4 */}
+              <div className="grid grid-cols-2 gap-2">
+                {(expandedCats ? normalCats : normalCats.slice(0, 4)).map((cat) => (
                   <button key={cat.id} type="button"
                     onClick={() => { setCategoryId(cat.id); setInstallments(1) }}
-                    className={`aspect-square rounded-2xl flex items-center justify-center text-2xl transition-all active:scale-90
-                      ${categoryId === cat.id ? "ring-2 ring-primary bg-primary/8" : "bg-muted/50 hover:bg-muted"}`}>
+                    className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 text-sm text-left transition-colors ${categoryId === cat.id ? "border-primary bg-primary/5 font-medium" : "border-border bg-background text-muted-foreground hover:border-foreground/30"}`}>
                     {cat.icon
-                      ? <span className="leading-none">{cat.icon}</span>
-                      : <span className="w-5 h-5 rounded-full" style={{ backgroundColor: cat.color || "#6b7280" }} />}
+                      ? <span className="text-base leading-none flex-shrink-0">{cat.icon}</span>
+                      : <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: cat.color || "#6b7280" }} />}
+                    <span className="truncate">{cat.name}</span>
+                    {categoryId === cat.id && <Check className="h-3.5 w-3.5 ml-auto text-primary flex-shrink-0" />}
                   </button>
                 ))}
-                <button type="button" onClick={() => setExpandedCats(o => !o)}
-                  className="aspect-square rounded-2xl flex items-center justify-center bg-muted/50 hover:bg-muted transition-all active:scale-90">
-                  <ChevronDown className={`h-5 w-5 text-muted-foreground transition-transform ${expandedCats ? "rotate-180" : ""}`} />
-                </button>
+              </div>
+              {/* Fila de acciones */}
+              <div className="flex gap-2">
+                {normalCats.length > 4 && (
+                  <button type="button" onClick={() => setExpandedCats(o => !o)}
+                    className="flex-1 flex items-center justify-center gap-1.5 rounded-xl border border-border bg-background py-2 text-xs text-muted-foreground hover:border-foreground/30 transition-colors">
+                    <ChevronDown className={`h-3.5 w-3.5 transition-transform ${expandedCats ? "rotate-180" : ""}`} />
+                    {expandedCats ? "Ver menos" : `Ver ${normalCats.length - 4} más`}
+                  </button>
+                )}
                 <button type="button" onClick={() => router.push("/categories/new")}
-                  className="aspect-square rounded-2xl flex items-center justify-center bg-muted/50 hover:bg-muted transition-all active:scale-90">
-                  <Plus className="h-5 w-5 text-muted-foreground" />
+                  className="flex items-center justify-center gap-1.5 rounded-xl border border-border bg-background px-4 py-2 text-xs text-muted-foreground hover:border-foreground/30 transition-colors">
+                  <Plus className="h-3.5 w-3.5" />
+                  Nueva
                 </button>
               </div>
-              {/* Categorías extra */}
-              {expandedCats && normalCats.length > 4 && (
-                <div className="grid grid-cols-6 gap-2">
-                  {normalCats.slice(4).map((cat) => (
-                    <button key={cat.id} type="button"
-                      onClick={() => { setCategoryId(cat.id); setInstallments(1); setExpandedCats(false) }}
-                      className={`aspect-square rounded-2xl flex items-center justify-center text-2xl transition-all active:scale-90
-                        ${categoryId === cat.id ? "ring-2 ring-primary bg-primary/8" : "bg-muted/50 hover:bg-muted"}`}>
-                      {cat.icon
-                        ? <span className="leading-none">{cat.icon}</span>
-                        : <span className="w-5 h-5 rounded-full" style={{ backgroundColor: cat.color || "#6b7280" }} />}
-                    </button>
-                  ))}
-                </div>
-              )}
-              {/* Nombre de la categoría seleccionada */}
-              {categoryId && (
-                <p className="text-xs text-muted-foreground pl-0.5">
-                  {normalCats.find(c => c.id === categoryId)?.name}
-                </p>
-              )}
             </div>
           )}
 
