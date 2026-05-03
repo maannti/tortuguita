@@ -57,7 +57,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
   const billTypeId = isCreditCard ? cardId : categoryId
 
   const canSave = !!label.trim() && amount > 0 && !!paymentMethod &&
-    (isCreditCard ? !!cardId : !!categoryId)
+    (isCreditCard ? (ccCards.length === 0 || !!cardId) : !!categoryId)
 
   function buildAssignments(): Array<{ userId: string; percentage: number }> {
     if (splitMode === "mine") return [{ userId: currentUserId, percentage: 100 }]
@@ -84,7 +84,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
     if (!canSave) { setError("Completá todos los campos requeridos"); return }
     setError(null); setIsLoading(true)
     try {
-      const res = await fetch("/api/bills", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ label: label.trim(), amount, paymentDate: new Date(paymentDate + "T12:00:00").toISOString(), billTypeId, totalInstallments: installments, assignments: buildAssignments(), notes: "" }) })
+      const res = await fetch("/api/bills", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ label: label.trim(), amount, paymentDate: new Date(paymentDate + "T12:00:00").toISOString(), billTypeId, ...(isCreditCard && installments > 1 ? { totalInstallments: installments } : {}), assignments: buildAssignments(), notes: "" }) })
       if (!res.ok) { const err = await res.json(); throw new Error(err.error || "Error al guardar") }
       router.push("/dashboard"); router.refresh()
     } catch (err) { setError(err instanceof Error ? err.message : "Error inesperado") } finally { setIsLoading(false) }
@@ -95,7 +95,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
   return (
     <form onSubmit={handleSubmit} className="flex flex-col min-h-[calc(100dvh-7rem)]">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b">
+      <div className="flex items-center justify-between px-4 py-3 border-b sticky top-0 z-10 bg-background/95 backdrop-blur-sm">
         <button type="button" onClick={() => backHref ? router.push(backHref) : router.back()} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"><ChevronLeft className="h-4 w-4" />Volver</button>
         <h1 className="text-base font-semibold">Nuevo gasto</h1>
         <button type="submit" disabled={isLoading || !canSave} className="px-4 py-1.5 rounded-full bg-primary text-primary-foreground text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 transition-all">{isLoading ? "..." : "Guardar"}</button>
