@@ -1,25 +1,7 @@
 "use client"
 
-import { useState, useCallback, useMemo } from "react"
+import { useState } from "react"
 import { HexColorPicker, HexColorInput } from "react-colorful"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
-import Image from "next/image"
-import { Check } from "lucide-react"
-
-// Calculate contrasting text color (black or white) based on background
-function getContrastColor(hexColor: string): string {
-  const hex = hexColor.replace('#', '')
-  const r = parseInt(hex.substring(0, 2), 16)
-  const g = parseInt(hex.substring(2, 4), 16)
-  const b = parseInt(hex.substring(4, 6), 16)
-  // Using relative luminance formula
-  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
-  return luminance > 0.5 ? '#000000' : '#ffffff'
-}
 
 interface ColorInputWithPickerProps {
   value: string
@@ -27,120 +9,92 @@ interface ColorInputWithPickerProps {
   disabled?: boolean
 }
 
-export function ColorInputWithPicker({
-  value,
-  onChange,
-  disabled = false,
-}: ColorInputWithPickerProps) {
+export function ColorInputWithPicker({ value, onChange, disabled = false }: ColorInputWithPickerProps) {
   const [open, setOpen] = useState(false)
-  const currentColor = value || '#3b82f6'
-
-  const contrastColor = useMemo(() => getContrastColor(currentColor), [currentColor])
-
-  const handleSave = useCallback(() => {
-    setOpen(false)
-  }, [])
+  const color = value || "#9D8189"
 
   return (
-    <div className="flex h-11 w-full rounded-[10px] border border-border/50 overflow-hidden">
-      {/* Color preview with hex code */}
-      <div
-        className="flex-1 flex items-center justify-center font-mono text-sm font-medium uppercase"
-        style={{ backgroundColor: currentColor, color: contrastColor }}
+    <div className="space-y-2">
+      {/* Trigger row */}
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center gap-3 rounded-2xl border bg-background px-4 py-3 transition-colors hover:bg-muted/30 disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        {currentColor}
-      </div>
+        {/* Swatch */}
+        <span
+          className="w-8 h-8 rounded-xl flex-shrink-0 shadow-sm"
+          style={{ backgroundColor: color }}
+        />
+        {/* Hex value */}
+        <span className="text-sm font-mono uppercase text-foreground flex-1 text-left tracking-wide">
+          {color}
+        </span>
+        {/* Color wheel icon */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/icons/color-wheel.png" alt="" className="w-6 h-6 opacity-70" />
+      </button>
 
-      {/* Color picker button */}
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <button
-            type="button"
-            disabled={disabled}
-            className="w-12 flex items-center justify-center bg-ios-gray-1 border-l border-border/50 transition-colors hover:bg-ios-gray-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-inset disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            <Image
-              src="/icons/color-wheel.png"
-              alt="Color picker"
-              width={24}
-              height={24}
-              className="object-contain"
-            />
-          </button>
-        </PopoverTrigger>
-        <PopoverContent
-          className="w-[280px] p-4 space-y-3"
-          align="end"
-          sideOffset={8}
-        >
-          {/* Header */}
-          <div className="flex items-center justify-between">
-            <span className="font-semibold text-base">Custom Color</span>
-            <div className="flex gap-1">
-              <div className="w-3 h-3 rounded-full bg-amber-400" />
-              <div className="w-3 h-3 rounded-full bg-red-500" />
-              <div className="w-3 h-3 rounded-full bg-green-500" />
-              <div className="w-3 h-3 rounded-full bg-blue-500" />
-            </div>
-          </div>
-
-          {/* Color Picker */}
-          <div className="color-picker-compact">
+      {/* Inline expanded picker */}
+      {open && (
+        <div className="rounded-2xl border bg-background/95 backdrop-blur-sm p-4 space-y-3 shadow-sm">
+          {/* react-colorful picker */}
+          <div className="color-picker-app">
             <HexColorPicker
-              color={currentColor}
+              color={color}
               onChange={onChange}
-              style={{ width: "100%", height: "140px" }}
+              style={{ width: "100%", height: "160px" }}
             />
           </div>
 
-          {/* Bottom row: Hex input + save button */}
+          {/* Hex input + Listo */}
           <div className="flex items-center gap-2">
-            <div className="flex-1 relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">#</span>
+            <div className="flex-1 flex items-center gap-1.5 rounded-xl border bg-background px-3 py-2.5 focus-within:ring-2 focus-within:ring-primary/30">
+              <span className="text-muted-foreground text-sm">#</span>
               <HexColorInput
-                color={currentColor}
+                color={color}
                 onChange={onChange}
                 prefixed={false}
-                className="flex h-9 w-full rounded-lg border border-border/50 bg-ios-gray-1 pl-7 pr-3 py-2 text-sm uppercase focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                className="flex-1 bg-transparent text-sm uppercase font-mono focus:outline-none text-foreground"
               />
             </div>
             <button
               type="button"
-              onClick={handleSave}
-              className="h-9 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors"
-              style={{ backgroundColor: currentColor }}
+              onClick={() => setOpen(false)}
+              className="px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold active:scale-95 transition-all"
             >
-              <Check className="h-4 w-4 text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.3)]" />
+              Listo
             </button>
           </div>
-        </PopoverContent>
-      </Popover>
+        </div>
+      )}
 
-      {/* Custom styles for react-colorful */}
       <style jsx global>{`
-        .color-picker-compact .react-colorful {
-          border-radius: 10px;
+        .color-picker-app .react-colorful {
+          border-radius: 16px;
           overflow: hidden;
+          gap: 10px;
         }
-        .color-picker-compact .react-colorful__saturation {
-          border-radius: 10px;
+        .color-picker-app .react-colorful__saturation {
+          border-radius: 12px;
+          flex: 1;
         }
-        .color-picker-compact .react-colorful__hue {
-          height: 12px;
-          border-radius: 6px;
-          margin-top: 10px;
+        .color-picker-app .react-colorful__hue {
+          height: 14px;
+          border-radius: 7px;
         }
-        .color-picker-compact .react-colorful__saturation-pointer {
-          width: 20px;
-          height: 20px;
-          border: 2px solid white;
+        .color-picker-app .react-colorful__saturation-pointer {
+          width: 22px;
+          height: 22px;
+          border: 3px solid white;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+        }
+        .color-picker-app .react-colorful__hue-pointer {
+          width: 18px;
+          height: 18px;
+          border: 3px solid white;
           box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-        }
-        .color-picker-compact .react-colorful__hue-pointer {
-          width: 16px;
-          height: 16px;
-          border: 2px solid white;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
       `}</style>
     </div>

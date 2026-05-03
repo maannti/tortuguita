@@ -79,7 +79,7 @@ export function CardForm({ mode, initialData }: Props) {
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        <div className="px-4 py-5 space-y-6">
+        <div className="px-4 py-5 pb-28 space-y-6">
           {error && <div className="rounded-xl bg-destructive/10 text-destructive text-sm px-4 py-3">{error}</div>}
 
           {/* Network */}
