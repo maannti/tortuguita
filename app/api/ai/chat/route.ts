@@ -13,7 +13,6 @@ import {
   logOutputIssue,
   needsOutputValidation,
 } from "@/lib/ai/safety";
-import { hit, limiters } from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,26 +22,8 @@ export async function POST(request: NextRequest) {
       return new Response("Unauthorized", { status: 401 });
     }
 
-    // Per-user budget for AI calls (defends against runaway Anthropic spend).
-    const limit = hit(`user:${session.user.id}`, limiters.aiChat);
-    if (!limit.ok) {
-      return new Response(
-        JSON.stringify({
-          type: "rate_limited",
-          message: "You've sent too many AI messages. Try again in a bit.",
-          retryAfterSeconds: limit.retryAfterSeconds,
-        }),
-        {
-          status: 429,
-          headers: {
-            "Content-Type": "application/json",
-            "Retry-After": String(limit.retryAfterSeconds),
-          },
-        }
-      );
-    }
-
-    const { conversationId, message } = await request.json();
+    const { conversationId, message, file } = await request.json();
+    // file = { name, type, data (base64) } | null
 
     // 0. Validate user message for safety
     const validation = validateUserMessage(message);
@@ -120,10 +101,23 @@ export async function POST(request: NextRequest) {
       content: m.content,
     }));
 
-    // Add current user message
+    // Add current user message (with optional file attachment)
+    const userContent: any[] = []
+    if (file) {
+      if (file.type === "application/pdf") {
+        userContent.push({ type: "document", source: { type: "base64", media_type: "application/pdf", data: file.data } })
+      } else if (file.type.startsWith("image/")) {
+        userContent.push({ type: "image", source: { type: "base64", media_type: file.type, data: file.data } })
+      } else if (file.type === "text/csv" || file.type === "text/plain") {
+        const csvText = Buffer.from(file.data, "base64").toString("utf-8")
+        userContent.push({ type: "text", text: `Archivo adjunto (${file.name}):\n\n${csvText}` })
+      }
+    }
+    const userText = message || (file ? `Analizá este resumen de tarjeta/banco y preparate para importar las transacciones.` : "")
+    userContent.push({ type: "text", text: userText })
     messageHistory.push({
       role: "user",
-      content: message,
+      content: userContent,
     });
 
     // 5. Call Claude with streaming
@@ -136,7 +130,7 @@ export async function POST(request: NextRequest) {
           const response = await anthropic.messages.create({
             model: MODEL,
             max_tokens: 4096,
-            system: buildSystemPrompt(context),
+            system: buildSystemPrompt(context, !!file),
             messages: messageHistory,
             tools,
           });
@@ -246,7 +240,7 @@ export async function POST(request: NextRequest) {
               const followUpResponse = await anthropic.messages.create({
                 model: MODEL,
                 max_tokens: 4096,
-                system: buildSystemPrompt(context),
+                system: buildSystemPrompt(context, !!file),
                 messages: [
                   ...messageHistory,
                   {
@@ -354,8 +348,8 @@ export async function POST(request: NextRequest) {
 }
 
 // Helper to build system prompt with context (uses hardened safety prompt)
-function buildSystemPrompt(context: any): string {
-  return buildSafeSystemPrompt({
+function buildSystemPrompt(context: any, hasFile = false): string {
+  const base = buildSafeSystemPrompt({
     categories: context.categories,
     incomeCategories: context.incomeCategories,
     currentMonthTotal: context.currentMonthTotal,
@@ -364,6 +358,25 @@ function buildSystemPrompt(context: any): string {
     currentUserName: context.currentUserName,
     currentDate: format(new Date(), "yyyy-MM-dd"),
   });
+  if (!hasFile) return base;
+  return base + `
+
+INSTRUCCIONES PARA IMPORTAR RESÚMENES:
+El usuario adjuntó un resumen de tarjeta o banco. Tu tarea es:
+1. Extraer todas las transacciones: fecha, descripción, monto en pesos (ARS).
+2. Para compras en cuotas (ej. "AMAZON 3/12"), identificar que es la cuota N de un total M.
+   - IMPORTANTE: en tortuguita, una compra en cuotas se registra UNA SOLA VEZ con totalInstallments=M.
+   - El sistema genera las cuotas mensuales automáticamente.
+   - Si ves "AMAZON 3/12", significa que ya existe una compra de hace 2 meses — NO la vuelvas a crear.
+3. Ignorar: pagos mínimos, pagos del resumen anterior, totales, cargos de financiación, intereses.
+4. ANTES de presentar la lista final, usar search_bills para verificar cuáles ya existen:
+   - Buscar por descripción similar y rango de fechas del último año
+   - Para cuotas: si encontrás un bill con descripción similar y totalInstallments igual, está duplicado
+   - Marcar los duplicados en tu lista (no los importes)
+5. Presentar dos listas al usuario: "A importar" y "Ya existentes (omitidos)".
+6. Preguntar confirmación antes de importar.
+7. Una vez confirmado, usar create_bill solo para los que NO son duplicados.
+8. Para cuotas nuevas: usar totalInstallments con el total (ej. 12), categoría de tarjeta de crédito correspondiente, y como paymentDate la fecha ORIGINAL de la compra (no la del resumen).`;
 }
 
 // Helper to build context
