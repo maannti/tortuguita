@@ -122,39 +122,55 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
             </div>
           </div>
 
-          {/* Categoría */}
+          {/* Categoría — dropdown */}
           {normalCats.length > 0 && (
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Categoría</label>
-              {/* Grid 2 columnas con nombre visible — primeras 4 */}
-              <div className="grid grid-cols-2 gap-2">
-                {(expandedCats ? normalCats : normalCats.slice(0, 4)).map((cat) => (
-                  <button key={cat.id} type="button"
-                    onClick={() => { setCategoryId(cat.id); setInstallments(1) }}
-                    className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 text-sm text-left transition-colors ${categoryId === cat.id ? "border-primary bg-primary/5 font-medium" : "border-border bg-background text-muted-foreground hover:border-foreground/30"}`}>
-                    {cat.icon
-                      ? <span className="text-base leading-none flex-shrink-0">{cat.icon}</span>
-                      : <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: cat.color || "#6b7280" }} />}
-                    <span className="truncate">{cat.name}</span>
-                    {categoryId === cat.id && <Check className="h-3.5 w-3.5 ml-auto text-primary flex-shrink-0" />}
-                  </button>
-                ))}
-              </div>
-              {/* Fila de acciones */}
               <div className="flex gap-2">
-                {normalCats.length > 4 && (
-                  <button type="button" onClick={() => setExpandedCats(o => !o)}
-                    className="flex-1 flex items-center justify-center gap-1.5 rounded-xl border border-border bg-background py-2 text-xs text-muted-foreground hover:border-foreground/30 transition-colors">
-                    <ChevronDown className={`h-3.5 w-3.5 transition-transform ${expandedCats ? "rotate-180" : ""}`} />
-                    {expandedCats ? "Ver menos" : `Ver ${normalCats.length - 4} más`}
-                  </button>
-                )}
+                {/* Trigger */}
+                <button type="button" onClick={() => setExpandedCats(o => !o)}
+                  className={`flex-1 flex items-center gap-2 rounded-xl border bg-background px-3 py-2.5 text-sm text-left transition-colors ${expandedCats ? "border-primary ring-2 ring-primary/20" : "border-border hover:border-foreground/30"}`}>
+                  {(() => {
+                    const sel = normalCats.find(c => c.id === categoryId)
+                    return sel ? (
+                      <>
+                        {sel.icon
+                          ? <span className="text-base leading-none flex-shrink-0">{sel.icon}</span>
+                          : <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: sel.color || "#6b7280" }} />}
+                        <span className="flex-1 font-medium text-foreground">{sel.name}</span>
+                      </>
+                    ) : (
+                      <span className="flex-1 text-muted-foreground">Seleccioná una categoría</span>
+                    )
+                  })()}
+                  <ChevronDown className={`h-4 w-4 text-muted-foreground flex-shrink-0 transition-transform ${expandedCats ? "rotate-180" : ""}`} />
+                </button>
+                {/* Nueva categoría */}
                 <button type="button" onClick={() => router.push("/categories/new")}
-                  className="flex items-center justify-center gap-1.5 rounded-xl border border-border bg-background px-4 py-2 text-xs text-muted-foreground hover:border-foreground/30 transition-colors">
-                  <Plus className="h-3.5 w-3.5" />
-                  Nueva
+                  title="Nueva categoría"
+                  className="w-11 rounded-xl border border-border bg-background flex items-center justify-center hover:border-foreground/30 transition-colors">
+                  <Plus className="h-4 w-4 text-muted-foreground" />
                 </button>
               </div>
+
+              {/* Lista desplegable */}
+              {expandedCats && (
+                <div className="rounded-xl border border-primary/30 bg-background overflow-hidden shadow-sm">
+                  {normalCats.map((cat, i) => (
+                    <button key={cat.id} type="button"
+                      onClick={() => { setCategoryId(cat.id); setInstallments(1); setExpandedCats(false) }}
+                      className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-left transition-colors
+                        ${i < normalCats.length - 1 ? "border-b border-border/50" : ""}
+                        ${categoryId === cat.id ? "bg-primary/5 text-foreground font-medium" : "text-muted-foreground hover:bg-muted/50"}`}>
+                      {cat.icon
+                        ? <span className="text-base leading-none flex-shrink-0">{cat.icon}</span>
+                        : <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: cat.color || "#6b7280" }} />}
+                      <span className="flex-1">{cat.name}</span>
+                      {categoryId === cat.id && <Check className="h-3.5 w-3.5 text-primary flex-shrink-0" />}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
