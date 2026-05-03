@@ -1,0 +1,91 @@
+"use client"
+import { useRouter } from "next/navigation"
+import { ChevronLeft, Plus, Pencil } from "lucide-react"
+import { DeleteCategoryButton } from "@/components/categories/delete-category-button"
+import { CardIcon, isNetworkId, NetworkId, BANKS } from "@/components/ui/card-network"
+
+interface Card {
+  id: string; name: string; color: string | null; icon: string | null
+}
+
+export function CardsList({ cards }: { cards: Card[] }) {
+  const router = useRouter()
+
+  return (
+    <div className="pb-28">
+      <div className="flex items-center justify-between px-4 py-3 border-b sticky top-0 bg-background/95 backdrop-blur-sm z-10">
+        <button onClick={() => router.push("/settings")}
+          className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
+          <ChevronLeft className="h-4 w-4" />Volver
+        </button>
+        <h1 className="text-base font-semibold" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
+          Mis tarjetas
+        </h1>
+        <button onClick={() => router.push("/cards/new")}
+          className="flex items-center gap-1 text-sm font-semibold text-primary">
+          <Plus className="h-4 w-4" />Nueva
+        </button>
+      </div>
+
+      <div className="px-4 pt-4">
+        {cards.length > 0 ? (
+          <div className="glass rounded-2xl divide-y divide-white/60 overflow-hidden">
+            {cards.map((card) => {
+              const network = isNetworkId(card.icon) ? card.icon as NetworkId : null
+              const matchedBank = BANKS.find(b => b.color === card.color)
+              const bankId = matchedBank?.id || null
+              const bankName = matchedBank?.name || card.name.split(" ")[0]
+              const netLabel = network
+                ? network.charAt(0).toUpperCase() + network.slice(1)
+                : ""
+
+              return (
+                <div key={card.id} className="flex items-center gap-3 px-4 py-3.5">
+                  <CardIcon
+                    bankId={bankId}
+                    bankColor={card.color || "#9D8189"}
+                    bankName={bankName}
+                    network={network}
+                    size="sm"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{card.name}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {netLabel && bankName ? `${netLabel} · ${bankName}` : "Tarjeta de crédito"}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <button onClick={() => router.push(`/cards/${card.id}/edit`)}
+                      className="p-2 rounded-lg hover:bg-black/5 text-muted-foreground hover:text-foreground transition-colors">
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                    <DeleteCategoryButton id={card.id} name={card.name} />
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="text-5xl mb-4">💳</div>
+            <p className="text-base font-medium mb-1" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
+              Sin tarjetas todavía
+            </p>
+            <p className="text-sm text-muted-foreground mb-6">Agregá tu primera tarjeta de crédito</p>
+            <button onClick={() => router.push("/cards/new")}
+              className="inline-flex items-center gap-2 bg-primary text-primary-foreground rounded-full px-6 py-3 text-sm font-medium shadow-md active:scale-95 transition-transform">
+              <Plus className="h-4 w-4" />Agregar
+            </button>
+          </div>
+        )}
+      </div>
+
+      {cards.length > 0 && (
+        <button onClick={() => router.push("/cards/new")}
+          className="fixed bottom-24 right-4 z-30 flex items-center justify-center w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 active:scale-95 transition-transform">
+          <Plus className="h-6 w-6" />
+        </button>
+      )}
+    </div>
+  )
+}

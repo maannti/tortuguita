@@ -1,0 +1,988 @@
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm, useFieldArray } from "react-hook-form";
+import { format } from "date-fns";
+import { billSchema, type BillFormData } from "@/lib/validations/bill";
+import { type BillingPeriodFormData } from "@/lib/validations/bill-type";
+import { Button } from "@/components/ui/button";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+  FormDescription,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
+import { X, Plus, Calendar } from "lucide-react";
+import { useTranslations } from "@/components/providers/language-provider";
+import { BillingPeriodDialog } from "./billing-period-dialog";
+import {
+  calculateBudgetDate,
+  hasBillingPeriod,
+  isAfterCurrentClosing,
+  hasNextPeriod,
+  type BillingPeriod,
+} from "@/lib/budget-date";
+
+interface BillFormProps {
+  initialData?: BillFormData & { id: string };
+  categories: Array<{
+    id: string;
+    name: string;
+    color: string | null;
+    icon: string | null;
+    isCreditCard: boolean;
+    currentClosingDate?: Date | null;
+    currentDueDate?: Date | null;
+    nextClosingDate?: Date | null;
+    nextDueDate?: Date | null;
+  }>;
+  members: Array<{
+    id: string;
+    name: string | null;
+    email: string | null;
+  }>;
+  memberIncomes?: Record<string, number>; // userId -> total income for current month
+  currentUserId: string;
+  mode: "create" | "edit";
+}
+
+export function BillForm({ initialData, categories, members, memberIncomes = {}, currentUserId, mode }: BillFormProps) {
+  const router = useRouter();
+  const t = useTranslations();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [cuotas, setCuotas] = useState("0");
+  const [customCuotas, setCustomCuotas] = useState("");
+  const [amountDisplay, setAmountDisplay] = useState(() => {
+    if (initialData?.amount && Number(initialData.amount) > 0) {
+      return formatAmountDisplay(Number(initialData.amount));
+    }
+    return "";
+  });
+
+  // Billing period state
+  const [billingPeriodDialogOpen, setBillingPeriodDialogOpen] = useState(false);
+  const [billingPeriodMode, setBillingPeriodMode] = useState<"current" | "next">("current");
+  const [billingPeriods, setBillingPeriods] = useState<Record<string, BillingPeriod>>({});
+  const [calculatedBudgetDate, setCalculatedBudgetDate] = useState<Date | null>(null);
+  const [selectedBudgetPeriod, setSelectedBudgetPeriod] = useState<"current" | "next" | "auto">("auto");
+  const [pendingFormData, setPendingFormData] = useState<BillFormData | null>(null);
+
+  // Format number with thousands separator (.) and decimal separator (,)
+  function formatAmountDisplay(value: number): string {
+    const [intPart, decPart] = value.toString().split(".");
+    const formattedInt = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    return decPart ? `${formattedInt},${decPart}` : formattedInt;
+  }
+
+  // Parse display string back to number
+  function parseAmountDisplay(display: string): number {
+    // Remove thousands separators, replace decimal comma with dot
+    const normalized = display.replace(/\./g, "").replace(",", ".");
+    return parseFloat(normalized) || 0;
+  }
+
+  const form = useForm<BillFormData>({
+    resolver: zodResolver(billSchema),
+    defaultValues: initialData || {
+      label: "",
+      amount: 0,
+      paymentDate: new Date(),
+      dueDate: null,
+      billTypeId: "",
+      notes: "",
+      assignments: [],
+    },
+  });
+
+  const { fields, append, remove: removeField } = useFieldArray({
+    control: form.control,
+    name: "assignments",
+  });
+
+  // Custom remove that sets remaining member to 100% if only one left
+  const remove = (index: number) => {
+    removeField(index);
+    // If only 1 member will remain, set their percentage to 100
+    if (fields.length === 2) {
+      setTimeout(() => {
+        form.setValue(`assignments.0.percentage`, 100);
+      }, 0);
+    }
+  };
+
+  const assignments = form.watch("assignments");
+  const totalPercentage = assignments?.reduce(
+    (sum, assignment) => sum + (Number(assignment.percentage) || 0),
+    0
+  ) || 0;
+
+  // Auto-distribute percentages equally when adding a new member
+  const distributeEqually = () => {
+    if (!assignments || assignments.length === 0) return;
+    const equalShare = Math.floor(100 / assignments.length);
+    const remainder = 100 - (equalShare * assignments.length);
+
+    assignments.forEach((_, index) => {
+      // Give the remainder to the first person
+      const share = index === 0 ? equalShare + remainder : equalShare;
+      form.setValue(`assignments.${index}.percentage`, share);
+    });
+  };
+
+  // Distribute percentages based on income ratio
+  const distributeByIncome = () => {
+    if (!assignments || assignments.length === 0) return;
+
+    // Calculate total income of assigned members
+    const totalIncome = assignments.reduce((sum, a) => {
+      return sum + (memberIncomes[a.userId] || 0);
+    }, 0);
+
+    if (totalIncome === 0) {
+      // No income data, fall back to equal distribution
+      distributeEqually();
+      return;
+    }
+
+    // Calculate percentage for each member based on their income ratio
+    let distributedTotal = 0;
+    assignments.forEach((assignment, index) => {
+      const income = memberIncomes[assignment.userId] || 0;
+      const percentage = Math.round((income / totalIncome) * 100);
+      distributedTotal += percentage;
+      form.setValue(`assignments.${index}.percentage`, percentage);
+    });
+
+    // Handle rounding errors - adjust first member to ensure total is 100
+    if (distributedTotal !== 100 && assignments.length > 0) {
+      const firstPercentage = Number(form.getValues(`assignments.0.percentage`)) || 0;
+      form.setValue(`assignments.0.percentage`, firstPercentage + (100 - distributedTotal));
+    }
+  };
+
+  // Check if we have income data for the current assignments
+  const hasIncomeData = assignments?.some(a => memberIncomes[a.userId] && memberIncomes[a.userId] > 0) ?? false;
+
+  // Auto-adjust other members when one is changed
+  const adjustOtherPercentages = (changedIndex: number, newValue: number) => {
+    if (!assignments || assignments.length <= 1) return;
+
+    const otherIndices = assignments
+      .map((_, i) => i)
+      .filter(i => i !== changedIndex);
+
+    const remaining = 100 - newValue;
+
+    if (otherIndices.length === 1) {
+      // Only one other person - they get the remainder
+      form.setValue(`assignments.${otherIndices[0]}.percentage`, Math.max(0, remaining));
+    } else {
+      // Multiple others - distribute remaining equally
+      const currentOtherTotal = otherIndices.reduce(
+        (sum, i) => sum + (Number(assignments[i]?.percentage) || 0),
+        0
+      );
+
+      if (currentOtherTotal > 0) {
+        // Distribute proportionally based on current values
+        otherIndices.forEach(i => {
+          const currentVal = Number(assignments[i]?.percentage) || 0;
+          const proportion = currentVal / currentOtherTotal;
+          const newVal = Math.round(remaining * proportion);
+          form.setValue(`assignments.${i}.percentage`, Math.max(0, newVal));
+        });
+      } else {
+        // All others are 0, distribute equally
+        const equalShare = Math.floor(remaining / otherIndices.length);
+        otherIndices.forEach((i, idx) => {
+          const share = idx === 0 ? remaining - (equalShare * (otherIndices.length - 1)) : equalShare;
+          form.setValue(`assignments.${i}.percentage`, Math.max(0, share));
+        });
+      }
+    }
+  };
+
+  // Watch selected category to determine if cuotas should be shown
+  const selectedCategoryId = form.watch("billTypeId");
+  const selectedCategory = categories.find(c => c.id === selectedCategoryId);
+  const showCuotas = selectedCategory?.isCreditCard ?? false;
+  const paymentDate = form.watch("paymentDate");
+
+  // Fetch billing period when category changes
+  const fetchBillingPeriod = useCallback(async (categoryId: string) => {
+    if (billingPeriods[categoryId]) return;
+
+    try {
+      const response = await fetch(`/api/bill-types/${categoryId}/billing-period`);
+      if (response.ok) {
+        const data = await response.json();
+        setBillingPeriods(prev => ({
+          ...prev,
+          [categoryId]: {
+            currentClosingDate: data.currentClosingDate ? new Date(data.currentClosingDate) : null,
+            currentDueDate: data.currentDueDate ? new Date(data.currentDueDate) : null,
+            nextClosingDate: data.nextClosingDate ? new Date(data.nextClosingDate) : null,
+            nextDueDate: data.nextDueDate ? new Date(data.nextDueDate) : null,
+          },
+        }));
+      }
+    } catch (err) {
+      console.error("Failed to fetch billing period:", err);
+    }
+  }, [billingPeriods]);
+
+  // Fetch billing period when credit card category is selected
+  useEffect(() => {
+    if (selectedCategory?.isCreditCard && selectedCategoryId) {
+      fetchBillingPeriod(selectedCategoryId);
+    }
+  }, [selectedCategoryId, selectedCategory?.isCreditCard, fetchBillingPeriod]);
+
+  // Helper to convert paymentDate to Date
+  const getPaymentDateAsDate = (pd: unknown): Date | null => {
+    if (!pd) return null;
+    if (pd instanceof Date) return pd;
+    if (typeof pd === 'string' || typeof pd === 'number') return new Date(pd);
+    return null;
+  };
+
+  // Calculate budget date when payment date or category changes
+  useEffect(() => {
+    const payment = getPaymentDateAsDate(paymentDate);
+    if (!selectedCategory || !payment) {
+      setCalculatedBudgetDate(null);
+      return;
+    }
+
+    if (!selectedCategory.isCreditCard) {
+      setCalculatedBudgetDate(payment);
+      return;
+    }
+
+    const billingPeriod = billingPeriods[selectedCategoryId];
+    const result = calculateBudgetDate(payment, true, billingPeriod);
+    setCalculatedBudgetDate(result.budgetDate);
+  }, [paymentDate, selectedCategoryId, selectedCategory, billingPeriods]);
+
+  // Reset selected period to auto when category changes
+  useEffect(() => {
+    setSelectedBudgetPeriod("auto");
+  }, [selectedCategoryId]);
+
+  // Get the final budget date based on selection
+  const getFinalBudgetDate = (): Date | null => {
+    const payment = getPaymentDateAsDate(paymentDate);
+    if (!payment) return null;
+
+    if (!selectedCategory?.isCreditCard) {
+      return payment;
+    }
+
+    const billingPeriod = billingPeriods[selectedCategoryId];
+    if (!billingPeriod) return payment;
+
+    if (selectedBudgetPeriod === "auto") {
+      return calculatedBudgetDate;
+    } else if (selectedBudgetPeriod === "current" && billingPeriod.currentDueDate) {
+      return new Date(billingPeriod.currentDueDate);
+    } else if (selectedBudgetPeriod === "next" && billingPeriod.nextDueDate) {
+      return new Date(billingPeriod.nextDueDate);
+    }
+
+    return calculatedBudgetDate;
+  };
+
+  // Check if billing period configuration is needed
+  const checkBillingPeriod = (): { needsConfig: boolean; mode: "current" | "next" } => {
+    if (!selectedCategory?.isCreditCard) {
+      return { needsConfig: false, mode: "current" };
+    }
+
+    const billingPeriod = billingPeriods[selectedCategoryId];
+
+    // Check if current period is configured
+    if (!hasBillingPeriod(billingPeriod)) {
+      return { needsConfig: true, mode: "current" };
+    }
+
+    // Check if expense is after closing and next period is needed
+    const payment = getPaymentDateAsDate(paymentDate);
+    if (payment && isAfterCurrentClosing(payment, billingPeriod) && !hasNextPeriod(billingPeriod)) {
+      return { needsConfig: true, mode: "next" };
+    }
+
+    return { needsConfig: false, mode: "current" };
+  };
+
+  // Handle billing period save
+  const handleBillingPeriodSave = async (data: BillingPeriodFormData) => {
+    const response = await fetch(`/api/bill-types/${selectedCategoryId}/billing-period`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const result = await response.json();
+      throw new Error(result.error || "Failed to save billing period");
+    }
+
+    const updated = await response.json();
+
+    // Create updated billing period object
+    const updatedBillingPeriod: BillingPeriod = {
+      currentClosingDate: updated.currentClosingDate ? new Date(updated.currentClosingDate) : null,
+      currentDueDate: updated.currentDueDate ? new Date(updated.currentDueDate) : null,
+      nextClosingDate: updated.nextClosingDate ? new Date(updated.nextClosingDate) : null,
+      nextDueDate: updated.nextDueDate ? new Date(updated.nextDueDate) : null,
+    };
+
+    // Update local state
+    setBillingPeriods(prev => ({
+      ...prev,
+      [selectedCategoryId]: updatedBillingPeriod,
+    }));
+
+    // If there was pending form data, submit it now with the updated billing period
+    if (pendingFormData) {
+      const formData = pendingFormData;
+      setPendingFormData(null);
+      await submitBill(formData, updatedBillingPeriod);
+    }
+  };
+
+  // Separate function to submit the bill with a specific billing period
+  async function submitBill(data: BillFormData, billingPeriod: BillingPeriod | undefined) {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      // Determine final cuotas value (from dropdown or custom input)
+      let cuotasNum = 0;
+      if (showCuotas) {
+        if (cuotas === "other") {
+          cuotasNum = parseInt(customCuotas) || 0;
+        } else {
+          cuotasNum = parseInt(cuotas);
+        }
+      }
+
+      // Get budget date based on user selection
+      const payment = data.paymentDate instanceof Date
+        ? data.paymentDate
+        : new Date(data.paymentDate as string | number);
+
+      let finalBudgetDate: Date;
+      if (selectedBudgetPeriod === "current" && billingPeriod?.currentDueDate) {
+        finalBudgetDate = new Date(billingPeriod.currentDueDate);
+      } else if (selectedBudgetPeriod === "next" && billingPeriod?.nextDueDate) {
+        finalBudgetDate = new Date(billingPeriod.nextDueDate);
+      } else {
+        // Auto calculation
+        const budgetDateResult = calculateBudgetDate(
+          payment,
+          selectedCategory?.isCreditCard ?? false,
+          billingPeriod
+        );
+        finalBudgetDate = budgetDateResult.budgetDate;
+      }
+
+      const url =
+        mode === "create" ? "/api/bills" : `/api/bills/${initialData?.id}`;
+
+      const response = await fetch(url, {
+        method: mode === "create" ? "POST" : "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...data,
+          budgetDate: finalBudgetDate,
+          totalInstallments: cuotasNum > 0 ? cuotasNum : undefined,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        setError(result.error || "Something went wrong");
+        return;
+      }
+
+      router.push("/bills");
+      router.refresh();
+    } catch (error) {
+      setError("Failed to save bill");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function onSubmit(data: BillFormData) {
+    // Check if billing period needs configuration
+    const { needsConfig, mode: dialogMode } = checkBillingPeriod();
+    if (needsConfig) {
+      setBillingPeriodMode(dialogMode);
+      setBillingPeriodDialogOpen(true);
+      setPendingFormData(data);
+      return;
+    }
+
+    // Submit with current billing period from state
+    const billingPeriod = billingPeriods[selectedCategoryId];
+    await submitBill(data, billingPeriod);
+  }
+
+  return (
+    <div className="md:rounded-lg md:border md:bg-card md:shadow-sm overflow-hidden">
+      <div className="px-4 pb-2 md:p-6 md:pb-4">
+        <h1 className="text-2xl font-semibold tracking-tight">
+          {mode === "create" ? t.bills.newBill : t.bills.editBill}
+        </h1>
+      </div>
+      <div className="px-4 pb-4 md:px-6 md:pb-6">
+        <Form {...form}>
+          <form id="bill-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+            {error && (
+              <div className="p-3 text-sm text-red-500 bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded-md">
+                {error}
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="label"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t.bills.label}</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder={t.bills.labelPlaceholder}
+                        disabled={isLoading}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="amount"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t.bills.amount}</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                        <Input
+                          type="text"
+                          inputMode="decimal"
+                          placeholder="0,00"
+                          disabled={isLoading}
+                          value={amountDisplay}
+                          onChange={(e) => {
+                            const input = e.target.value;
+                            // Remove everything except digits and comma (decimal separator)
+                            const cleaned = input.replace(/[^0-9,]/g, "");
+                            // Only allow one comma
+                            const parts = cleaned.split(",");
+                            const intPart = parts[0].replace(/^0+(?=\d)/, ""); // Remove leading zeros
+                            const decPart = parts[1]?.slice(0, 2); // Max 2 decimal places
+
+                            // Format with thousands separator
+                            const formattedInt = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+                            const formatted = decPart !== undefined ? `${formattedInt},${decPart}` : formattedInt;
+
+                            setAmountDisplay(formatted);
+
+                            // Convert to number for form state
+                            const numericValue = parseAmountDisplay(formatted);
+                            field.onChange(numericValue);
+                          }}
+                          onBlur={field.onBlur}
+                          name={field.name}
+                          ref={field.ref}
+                          className="pl-7"
+                        />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="billTypeId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t.bills.category}</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      disabled={isLoading}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder={t.bills.selectCategory} />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {categories.map((category) => (
+                          <SelectItem key={category.id} value={category.id}>
+                            <div className="flex items-center gap-2">
+                              {category.icon && <span>{category.icon}</span>}
+                              {category.name}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="paymentDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t.bills.paymentDate}</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="date"
+                        disabled={isLoading}
+                        value={
+                          field.value instanceof Date
+                            ? field.value.toISOString().split("T")[0]
+                            : ""
+                        }
+                        onChange={(e) => {
+                          const date = e.target.value
+                            ? new Date(e.target.value + "T00:00:00")
+                            : new Date();
+                          field.onChange(date);
+                        }}
+                      />
+                    </FormControl>
+                    <FormDescription>{t.bills.paymentDateDescription}</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {/* Due date and Cuotas - only show for credit card categories */}
+            {showCuotas && (
+              <>
+                <FormField
+                  control={form.control}
+                  name="dueDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t.bills.dueDate}</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="date"
+                          disabled={isLoading}
+                          value={
+                            field.value && (field.value instanceof Date || typeof field.value === 'string')
+                              ? (field.value instanceof Date
+                                  ? field.value
+                                  : new Date(field.value)
+                                ).toISOString().split("T")[0]
+                              : ""
+                          }
+                          onChange={(e) => {
+                            const date = e.target.value
+                              ? new Date(e.target.value + "T00:00:00")
+                              : null;
+                            field.onChange(date);
+                          }}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        {t.bills.dueDateDescription}
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              {/* Budget Date Selector - only show for credit cards */}
+              {selectedCategory?.isCreditCard && paymentDate && (
+                (() => {
+                  const billingPeriod = billingPeriods[selectedCategoryId];
+                  const hasCurrentPeriod = billingPeriod?.currentDueDate;
+                  const hasNextPeriodConfigured = billingPeriod?.nextDueDate;
+                  const finalBudgetDate = getFinalBudgetDate();
+
+                  // If no billing period configured, show a prompt to configure
+                  if (!hasCurrentPeriod) {
+                    return (
+                      <div className="p-3 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 rounded-md">
+                        <div className="flex items-center gap-2 text-sm text-amber-700 dark:text-amber-300">
+                          <Calendar className="h-4 w-4" />
+                          <span>Configurá el período de facturación para ver el impacto presupuestario</span>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold leading-none">
+                        {t.billingPeriod.budgetImpact}
+                      </label>
+                      <Select
+                        value={selectedBudgetPeriod}
+                        onValueChange={(value: "auto" | "current" | "next") => setSelectedBudgetPeriod(value)}
+                        disabled={isLoading}
+                      >
+                        <SelectTrigger className="bg-blue-50 dark:bg-blue-900/10 border-blue-200 dark:border-blue-800">
+                          <SelectValue>
+                            <div className="flex items-center gap-2 text-blue-700 dark:text-blue-300">
+                              <Calendar className="h-4 w-4" />
+                              <span>
+                                {finalBudgetDate ? format(finalBudgetDate, "MMM d, yyyy") : "Seleccionar"}
+                              </span>
+                            </div>
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {hasCurrentPeriod && (
+                            <SelectItem value="current">
+                              <div className="flex flex-col">
+                                <span>Cierre actual - {format(new Date(billingPeriod.currentDueDate!), "MMM d, yyyy")}</span>
+                                <span className="text-xs text-muted-foreground">
+                                  Cierra el {format(new Date(billingPeriod.currentClosingDate!), "MMM d")}
+                                </span>
+                              </div>
+                            </SelectItem>
+                          )}
+                          {hasNextPeriodConfigured && (
+                            <SelectItem value="next">
+                              <div className="flex flex-col">
+                                <span>Próximo cierre - {format(new Date(billingPeriod.nextDueDate!), "MMM d, yyyy")}</span>
+                                <span className="text-xs text-muted-foreground">
+                                  Cierra el {format(new Date(billingPeriod.nextClosingDate!), "MMM d")}
+                                </span>
+                              </div>
+                            </SelectItem>
+                          )}
+                          <SelectItem value="auto">
+                            <div className="flex flex-col">
+                              <span>Automático</span>
+                              <span className="text-xs text-muted-foreground">
+                                Según fecha de pago y cierre
+                              </span>
+                            </div>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  );
+                })()
+              )}
+
+              <div className="space-y-2">
+                  <label className="text-sm font-semibold leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                    Cuotas
+                  </label>
+                  <Select value={cuotas} onValueChange={(value) => {
+                    setCuotas(value);
+                    if (value !== "other") {
+                      setCustomCuotas("");
+                    }
+                  }} disabled={isLoading}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Sin cuotas" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="0">Sin cuotas</SelectItem>
+                      <SelectItem value="2">2 cuotas</SelectItem>
+                      <SelectItem value="3">3 cuotas</SelectItem>
+                      <SelectItem value="6">6 cuotas</SelectItem>
+                      <SelectItem value="12">12 cuotas</SelectItem>
+                      <SelectItem value="18">18 cuotas</SelectItem>
+                      <SelectItem value="24">24 cuotas</SelectItem>
+                      <SelectItem value="other">Otro...</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {cuotas === "other" && (
+                    <Input
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="Número de cuotas"
+                      value={customCuotas}
+                      onChange={(e) => {
+                        // Only allow digits
+                        const value = e.target.value.replace(/[^0-9]/g, "");
+                        setCustomCuotas(value);
+                      }}
+                      disabled={isLoading}
+                      className="mt-2"
+                    />
+                  )}
+                </div>
+              </>
+            )}
+
+            <FormField
+              control={form.control}
+              name="notes"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t.bills.notes}</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder={t.bills.notesPlaceholder}
+                      disabled={isLoading}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="space-y-4 pt-2">
+              <div>
+                {fields.length > 0 && (
+                  <>
+                    <h3 className="text-sm font-medium mb-2">
+                      {t.bills.assignToMembers}
+                    </h3>
+                    <p className="text-xs text-muted-foreground mb-4">
+                      {t.bills.splitBillDescription}
+                    </p>
+                  </>
+                )}
+
+                {fields.map((field, index) => {
+                  const assignedUserIds = assignments
+                    ?.map((a, i) => (i !== index ? a.userId : null))
+                    .filter(Boolean);
+                  const availableMembers = members.filter(
+                    (m) => !assignedUserIds?.includes(m.id)
+                  );
+                  const showPercentageControls = fields.length > 1;
+
+                  return (
+                    <div key={field.id} className="mb-3 p-3 bg-muted/30 rounded-lg space-y-3">
+                      <div className="flex items-center gap-3">
+                        <FormField
+                          control={form.control}
+                          name={`assignments.${index}.userId`}
+                          render={({ field }) => (
+                            <FormItem className="flex-1">
+                              <Select
+                                onValueChange={field.onChange}
+                                value={field.value}
+                                disabled={isLoading}
+                              >
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder={t.bills.selectMember} />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {availableMembers.map((member) => (
+                                    <SelectItem key={member.id} value={member.id}>
+                                      {member.name || member.email}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => remove(index)}
+                          disabled={isLoading}
+                          className="flex-shrink-0 h-8 w-8"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      {showPercentageControls && (
+                        <FormField
+                          control={form.control}
+                          name={`assignments.${index}.percentage`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormControl>
+                                <div className="flex items-center gap-3">
+                                  <div className="flex-1">
+                                    <Slider
+                                      min={0}
+                                      max={100}
+                                      step={1}
+                                      value={[Math.round(Number(field.value) || 0)]}
+                                      onValueChange={(values) => {
+                                        field.onChange(values[0]);
+                                        adjustOtherPercentages(index, values[0]);
+                                      }}
+                                      disabled={isLoading}
+                                    />
+                                  </div>
+                                  <div className="flex items-center gap-1 flex-shrink-0">
+                                    <Input
+                                      type="text"
+                                      inputMode="numeric"
+                                      value={Math.round(Number(field.value) || 0)}
+                                      onChange={(e) => {
+                                        const val = e.target.value.replace(/[^0-9]/g, "");
+                                        const num = Math.min(100, Math.max(0, parseInt(val) || 0));
+                                        field.onChange(num);
+                                        adjustOtherPercentages(index, num);
+                                      }}
+                                      disabled={isLoading}
+                                      className="w-14 h-8 text-center text-sm px-1"
+                                    />
+                                    <span className="text-sm">%</span>
+                                  </div>
+                                </div>
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      )}
+                    </div>
+                  );
+                })}
+
+                {fields.length < members.length && (
+                  <div className="flex flex-col sm:flex-row gap-2 mt-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        append({ userId: currentUserId, percentage: 100 });
+                        // Auto-distribute after adding (use setTimeout to wait for state update)
+                        setTimeout(() => {
+                          const newCount = fields.length + 1;
+                          const equalShare = Math.floor(100 / newCount);
+                          const remainder = 100 - (equalShare * newCount);
+                          for (let i = 0; i < newCount; i++) {
+                            const share = i === 0 ? equalShare + remainder : equalShare;
+                            form.setValue(`assignments.${i}.percentage`, share);
+                          }
+                        }, 0);
+                      }}
+                      disabled={isLoading}
+                      className="w-full sm:w-auto"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      {t.bills.addMember}
+                    </Button>
+                    {fields.length > 1 && (
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={distributeEqually}
+                          disabled={isLoading}
+                          className="w-full sm:w-auto text-muted-foreground"
+                        >
+                          Dividir igual
+                        </Button>
+                        {hasIncomeData && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={distributeByIncome}
+                            disabled={isLoading}
+                            className="w-full sm:w-auto text-muted-foreground"
+                          >
+                            📊 Por ingresos
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {form.formState.errors.assignments?.message && (
+                  <p className="text-sm text-destructive mt-2">
+                    {form.formState.errors.assignments.message}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Spacer for sticky button on mobile */}
+            <div className="h-20 md:hidden" />
+          </form>
+        </Form>
+      </div>
+
+      {/* Sticky submit button on mobile, inline on desktop */}
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur-sm md:relative md:bg-transparent md:backdrop-blur-none md:p-6 md:pt-0">
+        <div className="flex flex-col-reverse md:flex-row gap-2 max-w-2xl mx-auto md:max-w-none">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => router.push("/bills")}
+            disabled={isLoading}
+            size="lg"
+            className="w-full md:w-auto"
+          >
+            {t.common.cancel}
+          </Button>
+          <Button type="submit" form="bill-form" disabled={isLoading} size="lg" className="w-full md:flex-1">
+            {isLoading
+              ? t.bills.saving
+              : mode === "create"
+                ? t.bills.create
+                : t.bills.update}
+          </Button>
+        </div>
+      </div>
+
+      {/* Billing Period Dialog */}
+      {selectedCategory && (
+        <BillingPeriodDialog
+          open={billingPeriodDialogOpen}
+          onOpenChange={(open) => {
+            setBillingPeriodDialogOpen(open);
+            if (!open) {
+              setPendingFormData(null);
+            }
+          }}
+          billTypeId={selectedCategoryId}
+          billTypeName={selectedCategory.name}
+          mode={billingPeriodMode}
+          existingPeriod={billingPeriods[selectedCategoryId]}
+          onSave={handleBillingPeriodSave}
+        />
+      )}
+    </div>
+  );
+}
