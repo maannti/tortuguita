@@ -1,0 +1,171 @@
+// Shared credit card network logos + bank data
+// Used in category form, categories list, bills view, etc.
+
+export type NetworkId = "visa" | "mastercard" | "amex" | "cabal"
+export const KNOWN_NETWORKS: NetworkId[] = ["visa", "mastercard", "amex", "cabal"]
+export function isNetworkId(s: string | null | undefined): s is NetworkId {
+  return !!s && KNOWN_NETWORKS.includes(s as NetworkId)
+}
+
+export const NETWORKS: { id: NetworkId; name: string; color: string }[] = [
+  { id: "visa",       name: "Visa",       color: "#1A1F71" },
+  { id: "mastercard", name: "Mastercard", color: "#EB001B" },
+  { id: "amex",       name: "Amex",       color: "#2E77BC" },
+  { id: "cabal",      name: "Cabal",      color: "#005BAA" },
+]
+
+// Bank logo filenames — all Play Store PNGs, uniform square icons
+const BANK_FILES: Record<string, string> = {
+  icbc:        "icbc.png",
+  santander:   "santander.png",
+  galicia:     "galicia.png",
+  bbva:        "bbva.png",
+  brubank:     "brubank.png",
+  naranjax:    "naranjax.png",
+  macro:       "macro.png",
+  nacion:      "nacion.png",
+  provincia:   "provincia.png",
+  ciudad:      "ciudad.jpg",
+  supervielle: "supervielle.png",
+  patagonia:   "patagonia.jpg",
+  mercadopago: "mercadopago.png",
+  uala:        "uala.png",
+  otro:        "otro.svg",
+}
+
+// Network logo filenames — all Play Store PNGs
+const NETWORK_FILES: Record<NetworkId, string> = {
+  visa:       "visa.png",
+  mastercard: "mastercard.png",
+  amex:       "amex.png",
+  cabal:      "cabal.png",
+}
+
+export const BANKS = [
+  { id: "icbc",        name: "ICBC",         color: "#C41230" },
+  { id: "santander",   name: "Santander",    color: "#EC0000" },
+  { id: "galicia",     name: "Galicia",      color: "#E40613" },
+  { id: "bbva",        name: "BBVA",         color: "#004481" },
+  { id: "brubank",     name: "Brubank",      color: "#7B2FBE" },
+  { id: "naranjax",    name: "Naranja X",    color: "#FF6200" },
+  { id: "macro",       name: "Macro",        color: "#F5841F" },
+  { id: "mercadopago", name: "Mercado Pago", color: "#009EE3" },
+  { id: "uala",        name: "Ualá",         color: "#5C2D91" },
+  { id: "nacion",      name: "Nación",       color: "#004990" },
+  { id: "provincia",   name: "Provincia",    color: "#00539B" },
+  { id: "ciudad",      name: "Ciudad",       color: "#003087" },
+  { id: "supervielle", name: "Supervielle",  color: "#E05C00" },
+  { id: "patagonia",   name: "Patagonia",    color: "#005B8E" },
+  { id: "otro",        name: "Otro",         color: "#9D8189" },
+]
+
+// ── Network logo ─────────────────────────────────────────────────────────────
+
+interface NetworkLogoProps { network: NetworkId; size?: number; className?: string }
+
+export function NetworkLogo({ network, size = 40, className = "" }: NetworkLogoProps) {
+  const file = NETWORK_FILES[network]
+  return (
+    <img
+      src={`/logos/networks/${file}`}
+      alt={network}
+      width={size}
+      height={size}
+      className={`rounded-xl ${className}`}
+      style={{ objectFit: "cover", display: "block" }}
+    />
+  )
+}
+
+// ── Bank logo ─────────────────────────────────────────────────────────────────
+
+interface BankLogoProps { bankId: string; size?: number; className?: string }
+
+export function BankLogo({ bankId, size = 40, className = "" }: BankLogoProps) {
+  const file = BANK_FILES[bankId]
+  if (!file) return null
+
+  return (
+    <img
+      src={`/logos/banks/${file}`}
+      alt={bankId}
+      width={size}
+      height={size}
+      className={`rounded-xl ${className}`}
+      style={{ objectFit: "cover", display: "block" }}
+    />
+  )
+}
+
+// ── Combined card icon: bank logo + network badge ─────────────────────────────
+
+interface CardIconProps {
+  bankId?: string | null
+  bankColor: string
+  bankName: string
+  network: NetworkId | null
+  size?: "sm" | "md" | "lg"
+}
+
+export function CardIcon({ bankId, bankColor, bankName, network, size = "md" }: CardIconProps) {
+  const dims   = size === "sm" ? 36 : size === "md" ? 44 : 56
+  const badge  = size === "sm" ? 18 : size === "md" ? 22 : 28
+  const radius = size === "sm" ? "rounded-xl" : "rounded-2xl"
+
+  return (
+    <div className="relative flex-shrink-0" style={{ width: dims, height: dims }}>
+      {bankId && BANK_FILES[bankId] ? (
+        <BankLogo bankId={bankId} size={dims} className={radius} />
+      ) : (
+        <div
+          className={`w-full h-full ${radius} flex items-center justify-center font-bold text-white`}
+          style={{ backgroundColor: bankColor, fontSize: dims * 0.33 }}
+        >
+          {bankName.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2)}
+        </div>
+      )}
+
+      {/* Network badge */}
+      {network && (
+        <div
+          className="absolute -bottom-1 -right-1 rounded-full bg-white flex items-center justify-center shadow-md overflow-hidden"
+          style={{ width: badge, height: badge }}
+        >
+          <NetworkBadge network={network} size={badge - 4} />
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Tiny network badge
+function NetworkBadge({ network, size }: { network: NetworkId; size: number }) {
+  if (network === "mastercard") {
+    return (
+      <svg width={size} height={size} viewBox="0 0 20 20">
+        <circle cx="7"  cy="10" r="6" fill="#EB001B" />
+        <circle cx="13" cy="10" r="6" fill="#F79E1B" />
+        <path d="M10 4.4A6 6 0 0110 15.6 6 6 0 0110 4.4Z" fill="#FF5F00" />
+      </svg>
+    )
+  }
+  const styles: Record<NetworkId, { color: string; label: string; italic: boolean }> = {
+    visa:       { color: "#1A1F71", label: "V", italic: true  },
+    mastercard: { color: "#EB001B", label: "M", italic: false },
+    amex:       { color: "#016FD0", label: "A", italic: false },
+    cabal:      { color: "#005BAA", label: "C", italic: false },
+  }
+  const s = styles[network]
+  return (
+    <span style={{
+      fontSize: size * 0.72,
+      fontWeight: 900,
+      color: s.color,
+      fontStyle: s.italic ? "italic" : "normal",
+      fontFamily: s.italic ? "Georgia, serif" : "Arial, sans-serif",
+      lineHeight: 1,
+    }}>
+      {s.label}
+    </span>
+  )
+}

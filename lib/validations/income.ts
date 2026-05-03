@@ -1,0 +1,39 @@
+import { z } from "zod"
+
+const incomeAssignmentSchema = z.object({
+  userId: z.string().min(1, "User is required"),
+  percentage: z.coerce
+    .number()
+    .min(0, "Percentage cannot be negative")
+    .max(100, "Percentage cannot exceed 100"),
+})
+
+export const incomeSchema = z
+  .object({
+    label: z.string().min(1, "Label is required").max(100, "Label is too long"),
+    amount: z.coerce
+      .number()
+      .positive("Amount must be positive")
+      .multipleOf(0.01, "Amount must have at most 2 decimal places"),
+    incomeDate: z.coerce.date(),
+    incomeTypeId: z.string().min(1, "Category is required"),
+    notes: z.string().optional(),
+    assignments: z.array(incomeAssignmentSchema).default([]),
+  })
+  .refine(
+    (data) => {
+      if (data.assignments.length === 0) return true
+      const total = data.assignments.reduce(
+        (sum, assignment) => sum + assignment.percentage,
+        0
+      )
+      return Math.abs(total - 100) < 0.01 // Allow for floating point errors
+    },
+    {
+      message: "Total percentage must equal 100%",
+      path: ["assignments"],
+    }
+  )
+
+export type IncomeFormData = z.input<typeof incomeSchema>
+export type IncomeAssignmentData = z.input<typeof incomeAssignmentSchema>
