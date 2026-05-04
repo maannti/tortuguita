@@ -206,11 +206,11 @@ export function SettingsHub({ creditCards, categories }: Props) {
                     >
                       <div
                         className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
-                        style={{ backgroundColor: org.isPersonal ? "#9D818922" : "#7B9E8722" }}
+                        style={{ backgroundColor: org.isPersonal ? "#9D8189" : "#7B9E87" }}
                       >
                         {org.isPersonal
-                          ? <User className="h-4 w-4" style={{ color: "#9D8189" }} />
-                          : <Home className="h-4 w-4" style={{ color: "#7B9E87" }} />}
+                          ? <User className="h-4 w-4 text-white" />
+                          : <Home className="h-4 w-4 text-white" />}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{org.name}</p>
@@ -239,8 +239,8 @@ export function SettingsHub({ creditCards, categories }: Props) {
           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2 px-1">Gestión</p>
           <div className="glass rounded-2xl divide-y divide-white/60 overflow-hidden">
             {[
-              { label: "Mis tarjetas", href: "/cards", icon: <CreditCard className="h-4 w-4" style={{ color: "#7B9E87" }} />, bg: "#7B9E8720" },
-              { label: "Categorías de gastos", href: "/categories", icon: <Tag className="h-4 w-4" style={{ color: "#9D8189" }} />, bg: "#9D818920" },
+              { label: "Mis tarjetas", href: "/cards", icon: <CreditCard className="h-4 w-4 text-white" />, bg: "#7B9E87" },
+              { label: "Categorías de gastos", href: "/categories", icon: <Tag className="h-4 w-4 text-white" />, bg: "#9D8189" },
             ].map((item) => (
               <button key={item.label} onClick={() => router.push(item.href)}
                 className="w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-white/30 transition-colors">
