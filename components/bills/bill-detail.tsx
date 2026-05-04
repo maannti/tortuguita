@@ -15,11 +15,9 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
 import { CategoryBadge } from "@/components/categories/category-badge"
 import { CardIcon, BANKS, isNetworkId, NetworkId } from "@/components/ui/card-network"
 
@@ -222,24 +220,46 @@ export function BillDetail({ bill }: BillDetailProps) {
 
       {/* Delete confirmation dialog */}
       <Dialog open={deleteOpen} onOpenChange={(open) => { if (!open) { setDeleteOpen(false); setDeleteError(null) } }}>
-        <DialogContent className="rounded-3xl border-border/50 bg-background/95 backdrop-blur-md w-[calc(100%-2rem)] max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Eliminar gasto</DialogTitle>
-            <DialogDescription>
-              ¿Eliminás "{bill.label}"? Esta acción no se puede deshacer.
-            </DialogDescription>
+        <DialogContent className="rounded-3xl border-border/40 bg-card w-[calc(100%-2rem)] max-w-sm p-6 [&>.absolute]:hidden">
+          <DialogHeader className="items-center text-center gap-4 pb-1">
+            <div className="w-14 h-14 rounded-full bg-destructive/10 flex items-center justify-center">
+              <Trash2 className="h-6 w-6 text-destructive" />
+            </div>
+            <div className="space-y-1.5">
+              <DialogTitle
+                className="text-xl"
+                style={{ fontFamily: "var(--font-fraunces, serif)" }}
+              >
+                Eliminar gasto
+              </DialogTitle>
+              <DialogDescription className="text-sm text-muted-foreground leading-relaxed">
+                ¿Eliminás{" "}
+                <span className="font-medium text-foreground">"{bill.label}"</span>
+                ?{" "}Esta acción no se puede deshacer.
+              </DialogDescription>
+            </div>
           </DialogHeader>
           {deleteError && (
-            <p className="text-sm text-destructive">{deleteError}</p>
+            <p className="text-sm text-destructive text-center pt-1">{deleteError}</p>
           )}
-          <DialogFooter className="flex-col gap-2 sm:flex-row">
-            <Button variant="outline" onClick={() => setDeleteOpen(false)} disabled={isDeleting} className="w-full sm:w-auto">
-              Cancelar
-            </Button>
-            <Button variant="destructive" onClick={handleDelete} disabled={isDeleting} className="w-full sm:w-auto">
+          <div className="flex flex-col gap-2.5 pt-2">
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className="w-full rounded-full bg-destructive text-white py-3.5 text-sm font-semibold disabled:opacity-50 active:scale-[0.97] transition-all"
+            >
               {isDeleting ? "Eliminando…" : "Eliminar"}
-            </Button>
-          </DialogFooter>
+            </button>
+            <button
+              type="button"
+              onClick={() => { setDeleteOpen(false); setDeleteError(null) }}
+              disabled={isDeleting}
+              className="w-full rounded-full bg-muted text-muted-foreground py-3.5 text-sm font-medium disabled:opacity-50 active:scale-[0.97] transition-all"
+            >
+              Cancelar
+            </button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
