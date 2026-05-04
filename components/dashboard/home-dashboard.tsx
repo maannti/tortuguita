@@ -125,7 +125,7 @@ export function HomeDashboard({ month, monthKey, availableMonths, spaces }: Prop
             </div>
 
             {/* Member split — only shown when exactly 1 space is active */}
-            {members.length > 0 && (
+            {members.length > 1 && (
               <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${members.length}, 1fr)` }}>
                 {members.map((member) => (
                   <div key={member.id} className="flex-1 bg-white/35 backdrop-blur-sm rounded-2xl px-3 py-2.5">
