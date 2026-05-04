@@ -120,53 +120,56 @@ export async function POST(request: NextRequest) {
       content: userContent,
     });
 
-    // 5. Call Claude with streaming
+    // 5. Call Claude with a proper tool-use loop (handles multi-round tool calls)
     const stream = new ReadableStream({
       async start(controller) {
         try {
           let assistantMessage = "";
           let toolCallsData: any[] = [];
+          let currentMessages = [...messageHistory];
+          const systemPrompt = buildSystemPrompt(context, !!file);
+          const MAX_ITERATIONS = 8;
 
-          const response = await anthropic.messages.create({
-            model: MODEL,
-            max_tokens: 4096,
-            system: buildSystemPrompt(context, !!file),
-            messages: messageHistory,
-            tools,
-          });
+          for (let iteration = 0; iteration < MAX_ITERATIONS; iteration++) {
+            const response = await anthropic.messages.create({
+              model: MODEL,
+              max_tokens: 8192,
+              system: systemPrompt,
+              messages: currentMessages,
+              tools,
+            });
 
-          // First, handle any text content and collect tool_use blocks
-          const toolUseBlocks: any[] = [];
-          for (const block of response.content) {
-            if (block.type === "text") {
-              let textContent = block.text;
-
-              // Validate output if needed
-              if (needsOutputValidation(textContent)) {
-                const outputValidation = validateAIOutput(textContent);
-                if (!outputValidation.isValid) {
-                  logOutputIssue(session.user.id, conversation.id, outputValidation.issues);
-                  textContent = outputValidation.sanitizedContent || textContent;
+            // Stream any text blocks
+            for (const block of response.content) {
+              if (block.type === "text") {
+                let textContent = block.text;
+                if (needsOutputValidation(textContent)) {
+                  const outputValidation = validateAIOutput(textContent);
+                  if (!outputValidation.isValid) {
+                    logOutputIssue(session.user.id, conversation.id, outputValidation.issues);
+                    textContent = outputValidation.sanitizedContent || textContent;
+                  }
                 }
+                assistantMessage += textContent;
+                controller.enqueue(
+                  new TextEncoder().encode(
+                    `data: ${JSON.stringify({ type: "text", content: textContent })}\n\n`
+                  )
+                );
               }
-
-              assistantMessage += textContent;
-              controller.enqueue(
-                new TextEncoder().encode(
-                  `data: ${JSON.stringify({ type: "text", content: textContent })}\n\n`
-                )
-              );
-            } else if (block.type === "tool_use") {
-              toolUseBlocks.push(block);
             }
-          }
 
-          // If there are tool calls, execute ALL of them and then make ONE follow-up call
-          if (toolUseBlocks.length > 0) {
+            // Collect tool_use blocks
+            const toolUseBlocks = response.content.filter((b: any) => b.type === "tool_use");
+
+            // If no tool calls or stop_reason is end_turn, we're done
+            if (toolUseBlocks.length === 0 || response.stop_reason === "end_turn") {
+              break;
+            }
+
+            // Execute all tool calls in this round
             const toolResults: any[] = [];
-
-            // Execute all tools
-            for (const block of toolUseBlocks) {
+            for (const block of toolUseBlocks as any[]) {
               controller.enqueue(
                 new TextEncoder().encode(
                   `data: ${JSON.stringify({ type: "tool_start", tool: block.name })}\n\n`
@@ -180,117 +183,31 @@ export async function POST(request: NextRequest) {
                   session.user.id,
                   session.user.currentOrganizationId!
                 );
-
-                toolCallsData.push({
-                  tool: block.name,
-                  input: block.input,
-                  result,
-                  timestamp: new Date().toISOString(),
-                });
-
-                toolResults.push({
-                  type: "tool_result",
-                  tool_use_id: block.id,
-                  content: JSON.stringify(result),
-                });
-
+                toolCallsData.push({ tool: block.name, input: block.input, result, timestamp: new Date().toISOString() });
+                toolResults.push({ type: "tool_result", tool_use_id: block.id, content: JSON.stringify(result) });
                 controller.enqueue(
                   new TextEncoder().encode(
-                    `data: ${JSON.stringify({
-                      type: "tool_result",
-                      tool: block.name,
-                      result,
-                    })}\n\n`
+                    `data: ${JSON.stringify({ type: "tool_result", tool: block.name, result })}\n\n`
                   )
                 );
               } catch (error: any) {
-                const errorResult = {
-                  success: false,
-                  error: error.message || "Tool execution failed",
-                };
-
-                toolCallsData.push({
-                  tool: block.name,
-                  input: block.input,
-                  result: errorResult,
-                  timestamp: new Date().toISOString(),
-                });
-
-                toolResults.push({
-                  type: "tool_result",
-                  tool_use_id: block.id,
-                  content: JSON.stringify(errorResult),
-                  is_error: true,
-                });
-
+                const errorResult = { success: false, error: error.message || "Tool execution failed" };
+                toolCallsData.push({ tool: block.name, input: block.input, result: errorResult, timestamp: new Date().toISOString() });
+                toolResults.push({ type: "tool_result", tool_use_id: block.id, content: JSON.stringify(errorResult), is_error: true });
                 controller.enqueue(
                   new TextEncoder().encode(
-                    `data: ${JSON.stringify({
-                      type: "tool_result",
-                      tool: block.name,
-                      result: errorResult,
-                    })}\n\n`
+                    `data: ${JSON.stringify({ type: "tool_result", tool: block.name, result: errorResult })}\n\n`
                   )
                 );
               }
             }
 
-            // Now make ONE follow-up call with ALL tool results
-            try {
-              const followUpResponse = await anthropic.messages.create({
-                model: MODEL,
-                max_tokens: 4096,
-                system: buildSystemPrompt(context, !!file),
-                messages: [
-                  ...messageHistory,
-                  {
-                    role: "assistant",
-                    content: response.content,
-                  },
-                  {
-                    role: "user",
-                    content: toolResults,
-                  },
-                ],
-                tools,
-              });
-
-              // Stream follow-up response
-              for (const followBlock of followUpResponse.content) {
-                if (followBlock.type === "text") {
-                  let textContent = followBlock.text;
-
-                  // Validate output if needed
-                  if (needsOutputValidation(textContent)) {
-                    const outputValidation = validateAIOutput(textContent);
-                    if (!outputValidation.isValid) {
-                      logOutputIssue(session.user.id, conversation.id, outputValidation.issues);
-                      textContent = outputValidation.sanitizedContent || textContent;
-                    }
-                  }
-
-                  assistantMessage += textContent;
-                  controller.enqueue(
-                    new TextEncoder().encode(
-                      `data: ${JSON.stringify({
-                        type: "text",
-                        content: textContent,
-                      })}\n\n`
-                    )
-                  );
-                }
-              }
-            } catch (followUpError) {
-              console.error("Error in follow-up call:", followUpError);
-              controller.enqueue(
-                new TextEncoder().encode(
-                  `data: ${JSON.stringify({
-                    type: "error",
-                    error: "Failed to process tool results",
-                  })}\n\n`
-                )
-              );
-            }
+            // Append assistant turn + tool results to message history for next iteration
+            currentMessages = [
+              ...currentMessages,
+              { role: "assistant", content: response.content },
+              { role: "user", content: toolResults },
+            ];
           }
 
           // 6. Save assistant message

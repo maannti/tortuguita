@@ -581,14 +581,14 @@ export default function AIPage() {
 
         {/* Mobile: Full-screen app-like layout */}
         <div
-          className="flex md:hidden flex-col h-full bg-background"
+          className="flex md:hidden flex-col h-full bg-background pb-16"
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
         >
-          {/* Mobile scrollable container with sticky input */}
-          <div className="flex-1 overflow-y-auto min-h-0 flex flex-col">
+          {/* Mobile scrollable messages area */}
+          <div className="flex-1 overflow-y-auto min-h-0">
             {/* Mobile Messages area */}
-            <div className="flex-1">
+            <div>
               {messages.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full text-center px-6 pb-4">
                   <div className="space-y-8">
@@ -652,8 +652,10 @@ export default function AIPage() {
               )}
             </div>
 
-            {/* Mobile Input - Sticky to bottom of scroll container */}
-            <div className="sticky bottom-0 bg-background px-4 py-2">
+          </div>{/* end scroll */}
+
+          {/* Mobile Input - flex-shrink-0, always visible above BottomNav */}
+          <div className="flex-shrink-0 bg-background px-4 py-2">
               <form onSubmit={handleSubmit}>
                 <div className="flex items-center gap-3 bg-muted rounded-3xl px-4 py-3">
                   <textarea
@@ -701,7 +703,6 @@ export default function AIPage() {
                   </div>
                 </div>
               )}
-            </div>
           </div>
         </div>
       </div>
