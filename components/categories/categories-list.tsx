@@ -7,20 +7,27 @@ interface Category {
   id: string; name: string; color: string | null; icon: string | null
 }
 
-export function CategoriesList({ categories }: { categories: Category[] }) {
+interface CategoriesListProps {
+  categories: Category[]
+  spaceId: string
+  spaceName: string
+}
+
+export function CategoriesList({ categories, spaceId, spaceName }: CategoriesListProps) {
   const router = useRouter()
+  const newHref = `/categories/new?spaceId=${spaceId}`
 
   return (
     <div className="pb-28">
       <div className="flex items-center justify-between px-4 py-3 border-b sticky top-0 bg-background/95 backdrop-blur-sm z-10">
-        <button onClick={() => router.push("/settings")}
+        <button onClick={() => router.push("/categories")}
           className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
           <ChevronLeft className="h-4 w-4" />Volver
         </button>
         <h1 className="text-base font-semibold" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
           Categorías de gastos
         </h1>
-        <button onClick={() => router.push("/categories/new")}
+        <button onClick={() => router.push(newHref)}
           className="flex items-center gap-1 text-sm font-semibold text-primary">
           <Plus className="h-4 w-4" />Nueva
         </button>
@@ -59,7 +66,7 @@ export function CategoriesList({ categories }: { categories: Category[] }) {
               Sin categorías todavía
             </p>
             <p className="text-sm text-muted-foreground mb-6">Agregá tu primer gasto fijo o recurrente</p>
-            <button onClick={() => router.push("/categories/new")}
+            <button onClick={() => router.push(newHref)}
               className="inline-flex items-center gap-2 bg-primary text-primary-foreground rounded-full px-6 py-3 text-sm font-medium shadow-md active:scale-95 transition-transform">
               <Plus className="h-4 w-4" />Agregar
             </button>
@@ -68,7 +75,7 @@ export function CategoriesList({ categories }: { categories: Category[] }) {
       </div>
 
       {categories.length > 0 && (
-        <button onClick={() => router.push("/categories/new")}
+        <button onClick={() => router.push(newHref)}
           className="fixed bottom-24 right-4 z-30 flex items-center justify-center w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 active:scale-95 transition-transform">
           <Plus className="h-6 w-6" />
         </button>
