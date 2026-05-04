@@ -45,7 +45,7 @@ export default async function BillsPage({ searchParams }: PageProps) {
       billTypeIcon: b.billType.icon || null,
     }))
 
-  // Group credit card bills by billType — show monthly total per card
+  // Group credit card bills by billType — include individual bills for expandable list
   const ccGroupMap = new Map<
     string,
     {
@@ -55,6 +55,13 @@ export default async function BillsPage({ searchParams }: PageProps) {
       monthTotal: number
       itemCount: number
       activeInstallmentGroups: Set<string>
+      bills: Array<{
+        id: string
+        label: string
+        amount: number
+        currentInstallment: number | null
+        totalInstallments: number | null
+      }>
     }
   >()
 
@@ -67,12 +74,20 @@ export default async function BillsPage({ searchParams }: PageProps) {
         monthTotal: 0,
         itemCount: 0,
         activeInstallmentGroups: new Set(),
+        bills: [],
       })
     }
     const g = ccGroupMap.get(bill.billTypeId)!
     g.monthTotal += Number(bill.amount)
     g.itemCount += 1
     if (bill.installmentGroupId) g.activeInstallmentGroups.add(bill.installmentGroupId)
+    g.bills.push({
+      id: bill.id,
+      label: bill.label,
+      amount: Number(bill.amount),
+      currentInstallment: bill.currentInstallment,
+      totalInstallments: bill.totalInstallments,
+    })
   }
 
   const creditCardGroups = Array.from(ccGroupMap.values()).map((g) => ({
@@ -82,6 +97,7 @@ export default async function BillsPage({ searchParams }: PageProps) {
     monthTotal: g.monthTotal,
     itemCount: g.itemCount,
     activeInstallmentCount: g.activeInstallmentGroups.size,
+    bills: g.bills,
   }))
 
   return (

@@ -189,20 +189,23 @@ export function HomeDashboard({ month, monthKey, availableMonths, totalAmount, m
               )}
               <div className="divide-y divide-white/60">
                 {group.bills.map((bill) => (
-                  <div key={bill.id} className="flex items-center justify-between px-4 py-3.5">
+                  <Link key={bill.id} href={`/bills/${bill.id}`} className="flex items-center justify-between px-4 py-3.5 active:bg-muted/50 transition-colors">
                     <div>
                       <p className="text-sm font-medium">{bill.label}</p>
                       {bill.totalInstallments && bill.totalInstallments > 1 && (
                         <p className="text-xs text-muted-foreground">Cuota {bill.currentInstallment} de {bill.totalInstallments}</p>
                       )}
                     </div>
-                    <span
-                      className="text-base font-medium tabular-nums"
-                      style={{ fontFamily: "var(--font-fraunces, serif)" }}
-                    >
-                      {formatARS(bill.amount)}
-                    </span>
-                  </div>
+                    <div className="flex items-center gap-1">
+                      <span
+                        className="text-base font-medium tabular-nums"
+                        style={{ fontFamily: "var(--font-fraunces, serif)" }}
+                      >
+                        {formatARS(bill.amount)}
+                      </span>
+                      <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+                    </div>
+                  </Link>
                 ))}
               </div>
             </div>
