@@ -31,6 +31,13 @@ export default async function BillDetailPage({
           isCreditCard: true,
         },
       },
+      category: {
+        select: {
+          name: true,
+          color: true,
+          icon: true,
+        },
+      },
       user: {
         select: { name: true },
       },
@@ -65,6 +72,7 @@ export default async function BillDetailPage({
         totalInstallments: bill.totalInstallments,
         currentInstallment: bill.currentInstallment,
         billType: bill.billType,
+        category: bill.category,
         user: bill.user,
         assignments: bill.assignments.map((a) => ({
           id: a.id,
