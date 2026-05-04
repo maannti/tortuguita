@@ -1,11 +1,12 @@
 "use client"
 import { CardIcon, isNetworkId, NetworkId, BANKS } from "@/components/ui/card-network"
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { ChevronLeft, ChevronRight, Plus, FileText, User, Home } from "lucide-react"
 import { MonthPicker } from "@/components/ui/month-picker"
 import { cn } from "@/lib/utils"
+import { useSpaces } from "@/lib/spaces-context"
 
 interface Member { id: string; name: string; expenses: number; income: number; percentage: number }
 interface FixedExpense { id: string; label: string; amount: number; billTypeName: string; billTypeColor: string; billTypeIcon: string | null }
@@ -26,39 +27,14 @@ interface Props { month: string; monthKey: string; availableMonths: string[]; sp
 function formatARS(n: number) { return new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(Math.round(n)) }
 function capitalize(s: string) { return s.charAt(0).toUpperCase() + s.slice(1) }
 
-const STORAGE_KEY = "activeSpaceIds"
-
 export function HomeDashboard({ month, monthKey, availableMonths, spaces }: Props) {
   const router = useRouter()
   const [showActions, setShowActions] = useState(false)
   const [showPicker, setShowPicker] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // Space toggles — default all active, restored from localStorage after hydration
-  const [activeSpaceIds, setActiveSpaceIds] = useState<Set<string>>(() => new Set(spaces.map(s => s.id)))
-  const [hydrated, setHydrated] = useState(false)
-
-  useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY)
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved) as string[]
-        const valid = parsed.filter(id => spaces.some(s => s.id === id))
-        if (valid.length > 0) setActiveSpaceIds(new Set(valid))
-      } catch { /* ignore corrupt storage */ }
-    }
-    setHydrated(true)
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
-
-  const toggleSpace = (id: string) => {
-    setActiveSpaceIds(prev => {
-      if (prev.has(id) && prev.size === 1) return prev // keep at least one active
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id); else next.add(id)
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.from(next)))
-      return next
-    })
-  }
+  // Shared space state from context (synced app-wide via localStorage + cookie)
+  const { activeSpaceIds, toggleSpace, isHydrated } = useSpaces()
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -126,7 +102,7 @@ export function HomeDashboard({ month, monthKey, availableMonths, spaces }: Prop
             </div>
 
             {/* Space toggle pills — only when >1 space, shown after hydration to avoid flicker */}
-            {spaces.length > 1 && hydrated && (
+            {spaces.length > 1 && isHydrated && (
               <div className="flex gap-1.5 justify-center flex-wrap">
                 {spaces.map(space => (
                   <button
