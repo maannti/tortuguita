@@ -63,6 +63,8 @@ export default async function BillDetailPage({
     return parsed.getFullYear() >= 2000 ? parsed : null
   }
 
+  const spaceName = userOrgs.find(o => o.id === bill.organizationId)?.name ?? null
+
   return (
     <BillDetail
       bill={{
@@ -78,6 +80,7 @@ export default async function BillDetailPage({
         billType: bill.billType,
         category: bill.category,
         user: bill.user,
+        spaceName,
         assignments: bill.assignments.map((a) => ({
           id: a.id,
           percentage: Number(a.percentage),
