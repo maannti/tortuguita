@@ -4,6 +4,7 @@ import { notFound } from "next/navigation"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
 import { BillDetail } from "@/components/bills/bill-detail"
+import { getUserOrganizations } from "@/lib/organization-utils"
 
 export default async function BillDetailPage({
   params,
@@ -13,14 +14,17 @@ export default async function BillDetailPage({
   const session = await auth()
   const { id } = await params
 
-  if (!session?.user?.currentOrganizationId) {
+  if (!session?.user?.id) {
     return <div>Unauthorized</div>
   }
+
+  const userOrgs = await getUserOrganizations(session.user.id)
+  const orgIds = userOrgs.map(o => o.id)
 
   const bill = await prisma.bill.findFirst({
     where: {
       id,
-      organizationId: session.user.currentOrganizationId,
+      organizationId: { in: orgIds },
     },
     include: {
       billType: {
