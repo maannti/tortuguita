@@ -3,9 +3,17 @@ import { signOut, useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { useTheme } from "next-themes"
 import { useEffect, useState } from "react"
-import { ChevronRight, Sun, Moon, LogOut, User, Home, Check, CreditCard, Tag, Plus, X } from "lucide-react"
+import { ChevronRight, Sun, Moon, LogOut, User, Home, Check, CreditCard, Tag, Plus, X, Copy, Trash2, Settings2 } from "lucide-react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 
-interface Organization { id: string; name: string; isPersonal: boolean; role: string; memberCount: number }
+interface Organization {
+  id: string
+  name: string
+  isPersonal: boolean
+  role: string
+  memberCount: number
+  joinCode?: string | null
+}
 interface Props { creditCards: { id: string }[]; categories: { id: string }[] }
 
 function getInitials(name?: string | null) {
@@ -19,11 +27,22 @@ export function SettingsHub({ creditCards, categories }: Props) {
   const [mounted, setMounted] = useState(false)
   const [organizations, setOrganizations] = useState<Organization[]>([])
   const [isSwitching, setIsSwitching] = useState(false)
+
+  // Create space
   const [showNewSpace, setShowNewSpace] = useState(false)
   const [newSpaceName, setNewSpaceName] = useState("")
   const [newSpacePersonal, setNewSpacePersonal] = useState(false)
   const [isCreating, setIsCreating] = useState(false)
   const [createError, setCreateError] = useState<string | null>(null)
+
+  // Manage space dialog
+  const [managingOrg, setManagingOrg] = useState<Organization | null>(null)
+  const [editName, setEditName] = useState("")
+  const [isSaving, setIsSaving] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [deleteConfirm, setDeleteConfirm] = useState(false)
+  const [manageError, setManageError] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
 
   useEffect(() => { setMounted(true) }, [])
   useEffect(() => {
@@ -53,24 +72,59 @@ export function SettingsHub({ creditCards, categories }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: newSpaceName.trim(), isPersonal: newSpacePersonal }),
       })
-      if (!res.ok) {
-        const d = await res.json()
-        setCreateError(d.error || "Error al crear espacio")
-        return
-      }
-      const org: Organization & { joinCode?: string } = await res.json()
+      if (!res.ok) { const d = await res.json(); setCreateError(d.error || "Error al crear espacio"); return }
+      const org: Organization = await res.json()
       setOrganizations(prev => [...prev, { ...org, memberCount: org.memberCount ?? 1 }])
-      setNewSpaceName("")
-      setNewSpacePersonal(false)
-      setShowNewSpace(false)
-      // Switch to the new space automatically
+      setNewSpaceName(""); setNewSpacePersonal(false); setShowNewSpace(false)
       await switchOrg(org.id)
       router.refresh()
-    } catch {
-      setCreateError("Error al crear espacio")
-    } finally {
-      setIsCreating(false)
-    }
+    } catch { setCreateError("Error al crear espacio") }
+    finally { setIsCreating(false) }
+  }
+
+  const openManage = (org: Organization, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setManagingOrg(org)
+    setEditName(org.name)
+    setDeleteConfirm(false)
+    setManageError(null)
+    setCopied(false)
+  }
+
+  const saveRename = async () => {
+    if (!managingOrg || !editName.trim() || editName.trim() === managingOrg.name) return
+    setIsSaving(true)
+    setManageError(null)
+    try {
+      const res = await fetch(`/api/organizations/${managingOrg.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: editName.trim() }),
+      })
+      if (!res.ok) { const d = await res.json(); setManageError(d.error || "Error al guardar"); return }
+      setOrganizations(prev => prev.map(o => o.id === managingOrg.id ? { ...o, name: editName.trim() } : o))
+      setManagingOrg(prev => prev ? { ...prev, name: editName.trim() } : null)
+      router.refresh()
+    } catch { setManageError("Error al guardar") }
+    finally { setIsSaving(false) }
+  }
+
+  const deleteSpace = async () => {
+    if (!managingOrg) return
+    setIsDeleting(true)
+    setManageError(null)
+    try {
+      const res = await fetch(`/api/organizations/${managingOrg.id}`, { method: "DELETE" })
+      if (!res.ok) { const d = await res.json(); setManageError(d.error || "Error al eliminar"); return }
+      setOrganizations(prev => prev.filter(o => o.id !== managingOrg.id))
+      setManagingOrg(null)
+      router.refresh()
+    } catch { setManageError("Error al eliminar") }
+    finally { setIsDeleting(false) }
+  }
+
+  const copyCode = (code: string) => {
+    navigator.clipboard.writeText(code).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000) })
   }
 
   return (
@@ -121,20 +175,17 @@ export function SettingsHub({ creditCards, categories }: Props) {
                 onKeyDown={e => e.key === "Enter" && createSpace()}
                 className="w-full rounded-xl border border-border/50 bg-background px-3 py-2.5 text-sm outline-none focus:border-primary transition-colors"
               />
-              {/* Personal toggle */}
               <button
                 type="button"
                 onClick={() => setNewSpacePersonal(v => !v)}
                 className="flex items-center gap-3 w-full"
               >
                 <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors ${newSpacePersonal ? "bg-primary/10" : "bg-muted"}`}>
-                  {newSpacePersonal
-                    ? <User className="h-4 w-4 text-primary" />
-                    : <Home className="h-4 w-4 text-muted-foreground" />}
+                  {newSpacePersonal ? <User className="h-4 w-4 text-primary" /> : <Home className="h-4 w-4 text-muted-foreground" />}
                 </div>
                 <div className="text-left">
                   <p className="text-sm font-medium">{newSpacePersonal ? "Personal" : "Compartido"}</p>
-                  <p className="text-xs text-muted-foreground">{newSpacePersonal ? "Solo vos" : "Con otras personas (genera código de invitación)"}</p>
+                  <p className="text-xs text-muted-foreground">{newSpacePersonal ? "Solo vos" : "Con otras personas · genera código de invitación"}</p>
                 </div>
               </button>
               {createError && <p className="text-xs text-destructive">{createError}</p>}
@@ -153,19 +204,33 @@ export function SettingsHub({ creditCards, categories }: Props) {
               {organizations.map((org) => {
                 const isActive = org.id === session?.user?.currentOrganizationId
                 return (
-                  <button key={org.id} onClick={() => switchOrg(org.id)} disabled={isSwitching}
-                    className="w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-white/30 transition-colors">
-                    <div className="w-8 h-8 rounded-xl bg-muted flex items-center justify-center flex-shrink-0">
-                      {org.isPersonal
-                        ? <User className="h-4 w-4 text-muted-foreground" />
-                        : <Home className="h-4 w-4 text-muted-foreground" />}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{org.name}</p>
-                      <p className="text-xs text-muted-foreground">{org.isPersonal ? "Personal" : `${org.memberCount} miembro${org.memberCount !== 1 ? "s" : ""}`}</p>
-                    </div>
-                    {isActive && <Check className="h-4 w-4 text-primary flex-shrink-0" />}
-                  </button>
+                  <div key={org.id} className="flex items-center gap-3 px-4 py-3.5">
+                    <button
+                      onClick={() => switchOrg(org.id)}
+                      disabled={isSwitching}
+                      className="flex items-center gap-3 flex-1 min-w-0 text-left"
+                    >
+                      <div className="w-8 h-8 rounded-xl bg-muted flex items-center justify-center flex-shrink-0">
+                        {org.isPersonal
+                          ? <User className="h-4 w-4 text-muted-foreground" />
+                          : <Home className="h-4 w-4 text-muted-foreground" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{org.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {org.isPersonal ? "Personal" : `${org.memberCount} miembro${org.memberCount !== 1 ? "s" : ""}`}
+                        </p>
+                      </div>
+                      {isActive && <Check className="h-4 w-4 text-primary flex-shrink-0" />}
+                    </button>
+                    {/* Manage button */}
+                    <button
+                      onClick={(e) => openManage(org, e)}
+                      className="w-7 h-7 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 active:scale-95 transition-all flex-shrink-0"
+                    >
+                      <Settings2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
                 )
               })}
             </div>
@@ -177,18 +242,8 @@ export function SettingsHub({ creditCards, categories }: Props) {
           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2 px-1">Gestión</p>
           <div className="glass rounded-2xl divide-y divide-white/60 overflow-hidden">
             {[
-              {
-                label: "Mis tarjetas",
-                desc: `${creditCards.length} tarjeta${creditCards.length !== 1 ? "s" : ""} de crédito`,
-                href: "/cards",
-                icon: <CreditCard className="h-4 w-4" />,
-              },
-              {
-                label: "Categorías de gastos",
-                desc: `${categories.length} categoría${categories.length !== 1 ? "s" : ""}`,
-                href: "/categories",
-                icon: <Tag className="h-4 w-4" />,
-              },
+              { label: "Mis tarjetas", desc: `${creditCards.length} tarjeta${creditCards.length !== 1 ? "s" : ""} de crédito`, href: "/cards", icon: <CreditCard className="h-4 w-4" /> },
+              { label: "Categorías de gastos", desc: `${categories.length} categoría${categories.length !== 1 ? "s" : ""}`, href: "/categories", icon: <Tag className="h-4 w-4" /> },
             ].map((item) => (
               <button key={item.label} onClick={() => router.push(item.href)}
                 className="w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-white/30 transition-colors">
@@ -246,6 +301,100 @@ export function SettingsHub({ creditCards, categories }: Props) {
         </div>
 
       </div>
+
+      {/* ── Space management dialog ── */}
+      <Dialog open={!!managingOrg} onOpenChange={(open) => { if (!open) { setManagingOrg(null); setDeleteConfirm(false); setManageError(null) } }}>
+        <DialogContent className="rounded-3xl border-border/40 bg-card w-[calc(100%-2rem)] max-w-sm p-6 [&>.absolute]:hidden">
+          <DialogHeader className="text-left gap-1 pb-2">
+            <DialogTitle style={{ fontFamily: "var(--font-fraunces, serif)" }}>
+              {managingOrg?.name}
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              {managingOrg?.isPersonal ? "Espacio personal" : `${managingOrg?.memberCount} miembro${managingOrg?.memberCount !== 1 ? "s" : ""} · espacio compartido`}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {/* Join code — shared spaces only */}
+            {!managingOrg?.isPersonal && managingOrg?.joinCode && (
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Código de invitación</p>
+                <button
+                  onClick={() => copyCode(managingOrg.joinCode!)}
+                  className="w-full flex items-center justify-between px-4 py-3 rounded-2xl bg-muted/60 hover:bg-muted active:scale-[0.98] transition-all"
+                >
+                  <span className="text-lg font-mono font-semibold tracking-[0.2em] text-foreground">{managingOrg.joinCode}</span>
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    {copied ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
+                    <span>{copied ? "¡Copiado!" : "Copiar"}</span>
+                  </div>
+                </button>
+                <p className="text-xs text-muted-foreground mt-1.5 px-1">Compartí este código para que otros se unan al espacio.</p>
+              </div>
+            )}
+
+            {/* Rename — only for owners */}
+            {managingOrg?.role === "owner" && (
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Renombrar</p>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={editName}
+                    onChange={e => setEditName(e.target.value)}
+                    onKeyDown={e => e.key === "Enter" && saveRename()}
+                    className="flex-1 rounded-xl border border-border/50 bg-background px-3 py-2 text-sm outline-none focus:border-primary transition-colors"
+                  />
+                  <button
+                    onClick={saveRename}
+                    disabled={isSaving || !editName.trim() || editName.trim() === managingOrg?.name}
+                    className="px-4 rounded-xl bg-primary text-primary-foreground text-sm font-medium disabled:opacity-40 active:scale-95 transition-all"
+                  >
+                    {isSaving ? "…" : "OK"}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {manageError && <p className="text-xs text-destructive">{manageError}</p>}
+
+            {/* Delete — only for owners, with confirmation step */}
+            {managingOrg?.role === "owner" && (
+              <div className="pt-1 border-t border-border/40">
+                {!deleteConfirm ? (
+                  <button
+                    onClick={() => setDeleteConfirm(true)}
+                    className="w-full flex items-center gap-2 py-2.5 text-sm font-medium text-destructive active:scale-[0.98] transition-all"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Eliminar espacio
+                  </button>
+                ) : (
+                  <div className="space-y-2">
+                    <p className="text-sm text-destructive font-medium">¿Eliminar "{managingOrg?.name}"? Esta acción no se puede deshacer.</p>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={deleteSpace}
+                        disabled={isDeleting}
+                        className="flex-1 rounded-full bg-destructive text-white py-2.5 text-sm font-semibold disabled:opacity-50 active:scale-[0.97] transition-all"
+                      >
+                        {isDeleting ? "Eliminando…" : "Eliminar"}
+                      </button>
+                      <button
+                        onClick={() => setDeleteConfirm(false)}
+                        className="flex-1 rounded-full bg-muted text-muted-foreground py-2.5 text-sm font-medium active:scale-[0.97] transition-all"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
     </div>
   )
 }
