@@ -183,7 +183,24 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
             <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Monto total</label>
             <div className="flex items-center gap-2 rounded-xl border bg-background px-4 py-3 focus-within:ring-2 focus-within:ring-primary/30">
               <span className="text-muted-foreground font-medium">$</span>
-              <input type="text" inputMode="numeric" value={amountDisplay} onChange={(e) => setAmountDisplay(e.target.value.replace(/[^0-9,.]/g, ""))} onBlur={() => { const n = parseAmount(amountDisplay); if (n > 0) setAmountDisplay(formatDisplay(n)) }} placeholder="0" className="flex-1 bg-transparent text-sm focus:outline-none" />
+              <input
+                type="text"
+                inputMode="decimal"
+                value={amountDisplay}
+                onChange={(e) => {
+                  // Strip existing thousand-dots, keep only digits and one comma
+                  const stripped = e.target.value.replace(/\./g, "").replace(/[^0-9,]/g, "")
+                  const commaIdx = stripped.indexOf(",")
+                  const intPart = commaIdx >= 0 ? stripped.slice(0, commaIdx) : stripped
+                  const decPart = commaIdx >= 0 ? stripped.slice(commaIdx + 1) : null
+                  // Format integer with thousand dots
+                  const formattedInt = intPart ? intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ".") : ""
+                  setAmountDisplay(decPart !== null ? `${formattedInt},${decPart}` : formattedInt)
+                }}
+                onBlur={() => { const n = parseAmount(amountDisplay); if (n > 0) setAmountDisplay(formatDisplay(n)) }}
+                placeholder="0"
+                className="flex-1 bg-transparent text-sm focus:outline-none"
+              />
             </div>
             {amount > 0 && (
               <p
