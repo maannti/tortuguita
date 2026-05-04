@@ -189,7 +189,7 @@ export function HomeDashboard({ month, monthKey, availableMonths, totalAmount, m
               )}
               <div className="divide-y divide-white/60">
                 {group.bills.map((bill) => (
-                  <Link key={bill.id} href={`/bills/${bill.id}/edit`} className="flex items-center justify-between px-4 py-3.5 active:bg-muted/50 transition-colors">
+                  <Link key={bill.id} href={`/bills/${bill.id}`} className="flex items-center justify-between px-4 py-3.5 active:bg-muted/50 transition-colors">
                     <div>
                       <p className="text-sm font-medium">{bill.label}</p>
                       {bill.totalInstallments && bill.totalInstallments > 1 && (
