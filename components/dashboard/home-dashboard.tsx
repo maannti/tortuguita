@@ -3,9 +3,8 @@ import { CardIcon, isNetworkId, NetworkId, BANKS } from "@/components/ui/card-ne
 import { useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { ChevronLeft, ChevronRight, Plus, FileText, User, Home } from "lucide-react"
+import { ChevronLeft, ChevronRight, Plus, FileText } from "lucide-react"
 import { MonthPicker } from "@/components/ui/month-picker"
-import { cn } from "@/lib/utils"
 import { useSpaces } from "@/lib/spaces-context"
 
 interface Member { id: string; name: string; expenses: number; income: number; percentage: number }
@@ -34,7 +33,7 @@ export function HomeDashboard({ month, monthKey, availableMonths, spaces }: Prop
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Shared space state from context (synced app-wide via localStorage + cookie)
-  const { activeSpaceIds, toggleSpace, isHydrated } = useSpaces()
+  const { activeSpaceIds } = useSpaces()
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -100,29 +99,6 @@ export function HomeDashboard({ month, monthKey, availableMonths, spaces }: Prop
                 <ChevronRight className="h-4 w-4 text-[#6B5159]" />
               </button>
             </div>
-
-            {/* Space toggle pills — only when >1 space, shown after hydration to avoid flicker */}
-            {spaces.length > 1 && isHydrated && (
-              <div className="flex gap-1.5 justify-center flex-wrap">
-                {spaces.map(space => (
-                  <button
-                    key={space.id}
-                    onClick={() => toggleSpace(space.id)}
-                    className={cn(
-                      "flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium transition-all active:scale-95",
-                      activeSpaceIds.has(space.id)
-                        ? "bg-white/55 text-[#4A3540] shadow-sm"
-                        : "bg-white/15 text-[#9D8189]"
-                    )}
-                  >
-                    {space.isPersonal
-                      ? <User className="h-3 w-3" />
-                      : <Home className="h-3 w-3" />}
-                    <span>{space.name.split(" ")[0]}</span>
-                  </button>
-                ))}
-              </div>
-            )}
 
             {/* Big total */}
             <div>
