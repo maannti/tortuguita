@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { ChevronLeft, ChevronRight, Plus, CreditCard, ChevronRight as Arrow } from "lucide-react"
+import { ChevronLeft, ChevronRight, Plus, ChevronDown, ChevronUp } from "lucide-react"
 import { isNetworkId, CardIcon, BANKS, NetworkId } from "@/components/ui/card-network"
 import { MonthPicker } from "@/components/ui/month-picker"
 
@@ -11,9 +11,14 @@ interface RegularBill {
   id: string; label: string; amount: number; budgetDate: string
   billTypeName: string; billTypeColor: string; billTypeIcon: string | null
 }
+interface CCBill {
+  id: string; label: string; amount: number
+  currentInstallment: number | null; totalInstallments: number | null
+}
 interface CCGroup {
   name: string; color: string; icon: string | null
   monthTotal: number; itemCount: number; activeInstallmentCount: number
+  bills: CCBill[]
 }
 interface Props {
   month: string; monthKey: string; availableMonths: string[]
@@ -29,10 +34,19 @@ function capitalize(s: string) { return s.charAt(0).toUpperCase() + s.slice(1) }
 export function BillsView({ month, monthKey, availableMonths, regularBills, creditCardGroups, regularTotal, ccTotal }: Props) {
   const router = useRouter()
   const [showPicker, setShowPicker] = useState(false)
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set())
   const currentIndex = availableMonths.indexOf(monthKey)
   const prevMonth = currentIndex < availableMonths.length - 1 ? availableMonths[currentIndex + 1] : null
   const nextMonth = currentIndex > 0 ? availableMonths[currentIndex - 1] : null
   const grandTotal = regularTotal + ccTotal
+
+  function toggleGroup(name: string) {
+    setExpandedGroups(prev => {
+      const next = new Set(prev)
+      next.has(name) ? next.delete(name) : next.add(name)
+      return next
+    })
+  }
 
   return (
     <div className="pb-28">
@@ -82,34 +96,74 @@ export function BillsView({ month, monthKey, availableMonths, regularBills, cred
               <span className="text-sm text-muted-foreground">{formatARS(ccTotal)}</span>
             </div>
             <div className="space-y-2">
-              {creditCardGroups.map((group) => (
-                <Link key={group.name} href="/cuotas"
-                  className="flex items-center justify-between glass rounded-2xl px-4 py-3.5 active:scale-[0.99] transition-transform">
-                  <div className="flex items-center gap-3">
-                    <CardIcon
-                      bankId={BANKS.find(b => b.color === group.color)?.id ?? null}
-                      bankColor={group.color}
-                      bankName={group.name}
-                      network={isNetworkId(group.icon) ? group.icon as NetworkId : null}
-                      size="sm"
-                    />
-                    <div>
-                      <p className="text-sm font-semibold">{group.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {group.activeInstallmentCount > 0
-                          ? `${group.activeInstallmentCount} cuota${group.activeInstallmentCount !== 1 ? "s" : ""} activa${group.activeInstallmentCount !== 1 ? "s" : ""}`
-                          : `${group.itemCount} gasto${group.itemCount !== 1 ? "s" : ""}`}
-                      </p>
-                    </div>
+              {creditCardGroups.map((group) => {
+                const expanded = expandedGroups.has(group.name)
+                return (
+                  <div key={group.name} className="glass rounded-2xl overflow-hidden">
+                    {/* Group header — tap to expand */}
+                    <button
+                      type="button"
+                      onClick={() => toggleGroup(group.name)}
+                      className="w-full flex items-center justify-between px-4 py-3.5 active:bg-white/20 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <CardIcon
+                          bankId={BANKS.find(b => b.color === group.color)?.id ?? null}
+                          bankColor={group.color}
+                          bankName={group.name}
+                          network={isNetworkId(group.icon) ? group.icon as NetworkId : null}
+                          size="sm"
+                        />
+                        <div className="text-left">
+                          <p className="text-sm font-semibold">{group.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {group.activeInstallmentCount > 0
+                              ? `${group.activeInstallmentCount} cuota${group.activeInstallmentCount !== 1 ? "s" : ""} activa${group.activeInstallmentCount !== 1 ? "s" : ""}`
+                              : `${group.itemCount} gasto${group.itemCount !== 1 ? "s" : ""}`}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-base font-medium tabular-nums" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
+                          {formatARS(group.monthTotal)}
+                        </span>
+                        {expanded
+                          ? <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                          : <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                        }
+                      </div>
+                    </button>
+
+                    {/* Individual bills — shown when expanded */}
+                    {expanded && (
+                      <div className="border-t border-white/40 divide-y divide-white/30">
+                        {group.bills.map((bill) => (
+                          <Link
+                            key={bill.id}
+                            href={`/bills/${bill.id}`}
+                            className="flex items-center justify-between px-4 py-3 active:bg-white/20 transition-colors"
+                          >
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium truncate">{bill.label}</p>
+                              {bill.totalInstallments && bill.totalInstallments > 1 && (
+                                <p className="text-xs text-muted-foreground">
+                                  Cuota {bill.currentInstallment} de {bill.totalInstallments}
+                                </p>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1 ml-3 flex-shrink-0">
+                              <span className="text-sm font-medium tabular-nums" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
+                                {formatARS(bill.amount)}
+                              </span>
+                              <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+                            </div>
+                          </Link>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  <div className="flex items-center gap-1">
-                    <span className="text-base font-medium tabular-nums" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
-                      {formatARS(group.monthTotal)}
-                    </span>
-                    <Arrow className="h-4 w-4 text-muted-foreground" />
-                  </div>
-                </Link>
-              ))}
+                )
+              })}
             </div>
           </section>
         )}
@@ -123,7 +177,11 @@ export function BillsView({ month, monthKey, availableMonths, regularBills, cred
             </div>
             <div className="glass rounded-2xl overflow-hidden divide-y divide-white/60">
               {regularBills.map((bill) => (
-                <div key={bill.id} className="flex items-center justify-between px-4 py-3.5">
+                <Link
+                  key={bill.id}
+                  href={`/bills/${bill.id}`}
+                  className="flex items-center justify-between px-4 py-3.5 active:bg-white/20 transition-colors"
+                >
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="w-2.5 h-2.5 rounded-full flex-shrink-0 shadow-sm" style={{ backgroundColor: bill.billTypeColor }} />
                     <div className="min-w-0">
@@ -131,10 +189,13 @@ export function BillsView({ month, monthKey, availableMonths, regularBills, cred
                       <p className="text-xs text-muted-foreground">{bill.billTypeName} · {bill.budgetDate}</p>
                     </div>
                   </div>
-                  <span className="text-base font-medium tabular-nums ml-3 flex-shrink-0" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
-                    {formatARS(bill.amount)}
-                  </span>
-                </div>
+                  <div className="flex items-center gap-1 ml-3 flex-shrink-0">
+                    <span className="text-base font-medium tabular-nums" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
+                      {formatARS(bill.amount)}
+                    </span>
+                    <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+                  </div>
+                </Link>
               ))}
             </div>
           </section>
