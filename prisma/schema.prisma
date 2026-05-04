@@ -139,7 +139,8 @@ model BillType {
   updatedAt          DateTime     @updatedAt
 
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  bills          Bill[]
+  bills          Bill[]       @relation("BillType")
+  billsAsCategory Bill[]      @relation("BillCategory")
 
   @@unique([organizationId, name])
   @@index([organizationId])
@@ -153,6 +154,7 @@ model Bill {
   budgetDate          DateTime     // Budget impact date (for credit cards: due date of billing cycle)
   dueDate             DateTime?
   billTypeId          String
+  categoryId          String?      // expense category (optional, used when billTypeId is a CC card)
   organizationId      String
   userId              String
   notes               String?      @db.Text
@@ -162,7 +164,8 @@ model Bill {
   createdAt           DateTime     @default(now())
   updatedAt           DateTime     @updatedAt
 
-  billType       BillType         @relation(fields: [billTypeId], references: [id], onDelete: Restrict)
+  billType       BillType         @relation("BillType", fields: [billTypeId], references: [id], onDelete: Restrict)
+  category       BillType?        @relation("BillCategory", fields: [categoryId], references: [id], onDelete: SetNull)
   organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   user           User             @relation(fields: [userId], references: [id], onDelete: Restrict)
   assignments    BillAssignment[]
@@ -171,6 +174,7 @@ model Bill {
   @@index([organizationId, budgetDate])
   @@index([organizationId, dueDate])
   @@index([billTypeId])
+  @@index([categoryId])
   @@index([userId])
   @@index([paymentDate])
   @@index([installmentGroupId])
