@@ -1,10 +1,29 @@
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { unstable_cache } from "next/cache"
 import { startOfMonth, endOfMonth, format, parse } from "date-fns"
 import { es } from "date-fns/locale"
 import { HomeDashboard } from "@/components/dashboard/home-dashboard"
 
 interface PageProps { searchParams: Promise<{ month?: string }> }
+
+/** Available months change at most once a day — cache 5 min to avoid
+ *  a full-table scan on every page load. Revalidated on bill create/delete
+ *  via revalidateTag("available-months") when that feature is added. */
+const getAvailableMonths = unstable_cache(
+  async (orgId: string) => {
+    const [allBills, allIncomes] = await Promise.all([
+      prisma.bill.findMany({ where: { organizationId: orgId }, select: { budgetDate: true } }),
+      prisma.income.findMany({ where: { organizationId: orgId }, select: { incomeDate: true } }),
+    ])
+    const monthSet = new Set<string>()
+    for (const b of allBills) monthSet.add(format(new Date(b.budgetDate), "yyyy-MM"))
+    for (const i of allIncomes) monthSet.add(format(new Date(i.incomeDate), "yyyy-MM"))
+    return Array.from(monthSet).sort().reverse()
+  },
+  ["available-months"],
+  { revalidate: 300 } // 5 minutes
+)
 
 export default async function DashboardPage({ searchParams }: PageProps) {
   const session = await auth()
@@ -16,19 +35,22 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   const monthStart = startOfMonth(targetDate)
   const monthEnd = endOfMonth(targetDate)
 
-  const [allBills, allIncomes] = await Promise.all([
-    prisma.bill.findMany({ where: { organizationId: orgId }, select: { budgetDate: true } }),
-    prisma.income.findMany({ where: { organizationId: orgId }, select: { incomeDate: true } }),
-  ])
-  const monthSet = new Set<string>()
-  for (const b of allBills) monthSet.add(format(new Date(b.budgetDate), "yyyy-MM"))
-  for (const i of allIncomes) monthSet.add(format(new Date(i.incomeDate), "yyyy-MM"))
-  const availableMonths = Array.from(monthSet).sort().reverse()
-
-  const [bills, incomes, orgMembers] = await Promise.all([
-    prisma.bill.findMany({ where: { organizationId: orgId, budgetDate: { gte: monthStart, lte: monthEnd } }, include: { billType: true, assignments: { include: { user: { select: { id: true, name: true } } } } }, orderBy: { budgetDate: "asc" } }),
-    prisma.income.findMany({ where: { organizationId: orgId, incomeDate: { gte: monthStart, lte: monthEnd } }, include: { assignments: { include: { user: { select: { id: true, name: true } } } } } }),
-    prisma.userOrganization.findMany({ where: { organizationId: orgId }, include: { user: { select: { id: true, name: true } } } }),
+  // All queries in a single Promise.all — no sequential round-trips
+  const [availableMonths, bills, incomes, orgMembers] = await Promise.all([
+    getAvailableMonths(orgId),
+    prisma.bill.findMany({
+      where: { organizationId: orgId, budgetDate: { gte: monthStart, lte: monthEnd } },
+      include: { billType: true, assignments: { include: { user: { select: { id: true, name: true } } } } },
+      orderBy: { budgetDate: "asc" },
+    }),
+    prisma.income.findMany({
+      where: { organizationId: orgId, incomeDate: { gte: monthStart, lte: monthEnd } },
+      include: { assignments: { include: { user: { select: { id: true, name: true } } } } },
+    }),
+    prisma.userOrganization.findMany({
+      where: { organizationId: orgId },
+      include: { user: { select: { id: true, name: true } } },
+    }),
   ])
 
   const memberIncomeMap = new Map<string, { name: string; income: number }>()
