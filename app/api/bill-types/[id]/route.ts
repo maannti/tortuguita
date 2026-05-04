@@ -2,7 +2,13 @@ import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { billTypeSchema } from "@/lib/validations/bill-type"
+import { getUserOrganizations } from "@/lib/organization-utils"
 import { z } from "zod"
+
+async function getOrgIds(userId: string) {
+  const orgs = await getUserOrganizations(userId)
+  return orgs.map(o => o.id)
+}
 
 export async function GET(
   request: NextRequest,
@@ -10,37 +16,21 @@ export async function GET(
 ) {
   try {
     const session = await auth()
-
-    if (!session?.user?.currentOrganizationId) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      )
-    }
+    if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
     const { id } = await params
+    const orgIds = await getOrgIds(session.user.id)
 
     const billType = await prisma.billType.findFirst({
-      where: {
-        id,
-        organizationId: session.user.currentOrganizationId,
-      },
+      where: { id, organizationId: { in: orgIds } },
     })
 
-    if (!billType) {
-      return NextResponse.json(
-        { error: "Bill type not found" },
-        { status: 404 }
-      )
-    }
+    if (!billType) return NextResponse.json({ error: "Bill type not found" }, { status: 404 })
 
     return NextResponse.json(billType)
   } catch (error) {
     console.error("Error fetching bill type:", error)
-    return NextResponse.json(
-      { error: "Failed to fetch bill type" },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: "Failed to fetch bill type" }, { status: 500 })
   }
 }
 
@@ -50,51 +40,27 @@ export async function PATCH(
 ) {
   try {
     const session = await auth()
-
-    if (!session?.user?.currentOrganizationId) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      )
-    }
+    if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
     const { id } = await params
+    const orgIds = await getOrgIds(session.user.id)
     const body = await request.json()
     const data = billTypeSchema.parse(body)
 
     const billType = await prisma.billType.findFirst({
-      where: {
-        id,
-        organizationId: session.user.currentOrganizationId,
-      },
+      where: { id, organizationId: { in: orgIds } },
     })
 
-    if (!billType) {
-      return NextResponse.json(
-        { error: "Bill type not found" },
-        { status: 404 }
-      )
-    }
+    if (!billType) return NextResponse.json({ error: "Bill type not found" }, { status: 404 })
 
-    const updated = await prisma.billType.update({
-      where: { id },
-      data,
-    })
-
+    const updated = await prisma.billType.update({ where: { id }, data })
     return NextResponse.json(updated)
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: error.issues[0].message },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: error.issues[0].message }, { status: 400 })
     }
-
     console.error("Error updating bill type:", error)
-    return NextResponse.json(
-      { error: "Failed to update bill type" },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: "Failed to update bill type" }, { status: 500 })
   }
 }
 
@@ -104,40 +70,21 @@ export async function DELETE(
 ) {
   try {
     const session = await auth()
-
-    if (!session?.user?.currentOrganizationId) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      )
-    }
+    if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
     const { id } = await params
+    const orgIds = await getOrgIds(session.user.id)
 
     const billType = await prisma.billType.findFirst({
-      where: {
-        id,
-        organizationId: session.user.currentOrganizationId,
-      },
+      where: { id, organizationId: { in: orgIds } },
     })
 
-    if (!billType) {
-      return NextResponse.json(
-        { error: "Bill type not found" },
-        { status: 404 }
-      )
-    }
+    if (!billType) return NextResponse.json({ error: "Bill type not found" }, { status: 404 })
 
-    await prisma.billType.delete({
-      where: { id },
-    })
-
+    await prisma.billType.delete({ where: { id } })
     return NextResponse.json({ message: "Bill type deleted successfully" })
   } catch (error) {
     console.error("Error deleting bill type:", error)
-    return NextResponse.json(
-      { error: "Failed to delete bill type" },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: "Failed to delete bill type" }, { status: 500 })
   }
 }
