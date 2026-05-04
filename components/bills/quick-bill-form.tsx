@@ -185,6 +185,14 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
               <span className="text-muted-foreground font-medium">$</span>
               <input type="text" inputMode="numeric" value={amountDisplay} onChange={(e) => setAmountDisplay(e.target.value.replace(/[^0-9,.]/g, ""))} onBlur={() => { const n = parseAmount(amountDisplay); if (n > 0) setAmountDisplay(formatDisplay(n)) }} placeholder="0" className="flex-1 bg-transparent text-sm focus:outline-none" />
             </div>
+            {amount > 0 && (
+              <p
+                className="text-right text-2xl font-medium text-foreground/80 pr-1 leading-none"
+                style={{ fontFamily: "var(--font-fraunces, serif)" }}
+              >
+                {formatARS(amount)}
+              </p>
+            )}
           </div>
 
           {/* Categoría — dropdown */}
