@@ -5,6 +5,7 @@ import { useTheme } from "next-themes"
 import { useEffect, useState } from "react"
 import { ChevronRight, Sun, Moon, LogOut, User, Home, Check, CreditCard, Tag, Plus, X, Copy, Trash2, Settings2 } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import { useSpaces } from "@/lib/spaces-context"
 
 interface Organization {
   id: string
@@ -21,12 +22,12 @@ function getInitials(name?: string | null) {
 }
 
 export function SettingsHub({ creditCards, categories }: Props) {
-  const { data: session, update: updateSession } = useSession()
+  const { data: session } = useSession()
   const router = useRouter()
   const { theme, setTheme } = useTheme()
+  const { activeSpaceIds, toggleSpace } = useSpaces()
   const [mounted, setMounted] = useState(false)
   const [organizations, setOrganizations] = useState<Organization[]>([])
-  const [isSwitching, setIsSwitching] = useState(false)
 
   // Create space
   const [showNewSpace, setShowNewSpace] = useState(false)
@@ -50,16 +51,9 @@ export function SettingsHub({ creditCards, categories }: Props) {
     fetch("/api/organizations").then(r => r.ok ? r.json() : []).then(setOrganizations).catch(() => {})
   }, [session?.user?.id])
 
-  const switchOrg = async (orgId: string) => {
-    if (isSwitching || orgId === session?.user?.currentOrganizationId) return
-    setIsSwitching(true)
-    try {
-      const res = await fetch("/api/users/switch-organization", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ organizationId: orgId }),
-      })
-      if (res.ok) { await updateSession({ currentOrganizationId: orgId }); router.refresh() }
-    } catch {} finally { setIsSwitching(false) }
+  const handleToggleSpace = (orgId: string) => {
+    toggleSpace(orgId)
+    router.refresh()
   }
 
   const createSpace = async () => {
@@ -76,7 +70,8 @@ export function SettingsHub({ creditCards, categories }: Props) {
       const org: Organization = await res.json()
       setOrganizations(prev => [...prev, { ...org, memberCount: org.memberCount ?? 1 }])
       setNewSpaceName(""); setNewSpacePersonal(false); setShowNewSpace(false)
-      await switchOrg(org.id)
+      // Auto-activate the new space
+      if (!activeSpaceIds.has(org.id)) toggleSpace(org.id)
       router.refresh()
     } catch { setCreateError("Error al crear espacio") }
     finally { setIsCreating(false) }
@@ -202,12 +197,11 @@ export function SettingsHub({ creditCards, categories }: Props) {
           {organizations.length > 0 && (
             <div className="glass rounded-2xl divide-y divide-white/60 overflow-hidden">
               {organizations.map((org) => {
-                const isActive = org.id === session?.user?.currentOrganizationId
+                const isActive = activeSpaceIds.has(org.id)
                 return (
                   <div key={org.id} className="flex items-center gap-3 px-4 py-3.5">
                     <button
-                      onClick={() => switchOrg(org.id)}
-                      disabled={isSwitching}
+                      onClick={() => handleToggleSpace(org.id)}
                       className="flex items-center gap-3 flex-1 min-w-0 text-left"
                     >
                       <div className="w-8 h-8 rounded-xl bg-muted flex items-center justify-center flex-shrink-0">
