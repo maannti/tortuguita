@@ -98,7 +98,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         if (bill.assignments.length === 0) { const share = amount / orgMembers.length; for (const member of orgMembers) { const m = memberAmountMap.get(member.userId)!; m.amount += share } }
         else for (const a of bill.assignments) { const share = (amount * Number(a.percentage)) / 100; const m = memberAmountMap.get(a.userId); if (m) m.amount += share }
       }
-      return { name: group.name, color: group.color, icon: group.icon, totalAmount: group.bills.reduce((s, b) => s + Number(b.amount), 0), memberAmounts: Array.from(memberAmountMap.values()).filter(m => m.amount > 0), bills: group.bills.map(b => ({ id: b.id, label: b.label, amount: Number(b.amount), currentInstallment: b.currentInstallment, totalInstallments: b.totalInstallments })) }
+      return { name: group.name, color: group.color, icon: group.icon, totalAmount: group.bills.reduce((s, b) => s + Number(b.amount), 0), memberAmounts: Array.from(memberAmountMap.values()).filter(m => m.amount > 0) }
     })
 
     return {
@@ -107,7 +107,16 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       isPersonal: org.isPersonal,
       totalAmount,
       members,
-      fixedExpenses: bills.filter(b => !b.billType.isCreditCard).map(b => ({ id: b.id, label: b.label, amount: Number(b.amount), billTypeName: b.billType.name, billTypeColor: b.billType.color || "#6b7280", billTypeIcon: b.billType.icon || null })),
+      // All bills (CC + non-CC) — shown in "Gastos recientes" section
+      recentExpenses: bills.map(b => ({
+        id: b.id,
+        label: b.label,
+        amount: Number(b.amount),
+        billTypeName: b.billType.name,
+        billTypeColor: b.billType.color || "#6b7280",
+        billTypeIcon: b.billType.icon || null,
+        isCreditCard: b.billType.isCreditCard,
+      })),
       creditCardGroups,
     }
   })
