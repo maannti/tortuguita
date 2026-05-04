@@ -1,0 +1,249 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { CategoryBadge } from "@/components/categories/category-badge";
+import { DeleteBillButton } from "@/components/bills/delete-bill-button";
+import { MonthFilter } from "@/components/month-filter";
+import { CategoryFilter } from "@/components/category-filter";
+import { Info, Pencil, MoreVertical } from "lucide-react";
+import { useTranslations } from "@/components/providers/language-provider";
+
+function getPastelBackground(hexColor: string | null): string {
+  if (!hexColor) return "transparent";
+  const hex = hexColor.replace("#", "");
+  const r = parseInt(hex.substring(0, 2), 16);
+  const g = parseInt(hex.substring(2, 4), 16);
+  const b = parseInt(hex.substring(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, 0.08)`;
+}
+
+interface BillData {
+  id: string;
+  label: string;
+  amount: number;
+  paymentDate: string;
+  budgetDate: string;
+  dueDate: string | null;
+  notes: string | null;
+  totalInstallments: number | null;
+  currentInstallment: number | null;
+  installmentGroupId: string | null;
+  billType: {
+    id: string;
+    name: string;
+    color: string | null;
+    icon: string | null;
+    isCreditCard?: boolean;
+  };
+  user: {
+    name: string | null;
+  };
+  assignments: {
+    id: string;
+    percentage: number;
+    user: {
+      name: string | null;
+    };
+  }[];
+}
+
+interface Category {
+  id: string;
+  name: string;
+  icon: string | null;
+  color: string | null;
+}
+
+interface BillsContentProps {
+  bills: BillData[];
+  availableMonths: string[];
+  categories: Category[];
+}
+
+export function BillsContent({ bills, availableMonths, categories }: BillsContentProps) {
+  const t = useTranslations();
+  const [detailBill, setDetailBill] = useState<BillData | null>(null);
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">{t.bills.title}</h1>
+          <p className="text-muted-foreground">{t.bills.subtitle}</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <MonthFilter availableMonths={availableMonths} />
+          <CategoryFilter categories={categories} />
+        </div>
+        <Button asChild size="lg" className="w-full sm:w-auto">
+          <Link href="/bills/new">{t.bills.addBill}</Link>
+        </Button>
+      </div>
+
+      {bills.length === 0 ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <p className="text-muted-foreground mb-4">{t.bills.noBillsYet}</p>
+            <Button asChild>
+              <Link href="/bills/new">{t.bills.addFirstBill}</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-2">
+          {bills.map((bill) => (
+            <Card
+              key={bill.id}
+              style={{ backgroundColor: getPastelBackground(bill.billType.color) }}
+            >
+              <CardContent className="px-4 py-3">
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 text-xs text-foreground/60 mb-0.5">
+                      <span>{bill.budgetDate}</span>
+                      {bill.billType.icon && <span>{bill.billType.icon}</span>}
+                      {bill.totalInstallments && bill.currentInstallment && (
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-blue-600 text-white">
+                          cuota {bill.currentInstallment}/{bill.totalInstallments}
+                        </span>
+                      )}
+                      {bill.billType.isCreditCard && bill.paymentDate !== bill.budgetDate && (
+                        <span className="text-foreground/40">
+                          ({bill.paymentDate})
+                        </span>
+                      )}
+                    </div>
+                    <p className="font-medium leading-snug text-foreground/90">{bill.label}</p>
+                  </div>
+                  <span className="font-semibold whitespace-nowrap text-foreground/90">${bill.amount.toFixed(2)}</span>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0 rounded-full hover:bg-black/10 -mr-2">
+                        <MoreVertical className="h-4 w-4 text-foreground/70" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-44 rounded-2xl bg-background/95 backdrop-blur-sm border-border/50 p-1.5">
+                      <DropdownMenuItem
+                        className="flex items-center gap-2 rounded-xl py-2.5 px-3"
+                        onSelect={() => setDetailBill(bill)}
+                      >
+                        <Info className="h-4 w-4" />
+                        {t.bills.details}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild className="rounded-xl py-2.5 px-3">
+                        <Link href={`/bills/${bill.id}/edit`} className="flex items-center gap-2">
+                          <Pencil className="h-4 w-4" />
+                          {t.common.edit}
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator className="my-1.5" />
+                      <DeleteBillButton id={bill.id} label={bill.label} asMenuItem />
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {/* Dialog de detalle — fuera del map para evitar anidamiento con DeleteBillButton */}
+      <Dialog open={detailBill !== null} onOpenChange={(open) => { if (!open) setDetailBill(null); }}>
+        <DialogContent className="rounded-3xl border-border/50 bg-background/95 backdrop-blur-md w-[calc(100%-2rem)] max-w-md">
+          <DialogHeader>
+            <DialogTitle>{detailBill?.label}</DialogTitle>
+          </DialogHeader>
+          {detailBill && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">{t.bills.category}</p>
+                  <CategoryBadge
+                    name={detailBill.billType.name}
+                    color={detailBill.billType.color}
+                    icon={detailBill.billType.icon}
+                  />
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-muted-foreground mb-1">{t.common.amount}</p>
+                  <p className="text-lg font-semibold">${detailBill.amount.toFixed(2)}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">{t.billingPeriod.budgetImpact}</p>
+                  <p className="text-sm">{detailBill.budgetDate}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">{t.bills.addedBy}</p>
+                  <p className="text-sm">{detailBill.user.name}</p>
+                </div>
+              </div>
+              {detailBill.billType.isCreditCard && detailBill.paymentDate !== detailBill.budgetDate && (
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">{t.bills.paymentDate}</p>
+                  <p className="text-sm">{detailBill.paymentDate}</p>
+                </div>
+              )}
+              {detailBill.totalInstallments && detailBill.currentInstallment && (
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Cuota</p>
+                  <p className="text-sm">{detailBill.currentInstallment} de {detailBill.totalInstallments}</p>
+                </div>
+              )}
+              {detailBill.dueDate && (
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">{t.bills.dueDate}</p>
+                  <p className="text-sm">{detailBill.dueDate}</p>
+                </div>
+              )}
+              {detailBill.notes && (
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">{t.bills.notes}</p>
+                  <p className="text-sm">{detailBill.notes}</p>
+                </div>
+              )}
+              {detailBill.assignments.length > 0 && (
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">{t.bills.assignments}</p>
+                  <div className="text-sm space-y-0.5">
+                    {detailBill.assignments.map((a) => (
+                      <p key={a.id}>
+                        {a.user.name} ({a.percentage}%)
+                      </p>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <div className="pt-2">
+                <Link
+                  href={`/bills/${detailBill.id}/edit`}
+                  className="block w-full text-center py-2.5 rounded-xl bg-muted text-sm font-medium hover:bg-muted/80 transition-colors"
+                  onClick={() => setDetailBill(null)}
+                >
+                  Editar gasto
+                </Link>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
