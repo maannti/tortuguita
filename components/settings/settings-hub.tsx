@@ -204,10 +204,13 @@ export function SettingsHub({ creditCards, categories }: Props) {
                       onClick={() => handleToggleSpace(org.id)}
                       className="flex items-center gap-3 flex-1 min-w-0 text-left"
                     >
-                      <div className="w-8 h-8 rounded-xl bg-muted flex items-center justify-center flex-shrink-0">
+                      <div
+                        className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
+                        style={{ backgroundColor: org.isPersonal ? "#9D818922" : "#7B9E8722" }}
+                      >
                         {org.isPersonal
-                          ? <User className="h-4 w-4 text-muted-foreground" />
-                          : <Home className="h-4 w-4 text-muted-foreground" />}
+                          ? <User className="h-4 w-4" style={{ color: "#9D8189" }} />
+                          : <Home className="h-4 w-4" style={{ color: "#7B9E87" }} />}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{org.name}</p>
@@ -236,18 +239,15 @@ export function SettingsHub({ creditCards, categories }: Props) {
           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2 px-1">Gestión</p>
           <div className="glass rounded-2xl divide-y divide-white/60 overflow-hidden">
             {[
-              { label: "Mis tarjetas", desc: `${creditCards.length} tarjeta${creditCards.length !== 1 ? "s" : ""} de crédito`, href: "/cards", icon: <CreditCard className="h-4 w-4" /> },
-              { label: "Categorías de gastos", desc: `${categories.length} categoría${categories.length !== 1 ? "s" : ""}`, href: "/categories", icon: <Tag className="h-4 w-4" /> },
+              { label: "Mis tarjetas", href: "/cards", icon: <CreditCard className="h-4 w-4" style={{ color: "#7B9E87" }} />, bg: "#7B9E8720" },
+              { label: "Categorías de gastos", href: "/categories", icon: <Tag className="h-4 w-4" style={{ color: "#9D8189" }} />, bg: "#9D818920" },
             ].map((item) => (
               <button key={item.label} onClick={() => router.push(item.href)}
                 className="w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-white/30 transition-colors">
-                <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
+                <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: item.bg }}>
                   {item.icon}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium">{item.label}</p>
-                  <p className="text-xs text-muted-foreground">{item.desc}</p>
-                </div>
+                <p className="flex-1 text-sm font-medium">{item.label}</p>
                 <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
               </button>
             ))}
