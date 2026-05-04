@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -11,13 +10,6 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { CategoryBadge } from "@/components/categories/category-badge";
 import { DeleteBillButton } from "@/components/bills/delete-bill-button";
 import { MonthFilter } from "@/components/month-filter";
 import { CategoryFilter } from "@/components/category-filter";
@@ -78,7 +70,6 @@ interface BillsContentProps {
 
 export function BillsContent({ bills, availableMonths, categories }: BillsContentProps) {
   const t = useTranslations();
-  const [detailBill, setDetailBill] = useState<BillData | null>(null);
 
   return (
     <div className="space-y-6">
@@ -139,12 +130,11 @@ export function BillsContent({ bills, availableMonths, categories }: BillsConten
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-44 rounded-2xl bg-background/95 backdrop-blur-sm border-border/50 p-1.5">
-                      <DropdownMenuItem
-                        className="flex items-center gap-2 rounded-xl py-2.5 px-3"
-                        onSelect={() => setDetailBill(bill)}
-                      >
-                        <Info className="h-4 w-4" />
-                        {t.bills.details}
+                      <DropdownMenuItem asChild className="rounded-xl py-2.5 px-3">
+                        <Link href={`/bills/${bill.id}`} className="flex items-center gap-2">
+                          <Info className="h-4 w-4" />
+                          {t.bills.details}
+                        </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild className="rounded-xl py-2.5 px-3">
                         <Link href={`/bills/${bill.id}/edit`} className="flex items-center gap-2">
@@ -162,87 +152,6 @@ export function BillsContent({ bills, availableMonths, categories }: BillsConten
           ))}
         </div>
       )}
-
-      <Dialog open={detailBill !== null} onOpenChange={(open) => { if (!open) setDetailBill(null); }}>
-        <DialogContent className="rounded-3xl border-border/50 bg-background/95 backdrop-blur-md w-[calc(100%-2rem)] max-w-md">
-          <DialogHeader>
-            <DialogTitle>{detailBill?.label}</DialogTitle>
-          </DialogHeader>
-          {detailBill && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1">{t.bills.category}</p>
-                  <CategoryBadge
-                    name={detailBill.billType.name}
-                    color={detailBill.billType.color}
-                    icon={detailBill.billType.icon}
-                  />
-                </div>
-                <div className="text-right">
-                  <p className="text-xs text-muted-foreground mb-1">{t.common.amount}</p>
-                  <p className="text-lg font-semibold">${detailBill.amount.toFixed(2)}</p>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1">{t.billingPeriod.budgetImpact}</p>
-                  <p className="text-sm">{detailBill.budgetDate}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1">{t.bills.addedBy}</p>
-                  <p className="text-sm">{detailBill.user.name}</p>
-                </div>
-              </div>
-              {detailBill.billType.isCreditCard && detailBill.paymentDate !== detailBill.budgetDate && (
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1">{t.bills.paymentDate}</p>
-                  <p className="text-sm">{detailBill.paymentDate}</p>
-                </div>
-              )}
-              {detailBill.totalInstallments && detailBill.currentInstallment && (
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1">Cuota</p>
-                  <p className="text-sm">{detailBill.currentInstallment} de {detailBill.totalInstallments}</p>
-                </div>
-              )}
-              {detailBill.dueDate && (
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1">{t.bills.dueDate}</p>
-                  <p className="text-sm">{detailBill.dueDate}</p>
-                </div>
-              )}
-              {detailBill.notes && (
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1">{t.bills.notes}</p>
-                  <p className="text-sm">{detailBill.notes}</p>
-                </div>
-              )}
-              {detailBill.assignments.length > 0 && (
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1">{t.bills.assignments}</p>
-                  <div className="text-sm space-y-0.5">
-                    {detailBill.assignments.map((a) => (
-                      <p key={a.id}>
-                        {a.user.name} ({a.percentage}%)
-                      </p>
-                    ))}
-                  </div>
-                </div>
-              )}
-              <div className="pt-2">
-                <Link
-                  href={`/bills/${detailBill.id}/edit`}
-                  className="block w-full text-center py-2.5 rounded-xl bg-muted text-sm font-medium hover:bg-muted/80 transition-colors"
-                  onClick={() => setDetailBill(null)}
-                >
-                  Editar gasto
-                </Link>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

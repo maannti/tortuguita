@@ -21,9 +21,11 @@ interface DeleteBillButtonProps {
   label: string
   iconOnly?: boolean
   asMenuItem?: boolean
+  fullWidth?: boolean
+  redirectTo?: string
 }
 
-export function DeleteBillButton({ id, label, iconOnly, asMenuItem }: DeleteBillButtonProps) {
+export function DeleteBillButton({ id, label, iconOnly, asMenuItem, fullWidth, redirectTo }: DeleteBillButtonProps) {
   const t = useTranslations()
   const router = useRouter()
   const [isOpen, setIsOpen] = useState(false)
@@ -46,7 +48,11 @@ export function DeleteBillButton({ id, label, iconOnly, asMenuItem }: DeleteBill
       }
 
       setIsOpen(false)
-      router.refresh()
+      if (redirectTo) {
+        router.push(redirectTo)
+      } else {
+        router.refresh()
+      }
     } catch (error) {
       setError("Failed to delete bill")
     } finally {
@@ -68,6 +74,11 @@ export function DeleteBillButton({ id, label, iconOnly, asMenuItem }: DeleteBill
         ) : iconOnly ? (
           <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10">
             <X className="h-4 w-4" />
+          </Button>
+        ) : fullWidth ? (
+          <Button variant="destructive" size="lg" className="w-full">
+            <Trash2 className="h-4 w-4 mr-2" />
+            Eliminar gasto
           </Button>
         ) : (
           <Button variant="destructive" size="sm">
