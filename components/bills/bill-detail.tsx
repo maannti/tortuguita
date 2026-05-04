@@ -40,6 +40,11 @@ interface BillDetailProps {
       icon: string | null
       isCreditCard: boolean
     }
+    category: {
+      name: string
+      color: string | null
+      icon: string | null
+    } | null
     user: { name: string | null }
     assignments: {
       id: string
@@ -146,29 +151,49 @@ export function BillDetail({ bill }: BillDetailProps) {
 
           {/* Main info */}
           <div className="rounded-2xl border border-border/50 bg-card px-4 py-1">
-            <Row
-              label={bill.billType.isCreditCard ? "Tarjeta" : "Categoría"}
-              value={
-                bill.billType.isCreditCard ? (
-                  <div className="flex items-center gap-2">
-                    <CardIcon
-                      bankId={BANKS.find(b => b.color === bill.billType.color)?.id ?? null}
-                      bankColor={bill.billType.color || "#9D8189"}
-                      bankName={bill.billType.name}
-                      network={isNetworkId(bill.billType.icon) ? bill.billType.icon as NetworkId : null}
-                      size="sm"
-                    />
-                    <span>{bill.billType.name}</span>
-                  </div>
-                ) : (
+            {/* Categoría — siempre que exista (o para bills sin CC) */}
+            {bill.billType.isCreditCard ? (
+              <>
+                {bill.category && (
+                  <Row
+                    label="Categoría"
+                    value={
+                      <CategoryBadge
+                        name={bill.category.name}
+                        color={bill.category.color}
+                        icon={bill.category.icon}
+                      />
+                    }
+                  />
+                )}
+                <Row
+                  label="Tarjeta"
+                  value={
+                    <div className="flex items-center gap-2">
+                      <CardIcon
+                        bankId={BANKS.find(b => b.color === bill.billType.color)?.id ?? null}
+                        bankColor={bill.billType.color || "#9D8189"}
+                        bankName={bill.billType.name}
+                        network={isNetworkId(bill.billType.icon) ? bill.billType.icon as NetworkId : null}
+                        size="sm"
+                      />
+                      <span>{bill.billType.name}</span>
+                    </div>
+                  }
+                />
+              </>
+            ) : (
+              <Row
+                label="Categoría"
+                value={
                   <CategoryBadge
                     name={bill.billType.name}
                     color={bill.billType.color}
                     icon={bill.billType.icon}
                   />
-                )
-              }
-            />
+                }
+              />
+            )}
             <Row label="Fecha de pago" value={bill.paymentDate} />
             <Row label="Período presupuestario" value={bill.budgetDate} />
             {bill.billType.isCreditCard && bill.dueDate && (
