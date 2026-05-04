@@ -45,6 +45,12 @@ export default async function BillDetailPage({
   if (!bill) notFound()
 
   const formatDate = (d: Date) => format(new Date(d), "d 'de' MMMM yyyy", { locale: es })
+  // Descarta fechas inválidas del epoch (app vieja guardaba timestamp 0 en vez de null)
+  const validDate = (d: Date | null): Date | null => {
+    if (!d) return null
+    const parsed = new Date(d)
+    return parsed.getFullYear() >= 2000 ? parsed : null
+  }
 
   return (
     <BillDetail
@@ -54,7 +60,7 @@ export default async function BillDetailPage({
         amount: Number(bill.amount),
         paymentDate: formatDate(bill.paymentDate),
         budgetDate: formatDate(bill.budgetDate),
-        dueDate: bill.dueDate ? formatDate(bill.dueDate) : null,
+        dueDate: validDate(bill.dueDate) ? formatDate(bill.dueDate!) : null,
         notes: bill.notes,
         totalInstallments: bill.totalInstallments,
         currentInstallment: bill.currentInstallment,
