@@ -81,8 +81,22 @@ components/
 - **Fuente serif** para montos: `fontFamily: "var(--font-fraunces, serif)"`
 - **Nav**: pill flotante glass morphism, 4 tabs. Íconos con `fill="none"` y `strokeWidth={active ? 2.2 : 1.8}`
 - **Cards**: bordes redondeados (`rounded-2xl`/`rounded-3xl`), fondo pastel de color de categoría
-- **Paleta**: tones rosados/warm. Primary = tono rosado de la marca
 - **Formatos**: montos en ARS con `Intl.NumberFormat("es-AR")`, fechas en español con `date-fns/locale/es`
+
+### Paleta de colores oficial
+
+| Nombre | Hex | Uso principal |
+|---|---|---|
+| Sage | `#D8E2DC` | Gradient hero — inicio |
+| Peach | `#FFE5D9` | Gradient hero — medio |
+| Pink | `#FFCAD4` | Gradient hero — fin |
+| Dusty Rose | `#F4ACB7` | Orbs decorativos, acentos |
+| Mauve | `#9D8189` | Textos secundarios, íconos, estados activos en toggles |
+
+> Fuente: https://coolors.co/palette/d8e2dc-ffe5d9-ffcad4-f4acb7-9d8189
+>
+> Para textos sobre fondo claro usar `#4A3540` (mauve oscuro) y `#9D8189` para subtextos.
+> El `primary` CSS var del tema mapea al tono rosado de la marca.
 
 ## Reglas críticas
 
