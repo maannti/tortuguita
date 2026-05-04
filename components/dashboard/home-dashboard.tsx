@@ -81,9 +81,9 @@ export function HomeDashboard({ month, monthKey, availableMonths, totalAmount, m
 
             {/* Big total */}
             <div>
-              <p className="text-[11px] font-medium text-[#9D8189] uppercase tracking-wide mb-1">Total del mes</p>
+              <p className="text-[11px] font-medium text-[#9D8189] uppercase tracking-wide mb-1 text-center">Total del mes</p>
               <p
-                className="text-5xl font-medium text-[#4A3540] leading-none tracking-tight"
+                className="text-5xl font-medium text-[#4A3540] leading-none tracking-tight text-center"
                 style={{ fontFamily: "var(--font-fraunces, serif)" }}
               >
                 {formatARS(totalAmount)}
@@ -95,15 +95,15 @@ export function HomeDashboard({ month, monthKey, availableMonths, totalAmount, m
               <div className="grid gap-3 pt-1" style={{ gridTemplateColumns: `repeat(${members.length}, 1fr)` }}>
                 {members.map((member) => (
                   <div key={member.id} className="flex-1 bg-white/35 backdrop-blur-sm rounded-2xl px-3 py-2.5">
-                    <p className="text-[11px] font-medium text-[#9D8189]">{member.name.split(" ")[0]}</p>
+                    <p className="text-[11px] font-medium text-[#9D8189] text-center">{member.name.split(" ")[0]}</p>
                     <p
-                      className="text-xl font-medium text-[#4A3540] leading-tight mt-0.5"
+                      className="text-xl font-medium text-[#4A3540] leading-tight mt-0.5 text-center"
                       style={{ fontFamily: "var(--font-fraunces, serif)" }}
                     >
                       {formatARS(member.expenses)}
                     </p>
                     {member.percentage > 0 && (
-                      <p className="text-[10px] text-[#9D8189] mt-0.5">{Math.round(member.percentage)}% ingresos</p>
+                      <p className="text-[10px] text-[#9D8189] mt-0.5 text-center">{Math.round(member.percentage)}% ingresos</p>
                     )}
                   </div>
                 ))}
