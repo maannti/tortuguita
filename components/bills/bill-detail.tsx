@@ -147,7 +147,7 @@ export function BillDetail({ bill }: BillDetailProps) {
           {/* Main info */}
           <div className="rounded-2xl border border-border/50 bg-card px-4 py-1">
             <Row
-              label="Categoría"
+              label={bill.billType.isCreditCard ? "Tarjeta" : "Categoría"}
               value={
                 bill.billType.isCreditCard ? (
                   <div className="flex items-center gap-2">
