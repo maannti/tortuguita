@@ -53,6 +53,14 @@ export function CuotasView({ cards, monthLabel, monthKey, prevMonth, nextMonth }
               >
                 {capitalize(monthLabel)}
               </button>
+              {current && current.monthTotal > 0 && (
+                <p
+                  className="text-2xl font-medium text-[#4A3540] leading-tight mt-0.5"
+                  style={{ fontFamily: "var(--font-fraunces, serif)" }}
+                >
+                  {formatARS(current.monthTotal)}
+                </p>
+              )}
             </div>
             <button
               onClick={() => nextMonth && router.push(`/cuotas?month=${nextMonth}`)}
@@ -98,16 +106,6 @@ export function CuotasView({ cards, monthLabel, monthKey, prevMonth, nextMonth }
         </div>
       ) : (
         <div className="px-4 space-y-4 pt-2">
-          {/* Month total */}
-          {current.monthTotal > 0 && (
-            <div className="glass rounded-2xl px-4 py-3.5 flex items-center justify-between">
-              <span className="text-sm text-muted-foreground font-medium">{current.typeName} — este mes</span>
-              <span className="text-xl font-medium" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
-                {formatARS(current.monthTotal)}
-              </span>
-            </div>
-          )}
-
           {/* Installment groups */}
           {current.installmentGroups.map((group) => {
             const upcoming = group.bills.filter(b => !b.isPast)
@@ -116,31 +114,42 @@ export function CuotasView({ cards, monthLabel, monthKey, prevMonth, nextMonth }
             return (
               <div key={group.groupId} className="glass rounded-2xl overflow-hidden">
                 <div className="px-4 py-3.5 flex items-start justify-between border-b border-white/60 bg-white/20">
-                  <div>
-                    <p className="text-sm font-semibold">{group.label}</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold truncate">{group.label}</p>
                     <p className="text-xs text-muted-foreground mt-0.5">
                       {paidCount} de {group.totalInstallments} cuotas
                       {group.memberNames.length > 0 && ` · ${group.memberNames.join(" & ")}`}
                     </p>
-                  </div>
-                  <div className="flex flex-col items-end gap-1.5 ml-3">
-                    <span className="text-xs font-medium text-muted-foreground">{Math.round(progress * 100)}%</span>
-                    <div className="w-16 h-1.5 bg-black/10 rounded-full overflow-hidden">
-                      <div className="h-full rounded-full bg-primary shadow-sm" style={{ width: `${progress * 100}%` }} />
+                    {/* Progress bar */}
+                    <div className="mt-2.5 space-y-1">
+                      <div className="w-full h-2 bg-black/8 rounded-full overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all duration-500"
+                          style={{ width: `${progress * 100}%`, backgroundColor: current.typeColor }}
+                        />
+                      </div>
+                      <p className="text-[10px] text-muted-foreground">{Math.round(progress * 100)}% pagado</p>
                     </div>
                   </div>
                 </div>
                 <div className="divide-y divide-white/60">
                   {upcoming.slice(0, 3).map(bill => (
-                    <div key={bill.id} className="flex items-center justify-between px-4 py-3">
+                    <Link
+                      key={bill.id}
+                      href={`/bills/${bill.id}`}
+                      className="flex items-center justify-between px-4 py-3 active:bg-white/20 transition-colors"
+                    >
                       <div>
                         <span className="text-xs text-muted-foreground capitalize">{bill.budgetDate}</span>
                         <span className="text-xs text-muted-foreground ml-2">· cuota {bill.currentInstallment}</span>
                       </div>
-                      <span className="text-base font-medium tabular-nums" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
-                        {formatARS(bill.amount)}
-                      </span>
-                    </div>
+                      <div className="flex items-center gap-1">
+                        <span className="text-base font-medium tabular-nums" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
+                          {formatARS(bill.amount)}
+                        </span>
+                        <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+                      </div>
+                    </Link>
                   ))}
                   {upcoming.length > 3 && (
                     <div className="px-4 py-2.5 text-xs text-muted-foreground">+{upcoming.length - 3} cuotas más...</div>
@@ -158,15 +167,22 @@ export function CuotasView({ cards, monthLabel, monthKey, prevMonth, nextMonth }
               </h2>
               <div className="glass rounded-2xl overflow-hidden divide-y divide-white/60">
                 {current.singleBills.map(bill => (
-                  <div key={bill.id} className="flex items-center justify-between px-4 py-3.5">
-                    <div>
-                      <p className="text-sm font-medium">{bill.label}</p>
+                  <Link
+                    key={bill.id}
+                    href={`/bills/${bill.id}`}
+                    className="flex items-center justify-between px-4 py-3.5 active:bg-white/20 transition-colors"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate">{bill.label}</p>
                       <p className="text-xs text-muted-foreground capitalize">{bill.budgetDate}</p>
                     </div>
-                    <span className="text-base font-medium tabular-nums" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
-                      {formatARS(bill.amount)}
-                    </span>
-                  </div>
+                    <div className="flex items-center gap-1 ml-3 flex-shrink-0">
+                      <span className="text-base font-medium tabular-nums" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
+                        {formatARS(bill.amount)}
+                      </span>
+                      <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+                    </div>
+                  </Link>
                 ))}
               </div>
             </div>
