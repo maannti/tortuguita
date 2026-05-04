@@ -18,10 +18,9 @@ interface Props {
     nextClosingDate?: string | null
     nextDueDate?: string | null
   }
-  organizationId?: string
 }
 
-export function CardForm({ mode, initialData, organizationId }: Props) {
+export function CardForm({ mode, initialData }: Props) {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -85,7 +84,7 @@ export function CardForm({ mode, initialData, organizationId }: Props) {
       const res = await fetch(url, {
         method: mode === "create" ? "POST" : "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), color, icon: network, isCreditCard: true, organizationId: organizationId || undefined }),
+        body: JSON.stringify({ name: name.trim(), color, icon: network, isCreditCard: true }),
       })
       if (!res.ok) { const err = await res.json(); throw new Error(err.error || "Error al guardar") }
       const saved = await res.json()
@@ -111,8 +110,7 @@ export function CardForm({ mode, initialData, organizationId }: Props) {
         }
       }
 
-      const backPath = organizationId ? `/cards?spaceId=${organizationId}` : "/cards"
-      router.push(backPath); router.refresh()
+      router.push("/cards"); router.refresh()
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error inesperado")
     } finally { setIsLoading(false) }
@@ -122,7 +120,7 @@ export function CardForm({ mode, initialData, organizationId }: Props) {
     <form onSubmit={handleSubmit} className="flex flex-col min-h-[calc(100dvh-3.5rem)]">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b sticky top-0 bg-background/95 backdrop-blur-sm z-10">
-        <button type="button" onClick={() => router.push(organizationId ? `/cards?spaceId=${organizationId}` : "/cards")}
+        <button type="button" onClick={() => router.push("/cards")}
           className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
           <ChevronLeft className="h-4 w-4" />Volver
         </button>

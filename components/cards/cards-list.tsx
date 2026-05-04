@@ -10,18 +10,16 @@ interface Card {
 
 interface CardsListProps {
   cards: Card[]
-  spaceId: string
-  spaceName: string
 }
 
-export function CardsList({ cards, spaceId, spaceName }: CardsListProps) {
+export function CardsList({ cards }: CardsListProps) {
   const router = useRouter()
-  const newHref = `/cards/new?spaceId=${spaceId}`
+  const newHref = `/cards/new`
 
   return (
     <div className="pb-28">
       <div className="flex items-center justify-between px-4 py-3 border-b sticky top-0 bg-background/95 backdrop-blur-sm z-10">
-        <button onClick={() => router.push("/cards")}
+        <button onClick={() => router.push("/settings")}
           className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
           <ChevronLeft className="h-4 w-4" />Volver
         </button>
