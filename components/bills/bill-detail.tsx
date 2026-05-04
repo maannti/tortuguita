@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { CategoryBadge } from "@/components/categories/category-badge"
+import { CardIcon, BANKS, isNetworkId, NetworkId } from "@/components/ui/card-network"
 
 interface BillDetailProps {
   bill: {
@@ -148,11 +149,24 @@ export function BillDetail({ bill }: BillDetailProps) {
             <Row
               label="Categoría"
               value={
-                <CategoryBadge
-                  name={bill.billType.name}
-                  color={bill.billType.color}
-                  icon={bill.billType.icon}
-                />
+                bill.billType.isCreditCard ? (
+                  <div className="flex items-center gap-2">
+                    <CardIcon
+                      bankId={BANKS.find(b => b.color === bill.billType.color)?.id ?? null}
+                      bankColor={bill.billType.color || "#9D8189"}
+                      bankName={bill.billType.name}
+                      network={isNetworkId(bill.billType.icon) ? bill.billType.icon as NetworkId : null}
+                      size="sm"
+                    />
+                    <span>{bill.billType.name}</span>
+                  </div>
+                ) : (
+                  <CategoryBadge
+                    name={bill.billType.name}
+                    color={bill.billType.color}
+                    icon={bill.billType.icon}
+                  />
+                )
               }
             />
             <Row label="Fecha de pago" value={bill.paymentDate} />
