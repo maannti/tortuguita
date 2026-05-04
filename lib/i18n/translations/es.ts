@@ -138,7 +138,7 @@ export const es: Translations = {
     paymentDateDescription: "Cuando se realizó el pago",
     dueDate: "Fecha de Vencimiento - (Opcional)",
     dueDateDescription: "Para recordatorios de pagos futuros",
-    notes: "Notas - (Opcional)",
+    notes: "Detalle",
     notesPlaceholder: "Detalles adicionales sobre este gasto...",
     addedBy: "Agregado Por",
     details: "Detalles",
