@@ -1,25 +1,64 @@
 "use client"
 import { CardIcon, isNetworkId, NetworkId, BANKS } from "@/components/ui/card-network"
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { ChevronLeft, ChevronRight, Plus, FileText} from "lucide-react"
+import { ChevronLeft, ChevronRight, Plus, FileText, User, Home } from "lucide-react"
 import { MonthPicker } from "@/components/ui/month-picker"
+import { cn } from "@/lib/utils"
 
 interface Member { id: string; name: string; expenses: number; income: number; percentage: number }
 interface FixedExpense { id: string; label: string; amount: number; billTypeName: string; billTypeColor: string; billTypeIcon: string | null }
 interface CreditCardGroup { name: string; color: string; icon: string | null; totalAmount: number; memberAmounts: Array<{ name: string; amount: number }>; bills: Array<{ id: string; label: string; amount: number; currentInstallment: number | null; totalInstallments: number | null }> }
 
-interface Props { month: string; monthKey: string; availableMonths: string[]; totalAmount: number; members: Member[]; fixedExpenses: FixedExpense[]; creditCardGroups: CreditCardGroup[] }
+export interface SpaceData {
+  id: string
+  name: string
+  isPersonal: boolean
+  totalAmount: number
+  members: Member[]
+  fixedExpenses: FixedExpense[]
+  creditCardGroups: CreditCardGroup[]
+}
+
+interface Props { month: string; monthKey: string; availableMonths: string[]; spaces: SpaceData[] }
 
 function formatARS(n: number) { return new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(Math.round(n)) }
 function capitalize(s: string) { return s.charAt(0).toUpperCase() + s.slice(1) }
 
-export function HomeDashboard({ month, monthKey, availableMonths, totalAmount, members, fixedExpenses, creditCardGroups }: Props) {
-  const router = useRouter()
+const STORAGE_KEY = "activeSpaceIds"
 
+export function HomeDashboard({ month, monthKey, availableMonths, spaces }: Props) {
+  const router = useRouter()
   const [showActions, setShowActions] = useState(false)
+  const [showPicker, setShowPicker] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Space toggles — default all active, restored from localStorage after hydration
+  const [activeSpaceIds, setActiveSpaceIds] = useState<Set<string>>(() => new Set(spaces.map(s => s.id)))
+  const [hydrated, setHydrated] = useState(false)
+
+  useEffect(() => {
+    const saved = localStorage.getItem(STORAGE_KEY)
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved) as string[]
+        const valid = parsed.filter(id => spaces.some(s => s.id === id))
+        if (valid.length > 0) setActiveSpaceIds(new Set(valid))
+      } catch { /* ignore corrupt storage */ }
+    }
+    setHydrated(true)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const toggleSpace = (id: string) => {
+    setActiveSpaceIds(prev => {
+      if (prev.has(id) && prev.size === 1) return prev // keep at least one active
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id); else next.add(id)
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.from(next)))
+      return next
+    })
+  }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -34,10 +73,17 @@ export function HomeDashboard({ month, monthKey, availableMonths, totalAmount, m
     reader.readAsDataURL(file)
     e.target.value = ""
   }
-  const [showPicker, setShowPicker] = useState(false)
+
   const currentIndex = availableMonths.indexOf(monthKey)
   const prevMonth = currentIndex < availableMonths.length - 1 ? availableMonths[currentIndex + 1] : null
   const nextMonth = currentIndex > 0 ? availableMonths[currentIndex - 1] : null
+
+  // Combine data from active spaces
+  const activeSpaces = spaces.filter(s => activeSpaceIds.has(s.id))
+  const totalAmount = activeSpaces.reduce((s, sp) => s + sp.totalAmount, 0)
+  const fixedExpenses = activeSpaces.flatMap(sp => sp.fixedExpenses)
+  const creditCardGroups = activeSpaces.flatMap(sp => sp.creditCardGroups)
+  const members = activeSpaces.length === 1 ? activeSpaces[0].members : []
   const fixedTotal = fixedExpenses.reduce((s, e) => s + e.amount, 0)
 
   return (
@@ -46,15 +92,15 @@ export function HomeDashboard({ month, monthKey, availableMonths, totalAmount, m
 
       {/* ── Hero card ── */}
       <div className="px-4 pt-5 pb-2">
-        <div className="relative rounded-3xl overflow-hidden" style={{
-          background: "linear-gradient(135deg, #D8E2DC 0%, #FFE5D9 55%, #FFCAD4 100%)",
-        }}>
-          {/* Decorative orb */}
+        <div
+          className="relative rounded-3xl overflow-hidden"
+          style={{ background: "linear-gradient(135deg, #D8E2DC 0%, #FFE5D9 55%, #FFCAD4 100%)" }}
+        >
           <div className="absolute -top-8 -right-8 w-40 h-40 rounded-full bg-white/20 blur-2xl pointer-events-none" />
           <div className="absolute bottom-0 left-0 w-32 h-24 rounded-full bg-[#F4ACB7]/20 blur-xl pointer-events-none" />
 
-          <div className="relative px-5 pt-5 pb-4 space-y-4">
-            {/* Month nav inside hero */}
+          <div className="relative px-5 pt-5 pb-4 space-y-3">
+            {/* Month nav */}
             <div className="flex items-center justify-between">
               <button
                 onClick={() => prevMonth && router.push(`/dashboard?month=${prevMonth}`)}
@@ -79,6 +125,29 @@ export function HomeDashboard({ month, monthKey, availableMonths, totalAmount, m
               </button>
             </div>
 
+            {/* Space toggle pills — only when >1 space, shown after hydration to avoid flicker */}
+            {spaces.length > 1 && hydrated && (
+              <div className="flex gap-1.5 justify-center flex-wrap">
+                {spaces.map(space => (
+                  <button
+                    key={space.id}
+                    onClick={() => toggleSpace(space.id)}
+                    className={cn(
+                      "flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium transition-all active:scale-95",
+                      activeSpaceIds.has(space.id)
+                        ? "bg-white/55 text-[#4A3540] shadow-sm"
+                        : "bg-white/15 text-[#9D8189]"
+                    )}
+                  >
+                    {space.isPersonal
+                      ? <User className="h-3 w-3" />
+                      : <Home className="h-3 w-3" />}
+                    <span>{space.name.split(" ")[0]}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+
             {/* Big total */}
             <div>
               <p className="text-[11px] font-medium text-[#9D8189] uppercase tracking-wide mb-1 text-center">Total del mes</p>
@@ -90,7 +159,7 @@ export function HomeDashboard({ month, monthKey, availableMonths, totalAmount, m
               </p>
             </div>
 
-            {/* Member split */}
+            {/* Member split — only shown when exactly 1 space is active */}
             {members.length > 0 && (
               <div className="grid gap-3 pt-1" style={{ gridTemplateColumns: `repeat(${members.length}, 1fr)` }}>
                 {members.map((member) => (
@@ -120,10 +189,7 @@ export function HomeDashboard({ month, monthKey, availableMonths, totalAmount, m
         {fixedExpenses.length > 0 && (
           <section>
             <div className="flex items-center justify-between mb-2.5 px-1">
-              <h2
-                className="text-base font-medium text-foreground"
-                style={{ fontFamily: "var(--font-fraunces, serif)" }}
-              >
+              <h2 className="text-base font-medium text-foreground" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
                 Gastos fijos
               </h2>
               <span className="text-sm font-medium text-muted-foreground">{formatARS(fixedTotal)}</span>
@@ -138,10 +204,7 @@ export function HomeDashboard({ month, monthKey, availableMonths, totalAmount, m
                       <p className="text-xs text-muted-foreground">{expense.billTypeName}</p>
                     </div>
                   </div>
-                  <span
-                    className="text-base font-medium tabular-nums text-foreground"
-                    style={{ fontFamily: "var(--font-fraunces, serif)" }}
-                  >
+                  <span className="text-base font-medium tabular-nums text-foreground" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
                     {formatARS(expense.amount)}
                   </span>
                 </div>
@@ -162,10 +225,7 @@ export function HomeDashboard({ month, monthKey, availableMonths, totalAmount, m
                   network={isNetworkId(group.icon) ? group.icon as NetworkId : null}
                   size="sm"
                 />
-                <h2
-                  className="text-base font-medium text-foreground"
-                  style={{ fontFamily: "var(--font-fraunces, serif)" }}
-                >
+                <h2 className="text-base font-medium text-foreground" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
                   {group.name}
                 </h2>
               </div>
@@ -177,10 +237,7 @@ export function HomeDashboard({ month, monthKey, availableMonths, totalAmount, m
                   {group.memberAmounts.map((m) => (
                     <div key={m.name} className="px-4 py-2.5 text-center border-r border-white/50 last:border-r-0">
                       <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">{m.name}</p>
-                      <p
-                        className="text-sm font-medium mt-0.5"
-                        style={{ fontFamily: "var(--font-fraunces, serif)" }}
-                      >
+                      <p className="text-sm font-medium mt-0.5" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
                         {formatARS(m.amount)}
                       </p>
                     </div>
@@ -197,10 +254,7 @@ export function HomeDashboard({ month, monthKey, availableMonths, totalAmount, m
                       )}
                     </div>
                     <div className="flex items-center gap-1">
-                      <span
-                        className="text-base font-medium tabular-nums"
-                        style={{ fontFamily: "var(--font-fraunces, serif)" }}
-                      >
+                      <span className="text-base font-medium tabular-nums" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
                         {formatARS(bill.amount)}
                       </span>
                       <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
@@ -216,20 +270,23 @@ export function HomeDashboard({ month, monthKey, availableMonths, totalAmount, m
         {totalAmount === 0 && (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <div className="text-5xl mb-4">🐢</div>
-            <p
-              className="text-lg font-medium text-foreground mb-1"
-              style={{ fontFamily: "var(--font-fraunces, serif)" }}
-            >
+            <p className="text-lg font-medium text-foreground mb-1" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
               Sin gastos este mes
             </p>
-            <p className="text-sm text-muted-foreground mb-6">¡La tortuguita descansa!</p>
-            <button
+            <p className="text-sm text-muted-foreground">¡La tortuguita descansa!</p>
+          </div>
+        )}
+      </div>
+
+      {/* FAB */}
+      <button
         onClick={() => setShowActions(true)}
-        className="fixed bottom-[88px] right-4 z-30 flex items-center justify-center w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg active:scale-95 transition-transform"
+        className="fixed bottom-24 right-4 z-30 flex items-center justify-center w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 active:scale-95 transition-transform"
       >
         <Plus className="h-6 w-6" />
       </button>
 
+      {/* Action sheet */}
       {showActions && (
         <>
           <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm" onClick={() => setShowActions(false)} />
@@ -272,17 +329,6 @@ export function HomeDashboard({ month, monthKey, availableMonths, totalAmount, m
           </div>
         </>
       )}
-          </div>
-        )}
-      </div>
-
-      {/* FAB */}
-      <Link
-        href="/bills/new"
-        className="fixed bottom-24 right-4 z-30 flex items-center justify-center w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 active:scale-95 transition-transform"
-      >
-        <Plus className="h-6 w-6" />
-      </Link>
 
       {/* Month picker */}
       {showPicker && (
