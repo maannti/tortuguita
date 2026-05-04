@@ -28,6 +28,14 @@ export async function GET(
       },
       include: {
         billType: true,
+        category: {
+          select: {
+            id: true,
+            name: true,
+            color: true,
+            icon: true,
+          },
+        },
         user: {
           select: {
             id: true,
@@ -153,6 +161,7 @@ export async function PATCH(
         budgetDate,
         dueDate: data.dueDate || null,
         billTypeId: data.billTypeId,
+        categoryId: data.categoryId || null,
         notes: data.notes,
         assignments: {
           deleteMany: {},
