@@ -3,8 +3,7 @@ import { CardIcon, isNetworkId, NetworkId, BANKS } from "@/components/ui/card-ne
 import { useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react"
-import { FileText } from "lucide-react"
+import { ChevronLeft, ChevronRight, Plus, FileText} from "lucide-react"
 import { MonthPicker } from "@/components/ui/month-picker"
 
 interface Member { id: string; name: string; expenses: number; income: number; percentage: number }
@@ -18,6 +17,7 @@ function capitalize(s: string) { return s.charAt(0).toUpperCase() + s.slice(1) }
 
 export function HomeDashboard({ month, monthKey, availableMonths, totalAmount, members, fixedExpenses, creditCardGroups }: Props) {
   const router = useRouter()
+
   const [showActions, setShowActions] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -34,7 +34,6 @@ export function HomeDashboard({ month, monthKey, availableMonths, totalAmount, m
     reader.readAsDataURL(file)
     e.target.value = ""
   }
-
   const [showPicker, setShowPicker] = useState(false)
   const currentIndex = availableMonths.indexOf(monthKey)
   const prevMonth = currentIndex < availableMonths.length - 1 ? availableMonths[currentIndex + 1] : null
@@ -42,9 +41,9 @@ export function HomeDashboard({ month, monthKey, availableMonths, totalAmount, m
   const fixedTotal = fixedExpenses.reduce((s, e) => s + e.amount, 0)
 
   return (
-    <>
+    <div className="pb-28">
       <input ref={fileInputRef} type="file" accept=".pdf,.csv,.txt,image/*" onChange={handleFileChange} className="hidden" />
-      <div className="pb-28">
+
       {/* ── Hero card ── */}
       <div className="px-4 pt-5 pb-2">
         <div className="relative rounded-3xl overflow-hidden" style={{
@@ -228,7 +227,6 @@ export function HomeDashboard({ month, monthKey, availableMonths, totalAmount, m
         <Plus className="h-6 w-6" />
       </button>
 
-      {/* Action sheet */}
       {showActions && (
         <>
           <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm" onClick={() => setShowActions(false)} />
