@@ -11,6 +11,7 @@ interface InitialData {
   label: string
   amount: number
   billTypeId: string
+  categoryId?: string | null
   isCreditCard: boolean
   paymentDate: string  // yyyy-MM-dd
   totalInstallments: number | null
@@ -75,7 +76,12 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
   const [label, setLabel] = useState(initialData?.label ?? "")
   const [amountDisplay, setAmountDisplay] = useState(initialData ? formatDisplay(initialData.amount) : "")
   const [notes, setNotes] = useState(initialData?.notes ?? "")
-  const [categoryId, setCategoryId] = useState(initialData && !initialData.isCreditCard ? initialData.billTypeId : "")
+  // For non-CC: categoryId maps to billTypeId. For CC: categoryId maps to the new categoryId field.
+  const [categoryId, setCategoryId] = useState(
+    initialData
+      ? (initialData.isCreditCard ? (initialData.categoryId ?? "") : initialData.billTypeId)
+      : ""
+  )
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | "">(initPaymentMethod)
   const [cardId, setCardId] = useState(initialData?.isCreditCard ? initialData.billTypeId : "")
   const [installments, setInstallments] = useState(initialData?.totalInstallments ?? defaultInstallments ?? 1)
@@ -135,6 +141,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
           amount,
           paymentDate: new Date(paymentDate + "T12:00:00").toISOString(),
           billTypeId,
+          categoryId: isCreditCard ? (categoryId || null) : null,
           ...(isCreditCard && installments > 1 ? { totalInstallments: installments } : {}),
           assignments: buildAssignments(),
           notes: notes.trim() || "",
@@ -180,8 +187,8 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
             </div>
           </div>
 
-          {/* Categoría — dropdown (solo si no es crédito) */}
-          {!isCreditCard && normalCats.length > 0 && (
+          {/* Categoría — dropdown */}
+          {normalCats.length > 0 && (
             <div className="space-y-1.5">
               <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Categoría</label>
               <div className="flex gap-2">
@@ -233,7 +240,8 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
                 <button key={pm.value} type="button"
                   onClick={() => {
                     setPaymentMethod(pm.value)
-                    if (pm.value !== "credit") { setCardId(""); setInstallments(1); setCustomInstallments("") }
+                    if (pm.value !== "credit") { setCardId(""); setInstallments(1); setCustomInstallments(""); setCategoryId("") }
+                    else { setCategoryId("") }
                   }}
                   className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 text-sm text-left transition-colors ${paymentMethod === pm.value ? "border-primary bg-primary/5 font-medium text-foreground" : "border-border bg-background text-muted-foreground hover:border-foreground/30"}`}>
                   {pm.icon}
