@@ -37,6 +37,7 @@ interface BillDetailProps {
       icon: string | null
     } | null
     user: { name: string | null }
+    spaceName: string | null
     assignments: {
       id: string
       percentage: number
@@ -146,21 +147,17 @@ export function BillDetail({ bill }: BillDetailProps) {
 
           {/* Main info */}
           <div className="rounded-2xl border border-border/50 bg-card px-4 py-1">
-            {/* Categoría — siempre que exista (o para bills sin CC) */}
+            {/* Categoría — siempre visible */}
             {bill.billType.isCreditCard ? (
               <>
-                {bill.category && (
-                  <Row
-                    label="Categoría"
-                    value={
-                      <CategoryBadge
-                        name={bill.category.name}
-                        color={bill.category.color}
-                        icon={bill.category.icon}
-                      />
-                    }
-                  />
-                )}
+                <Row
+                  label="Categoría"
+                  value={
+                    bill.category
+                      ? <CategoryBadge name={bill.category.name} color={bill.category.color} icon={bill.category.icon} />
+                      : <span className="text-muted-foreground/60 text-sm">Sin categoría</span>
+                  }
+                />
                 <Row
                   label="Tarjeta"
                   value={
@@ -196,6 +193,7 @@ export function BillDetail({ bill }: BillDetailProps) {
             )}
             {bill.notes && <Row label="Notas" value={bill.notes} />}
             <Row label="Cargado por" value={bill.user.name ?? "—"} />
+            {bill.spaceName && <Row label="Espacio" value={bill.spaceName} />}
           </div>
 
           {/* Assignments */}
