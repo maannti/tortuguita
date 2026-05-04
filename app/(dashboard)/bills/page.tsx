@@ -1,8 +1,10 @@
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { cookies } from "next/headers"
 import { format, parse, startOfMonth, endOfMonth } from "date-fns"
 import { es } from "date-fns/locale"
 import { BillsView } from "@/components/bills/bills-view"
+import { getUserOrganizations } from "@/lib/organization-utils"
 
 interface PageProps {
   searchParams: Promise<{ month?: string }>
@@ -10,28 +12,40 @@ interface PageProps {
 
 export default async function BillsPage({ searchParams }: PageProps) {
   const session = await auth()
-  if (!session?.user?.currentOrganizationId) return <div>Unauthorized</div>
+  if (!session?.user?.id) return <div>Unauthorized</div>
 
-  const orgId = session.user.currentOrganizationId
+  // Resolve active space IDs from cookie (written by SpacesProvider on toggle)
+  const cookieStore = await cookies()
+  const userOrgs = await getUserOrganizations(session.user.id)
+  const userOrgIds = userOrgs.map(o => o.id)
+
+  const cookieVal = cookieStore.get("activeSpaceIds")?.value
+  const activeOrgIds = cookieVal
+    ? cookieVal.split(",").filter(id => userOrgIds.includes(id))
+    : userOrgIds
+  const orgIds = activeOrgIds.length > 0 ? activeOrgIds : userOrgIds
+
   const params = await searchParams
   const now = new Date()
   const targetDate = params.month ? parse(params.month, "yyyy-MM", new Date()) : now
   const monthStart = startOfMonth(targetDate)
   const monthEnd = endOfMonth(targetDate)
 
-  const allBills = await prisma.bill.findMany({
-    where: { organizationId: orgId },
-    select: { budgetDate: true },
-  })
+  const [allBills, bills] = await Promise.all([
+    prisma.bill.findMany({
+      where: { organizationId: { in: orgIds } },
+      select: { budgetDate: true },
+    }),
+    prisma.bill.findMany({
+      where: { organizationId: { in: orgIds }, budgetDate: { gte: monthStart, lte: monthEnd } },
+      include: { billType: true },
+      orderBy: { budgetDate: "asc" },
+    }),
+  ])
+
   const monthSet = new Set<string>()
   for (const b of allBills) monthSet.add(format(new Date(b.budgetDate), "yyyy-MM"))
   const availableMonths = Array.from(monthSet).sort().reverse()
-
-  const bills = await prisma.bill.findMany({
-    where: { organizationId: orgId, budgetDate: { gte: monthStart, lte: monthEnd } },
-    include: { billType: true },
-    orderBy: { budgetDate: "asc" },
-  })
 
   const regularBills = bills
     .filter((b) => !b.billType.isCreditCard)
