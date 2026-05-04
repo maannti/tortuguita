@@ -3,14 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { ChevronLeft, MoreHorizontal, Pencil, Trash2 } from "lucide-react"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+import { ChevronLeft, Pencil, Trash2 } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -72,6 +65,7 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
 
 export function BillDetail({ bill }: BillDetailProps) {
   const router = useRouter()
+  const accentColor = (bill.category?.color || bill.billType.color) ?? "#9D8189"
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
@@ -96,7 +90,7 @@ export function BillDetail({ bill }: BillDetailProps) {
 
   return (
     <div className="flex flex-col min-h-[calc(100dvh-3.5rem)]">
-      {/* Header sticky */}
+      {/* Navigation bar */}
       <div className="flex items-center justify-between px-4 py-3 border-b sticky top-0 bg-background/95 backdrop-blur-sm z-10">
         <button
           type="button"
@@ -106,45 +100,48 @@ export function BillDetail({ bill }: BillDetailProps) {
           <ChevronLeft className="h-4 w-4" />
           Gastos
         </button>
-        <h1 className="text-base font-semibold truncate max-w-[50%]" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
-          {bill.label}
-        </h1>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button className="p-1.5 rounded-full hover:bg-muted transition-colors">
-              <MoreHorizontal className="h-5 w-5 text-muted-foreground" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-44 rounded-2xl bg-background/95 backdrop-blur-sm border-border/50 p-1.5">
-            <DropdownMenuItem asChild className="rounded-xl py-2.5 px-3">
-              <Link href={`/bills/${bill.id}/edit`} className="flex items-center gap-2">
-                <Pencil className="h-4 w-4" />
-                Editar
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator className="my-1" />
-            <DropdownMenuItem
-              className="flex items-center gap-2 rounded-xl py-2.5 px-3 text-destructive focus:text-destructive"
-              onSelect={() => setDeleteOpen(true)}
-            >
-              <Trash2 className="h-4 w-4" />
-              Eliminar
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="flex items-center gap-2">
+          <Link
+            href={`/bills/${bill.id}/edit`}
+            className="w-9 h-9 flex items-center justify-center rounded-2xl bg-muted/80 text-muted-foreground hover:text-foreground active:scale-95 transition-all"
+          >
+            <Pencil className="h-4 w-4" />
+          </Link>
+          <button
+            type="button"
+            onClick={() => setDeleteOpen(true)}
+            className="w-9 h-9 flex items-center justify-center rounded-2xl bg-muted/80 text-muted-foreground hover:text-destructive active:scale-95 transition-all"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        </div>
       </div>
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto">
         <div className="px-4 pt-5 pb-28 space-y-4">
-          {/* Amount hero */}
-          <div>
-            <p
-              className="text-4xl font-bold tracking-tight"
-              style={{ fontFamily: "var(--font-fraunces, serif)" }}
-            >
-              {formatARS(bill.amount)}
-            </p>
+          {/* Hero */}
+          <div
+            className="relative rounded-3xl overflow-hidden px-5 pt-6 pb-7 text-center"
+            style={{ background: `linear-gradient(135deg, ${accentColor}18 0%, ${accentColor}30 100%)` }}
+          >
+            {/* Orbs decorativos */}
+            <div className="absolute -top-8 -right-8 w-36 h-36 rounded-full blur-2xl pointer-events-none" style={{ backgroundColor: `${accentColor}22` }} />
+            <div className="absolute bottom-0 left-0 w-28 h-20 rounded-full blur-xl pointer-events-none"  style={{ backgroundColor: `${accentColor}18` }} />
+            <div className="relative space-y-2">
+              <p className="text-sm text-muted-foreground font-medium truncate px-4">{bill.label}</p>
+              <p
+                className="text-5xl font-medium text-foreground leading-none tracking-tight"
+                style={{ fontFamily: "var(--font-fraunces, serif)" }}
+              >
+                {formatARS(bill.amount)}
+              </p>
+              {bill.totalInstallments && bill.currentInstallment && (
+                <p className="text-xs text-muted-foreground pt-0.5">
+                  Cuota {bill.currentInstallment} de {bill.totalInstallments}
+                </p>
+              )}
+            </div>
           </div>
 
           {/* Main info */}
@@ -196,9 +193,6 @@ export function BillDetail({ bill }: BillDetailProps) {
             <Row label="Período presupuestario" value={bill.budgetDate} />
             {bill.billType.isCreditCard && bill.dueDate && (
               <Row label="Fecha de vencimiento" value={bill.dueDate} />
-            )}
-            {bill.totalInstallments && bill.currentInstallment && (
-              <Row label="Cuota" value={`${bill.currentInstallment} de ${bill.totalInstallments}`} />
             )}
             {bill.notes && <Row label="Notas" value={bill.notes} />}
             <Row label="Cargado por" value={bill.user.name ?? "—"} />
