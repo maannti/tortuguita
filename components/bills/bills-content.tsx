@@ -163,7 +163,6 @@ export function BillsContent({ bills, availableMonths, categories }: BillsConten
         </div>
       )}
 
-      {/* Dialog de detalle — fuera del map para evitar anidamiento con DeleteBillButton */}
       <Dialog open={detailBill !== null} onOpenChange={(open) => { if (!open) setDetailBill(null); }}>
         <DialogContent className="rounded-3xl border-border/50 bg-background/95 backdrop-blur-md w-[calc(100%-2rem)] max-w-md">
           <DialogHeader>
