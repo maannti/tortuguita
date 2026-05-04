@@ -65,6 +65,7 @@ export default async function EditBillPage({
         label: bill.label,
         amount: Number(bill.amount),
         billTypeId: bill.billTypeId,
+        categoryId: bill.categoryId,
         isCreditCard: bill.billType.isCreditCard,
         paymentDate: format(new Date(bill.paymentDate), "yyyy-MM-dd"),
         totalInstallments: bill.totalInstallments,
