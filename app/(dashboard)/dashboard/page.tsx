@@ -50,7 +50,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       prisma.bill.findMany({
         where: { organizationId: uo.organizationId, budgetDate: { gte: monthStart, lte: monthEnd } },
         include: { billType: true, assignments: { include: { user: { select: { id: true, name: true } } } } },
-        orderBy: { budgetDate: "desc" },
+        orderBy: { createdAt: "desc" },
       }),
       prisma.income.findMany({
         where: { organizationId: uo.organizationId, incomeDate: { gte: monthStart, lte: monthEnd } },
