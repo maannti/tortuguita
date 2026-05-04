@@ -3,12 +3,11 @@
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
-import { User, Home, Check, Layers } from "lucide-react"
+import { User, Home, Check } from "lucide-react"
 import { LogoWordmark } from "@/components/ui/logo"
 import { useSpaces } from "@/lib/spaces-context"
 import { cn } from "@/lib/utils"
 
-// Brand colours (from design palette)
 const MAUVE = "#9D8189"
 const MAUVE_DARK = "#4A3540"
 
@@ -18,7 +17,6 @@ export function SimpleHeader() {
   const [open, setOpen] = useState(false)
   const wrapperRef = useRef<HTMLDivElement>(null)
 
-  // Close dropdown on outside click / Escape
   useEffect(() => {
     if (!open) return
     const onMouse = (e: MouseEvent) => {
@@ -32,10 +30,9 @@ export function SimpleHeader() {
 
   const handleToggle = (id: string) => {
     toggleSpace(id)
-    router.refresh() // re-fetches server components with updated cookie
+    router.refresh()
   }
 
-  const activeCount = spaces.filter(s => activeSpaceIds.has(s.id)).length
   const showSpaces = spaces.length > 1 && isHydrated
 
   return (
@@ -53,39 +50,48 @@ export function SimpleHeader() {
           <LogoWordmark />
         </Link>
 
-        {/* Space selector — compact dropdown trigger */}
         {showSpaces && (
           <div ref={wrapperRef} className="relative">
-            {/* Trigger button */}
+            {/* Trigger: colored dots — active = solid mauve, inactive = ghost */}
             <button
               onClick={() => setOpen(v => !v)}
-              className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all active:scale-95",
-                open
-                  ? "text-white"
-                  : "text-[#9D8189] hover:opacity-80"
-              )}
+              className="flex items-center gap-2 px-3 py-2 rounded-full transition-all active:scale-95"
               style={open
-                ? { backgroundColor: MAUVE }
-                : { backgroundColor: `${MAUVE}18`, border: `1.5px solid ${MAUVE}40` }
+                ? { backgroundColor: `${MAUVE}18`, border: `1.5px solid ${MAUVE}50` }
+                : { backgroundColor: `${MAUVE}10`, border: `1.5px solid ${MAUVE}25` }
               }
             >
-              <Layers className="h-3.5 w-3.5 shrink-0" />
-              <span>{activeCount}/{spaces.length}</span>
+              <div className="flex items-center gap-1.5">
+                {spaces.map(s => (
+                  <div
+                    key={s.id}
+                    className="rounded-full transition-all duration-200"
+                    style={{
+                      width: "8px",
+                      height: "8px",
+                      backgroundColor: activeSpaceIds.has(s.id) ? MAUVE : `${MAUVE}30`,
+                      transform: activeSpaceIds.has(s.id) ? "scale(1)" : "scale(0.75)",
+                    }}
+                  />
+                ))}
+              </div>
             </button>
 
-            {/* Dropdown panel */}
+            {/* Dropdown */}
             {open && (
               <div
-                className="absolute right-0 top-[calc(100%+8px)] min-w-[200px] rounded-2xl p-1.5 z-50 shadow-xl"
+                className="absolute right-0 top-[calc(100%+8px)] min-w-[210px] rounded-2xl p-1.5 z-50"
                 style={{
-                  background: "rgba(255,255,255,0.96)",
+                  background: "rgba(255,255,255,0.97)",
                   backdropFilter: "blur(20px)",
                   WebkitBackdropFilter: "blur(20px)",
                   border: "1px solid rgba(255,255,255,0.8)",
                   boxShadow: "0 8px 32px rgba(157,129,137,0.18), 0 2px 8px rgba(157,129,137,0.10)",
                 }}
               >
+                <p className="text-[10px] font-semibold uppercase tracking-wider px-3 pt-2 pb-1.5" style={{ color: `${MAUVE}80` }}>
+                  Espacios
+                </p>
                 {spaces.map(space => {
                   const active = activeSpaceIds.has(space.id)
                   return (
@@ -93,41 +99,28 @@ export function SimpleHeader() {
                       key={space.id}
                       onClick={() => handleToggle(space.id)}
                       className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl transition-all active:scale-[0.98] text-left"
-                      style={active
-                        ? { backgroundColor: `${MAUVE}14` }
-                        : { backgroundColor: "transparent" }
-                      }
+                      style={active ? { backgroundColor: `${MAUVE}12` } : {}}
                     >
-                      {/* Space icon */}
                       <div
                         className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 transition-all"
-                        style={active
-                          ? { backgroundColor: MAUVE }
-                          : { backgroundColor: `${MAUVE}22` }
-                        }
+                        style={{ backgroundColor: active ? MAUVE : `${MAUVE}20` }}
                       >
                         {space.isPersonal
                           ? <User className="h-3.5 w-3.5" style={{ color: active ? "#fff" : MAUVE }} />
                           : <Home className="h-3.5 w-3.5" style={{ color: active ? "#fff" : MAUVE }} />}
                       </div>
-
-                      {/* Name */}
                       <span
                         className="flex-1 text-sm font-medium truncate"
-                        style={{ color: active ? MAUVE_DARK : "#9D8189" }}
+                        style={{ color: active ? MAUVE_DARK : `${MAUVE}90` }}
                       >
                         {space.name}
                       </span>
-
-                      {/* Checkmark */}
                       {active && <Check className="h-3.5 w-3.5 shrink-0" style={{ color: MAUVE }} />}
                     </button>
                   )
                 })}
-
-                {/* Footer hint */}
-                <p className="text-[10px] text-center pb-1 pt-0.5" style={{ color: `${MAUVE}90` }}>
-                  Toca para activar o desactivar
+                <p className="text-[10px] text-center py-1.5" style={{ color: `${MAUVE}60` }}>
+                  Toca para activar · desactivar
                 </p>
               </div>
             )}
