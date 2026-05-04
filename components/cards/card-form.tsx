@@ -9,7 +9,14 @@ import {
 interface Props {
   mode: "create" | "edit"
   initialData?: {
-    id: string; name: string; color: string | null; icon: string | null
+    id: string
+    name: string
+    color: string | null
+    icon: string | null
+    currentClosingDate?: string | null
+    currentDueDate?: string | null
+    nextClosingDate?: string | null
+    nextDueDate?: string | null
   }
 }
 
@@ -24,6 +31,12 @@ export function CardForm({ mode, initialData }: Props) {
     initialData?.color ? (BANKS.find(b => b.color === initialData!.color)?.id ?? null) : null
   )
   const [name, setName] = useState(initialData?.name || "")
+
+  // Billing period state
+  const [currentClosingDate, setCurrentClosingDate] = useState(initialData?.currentClosingDate ?? "")
+  const [currentDueDate, setCurrentDueDate] = useState(initialData?.currentDueDate ?? "")
+  const [nextClosingDate, setNextClosingDate] = useState(initialData?.nextClosingDate ?? "")
+  const [nextDueDate, setNextDueDate] = useState(initialData?.nextDueDate ?? "")
 
   const selectedBank = BANKS.find(b => b.id === bankId)
   const color = selectedBank?.color || BANKS[0].color
@@ -46,6 +59,25 @@ export function CardForm({ mode, initialData }: Props) {
     e.preventDefault()
     if (!name.trim()) { setError("Ingresá un nombre"); return }
     if (!network) { setError("Seleccioná una red (Visa, Mastercard…)"); return }
+
+    // Validate billing period if any date is filled
+    if (currentClosingDate || currentDueDate) {
+      if (!currentClosingDate || !currentDueDate) {
+        setError("Completá cierre y vencimiento del período actual"); return
+      }
+      if (new Date(currentDueDate) <= new Date(currentClosingDate)) {
+        setError("El vencimiento debe ser posterior al cierre"); return
+      }
+    }
+    if (nextClosingDate || nextDueDate) {
+      if (!nextClosingDate || !nextDueDate) {
+        setError("Completá cierre y vencimiento del próximo período"); return
+      }
+      if (new Date(nextDueDate) <= new Date(nextClosingDate)) {
+        setError("El vencimiento del próximo período debe ser posterior al cierre"); return
+      }
+    }
+
     setError(null); setIsLoading(true)
     try {
       const url = mode === "create" ? "/api/bill-types" : `/api/bill-types/${initialData?.id}`
@@ -55,6 +87,29 @@ export function CardForm({ mode, initialData }: Props) {
         body: JSON.stringify({ name: name.trim(), color, icon: network, isCreditCard: true }),
       })
       if (!res.ok) { const err = await res.json(); throw new Error(err.error || "Error al guardar") }
+      const saved = await res.json()
+      const cardId = saved.id
+
+      // Save billing period separately if dates are provided
+      if (currentClosingDate && currentDueDate) {
+        const periodRes = await fetch(`/api/bill-types/${cardId}/billing-period`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            currentClosingDate: new Date(currentClosingDate + "T00:00:00"),
+            currentDueDate: new Date(currentDueDate + "T00:00:00"),
+            ...(nextClosingDate && nextDueDate ? {
+              nextClosingDate: new Date(nextClosingDate + "T00:00:00"),
+              nextDueDate: new Date(nextDueDate + "T00:00:00"),
+            } : {}),
+          }),
+        })
+        if (!periodRes.ok) {
+          const err = await periodRes.json()
+          throw new Error(err.error || "Error al guardar el período")
+        }
+      }
+
       router.push("/cards"); router.refresh()
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error inesperado")
@@ -147,6 +202,69 @@ export function CardForm({ mode, initialData }: Props) {
             <input type="text" value={name} onChange={(e) => setName(e.target.value)}
               placeholder="ej. ICBC Visa"
               className="w-full rounded-xl border bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
+          </div>
+
+          {/* Billing period */}
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Período de facturación actual
+              </label>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Cierre y vencimiento del resumen en curso
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">Fecha de cierre</label>
+                <input
+                  type="date"
+                  value={currentClosingDate}
+                  onChange={(e) => setCurrentClosingDate(e.target.value)}
+                  className="w-full rounded-xl border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">Fecha de vencimiento</label>
+                <input
+                  type="date"
+                  value={currentDueDate}
+                  onChange={(e) => setCurrentDueDate(e.target.value)}
+                  className="w-full rounded-xl border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Próximo período (opcional)
+              </label>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Completá si ya conocés el próximo cierre
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">Fecha de cierre</label>
+                <input
+                  type="date"
+                  value={nextClosingDate}
+                  onChange={(e) => setNextClosingDate(e.target.value)}
+                  className="w-full rounded-xl border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">Fecha de vencimiento</label>
+                <input
+                  type="date"
+                  value={nextDueDate}
+                  onChange={(e) => setNextDueDate(e.target.value)}
+                  className="w-full rounded-xl border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+              </div>
+            </div>
           </div>
         </div>
       </div>
