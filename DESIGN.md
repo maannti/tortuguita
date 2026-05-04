@@ -1,72 +1,93 @@
 # tortuguita — Sistema de Diseño
 
-> Referencia para mantener continuidad visual entre deploys.
-> Si vas a tocar cualquier componente, leé esto primero.
+> **Leer antes de tocar cualquier componente.** Este archivo documenta las decisiones
+> de diseño que ya están aprobadas. No cambiar sin consenso.
+>
+> Dashboard de referencia: commit `838dcd7366acb66506b6426f158e3cbb5a5f144f` en `maannti/tortuguita`
 
 ---
 
-## Paleta y lenguaje visual
+## Principios generales
 
-- **Color primario**: mauve/dusty rose — se usa para el FAB, íconos activos en nav, botón Guardar
-- **Bordes y cards**: `rounded-2xl` para listas, `rounded-3xl` para cards hero/grandes
-- **Fondo de cards**: `bg-card` con `border` sutil, sin sombras agresivas
-- **Texto secundario**: `text-muted-foreground`, nunca gris duro
-- **Texto de sección**: `text-sm font-semibold text-foreground` (no uppercase, no tracking wide)
-
----
-
-## Componentes clave
-
-### Dashboard (`home-dashboard.tsx`)
-
-**Hero card** — flotante, gradiente suave sage→rose, texto oscuro encima:
-```
-background: linear-gradient(135deg, #c8d8c4 0%, #ddd0c8 50%, #dfc5c8 100%)
-rounded-3xl, px-4 pt-4, dark text (no white)
-```
-Contiene: navegación de mes (< mes >) + total grande centrado + desglose por miembros.
-
-**Tarjetas de crédito** — lista colapsable (`rounded-2xl border bg-card`):
-- Fila resumen: círculo de color del grupo + nombre + "X cuotas activas" + monto + chevron
-- Al tocar: se expande inline mostrando desglose por miembro y lista de cuotas
-- NO usar headers de color sólido de fondo
-
-**FAB** — `fixed bottom-[88px] right-4` para quedar sobre la nav bar (que mide `h-16` + `pb-safe`)
+- UI en español (Argentina). Meses, labels, botones: todo en español.
+- Paleta: **mauve/dusty rose** como primario. Cards con `border` sutil, sin sombras agresivas.
+- Bordes: `rounded-2xl` para listas/cards, `rounded-3xl` para hero.
+- Texto secundario: `text-muted-foreground`. Nunca gris duro hardcodeado.
+- Sin uppercase agresivo. Sin headers de color sólido en secciones.
 
 ---
 
-### Formularios (`quick-bill-form`, `card-form`, `category-form-v2`)
+## Dashboard (`home-dashboard.tsx`) ← DISEÑO APROBADO
 
-- Un solo botón **Guardar** en pill al final del scroll, sin sección de botones fija al fondo duplicada
-- `pb-28` en el contenedor scrolleable para que el contenido no quede tapado por la nav
-- Header sticky: `sticky top-0 z-10 bg-background/95 backdrop-blur-sm`
+El diseño de referencia es el commit `838dcd7`. **No alterarlo.**
+
+### Hero card
+- Card flotante con gradiente suave (NO fondo sólido de color primario)
+- El gradiente lo define el propio componente — respetar los colores que ya estaban
+- Dentro: navegación del mes `< Mayo 2026 >`, total grande, desglose por miembros
+- Los miembros van en sub-cards redondeadas DENTRO del hero (no grid plano)
+- Texto oscuro sobre gradiente (no texto blanco)
+
+### Grupos de tarjeta de crédito
+- Se muestran con el icono compuesto (logo banco + logo red: Mastercard, Visa, etc.)
+- Expanded por defecto — NO usar accordion/toggle
+- Header: icono + nombre de tarjeta + monto alineado a la derecha
+- Debajo: desglose por miembro y lista de cuotas
+
+### FAB (botón +)
+- `fixed bottom-[88px] right-4 z-30` — bien despejado sobre la nav bar
+- Al tocarlo: abre un action sheet (NO navega directamente a /bills/new)
+- Action sheet tiene dos opciones: "Nuevo gasto" y "Importar resumen"
+- "Importar resumen" → file picker → guarda en sessionStorage → navega a /ai
 
 ---
 
-### Navegación inferior (`bottom-nav.tsx`)
+## Formularios
 
-Items: **Inicio** · **Gastos** · **Cuotas** · **Santi** (Config)
+- Un solo botón **Guardar** al final del scroll (pill), sin sección duplicada fija al fondo
+- `pb-28` en el contenedor scrolleable (para que el scroll no quede tapado por la nav)
+- Header del formulario: `sticky top-0 z-10 bg-background/95 backdrop-blur-sm`
+
+---
+
+## Navegación inferior (`bottom-nav.tsx`)
+
+Items: **Inicio · Gastos · Cuotas · Santi** (Settings)  
 - `fixed bottom-0`, `h-16`, `pb-safe`
 - Color activo: `text-primary`
-- Color inactivo: `text-muted-foreground`
 
 ---
 
-### Pantalla de AI (`ai/page.tsx`)
+## AI Chat (`app/(dashboard)/ai/page.tsx`)
 
-Layout mobile:
-- Contenedor outer: `flex md:hidden flex-col h-full bg-background pb-16`
-- Mensajes: `flex-1 overflow-y-auto min-h-0` (scrolleable, fuera del input)
-- Input: `flex-shrink-0` al final del flex column (NO sticky)
+### Layout mobile
+```
+flex md:hidden flex-col h-full bg-background pb-16
+  ├─ flex-1 overflow-y-auto min-h-0   ← mensajes, scrolleable
+  └─ flex-shrink-0 bg-background      ← input, NUNCA sticky, siempre visible
+```
 
-Auto-import: cuando llega con `sessionStorage("pendingImport")`, ejecuta `autoSubmitImport()` directo sin intervención del usuario.
+### Auto-import
+- Al cargar: chequea `sessionStorage("pendingImport")`
+- Si hay archivo → llama `autoSubmitImport(file)` directo (sin que el usuario escriba nada)
+- Mensaje por defecto: "Analizá este resumen de tarjeta y mostrá las transacciones encontradas antes de importar."
+
+---
+
+## API AI (`app/api/ai/chat/route.ts`)
+
+- Acepta `file: { name, type, data (base64) }` en el body
+- Loop de tool use: máximo 8 iteraciones (no dos llamadas fijas)
+- `max_tokens: 8192` (necesario para listar todos los movimientos de un resumen)
+- Anti-duplicados: instrucción en system prompt para buscar con `search_bills` antes de importar
 
 ---
 
 ## Reglas de deploy
 
-1. **Siempre** usar los scripts `deploy-*.sh` de `~/Desktop/logos/`
-2. Cada script embeds el archivo como base64 → no depende de git diff en el sandbox
-3. Después de un deploy, verificar en producción antes de cerrar la sesión
-4. Si algo queda "feo", no pushear encima — hacer rollback con `git revert HEAD` y rediseñar
+1. **Nunca** tocar `home-dashboard.tsx` sin tener claro el commit de referencia (`838dcd7`)
+2. Para restaurar el dashboard visual: `git show 838dcd7366acb66506b6426f158e3cbb5a5f144f:components/dashboard/home-dashboard.tsx > components/dashboard/home-dashboard.tsx`
+3. Usar siempre los scripts `deploy-*.sh` de `~/Desktop/logos/`
+4. Después de deployar, verificar en el teléfono antes de cerrar la sesión
+5. Si algo queda mal visualmente: `git revert HEAD` y rediseñar
 
