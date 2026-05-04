@@ -19,6 +19,7 @@ export const billSchema = z
     budgetDate: z.coerce.date().optional(),
     dueDate: z.union([z.coerce.date(), z.null()]).optional(),
     billTypeId: z.string().min(1, "Category is required"),
+    categoryId: z.string().optional().nullable(),
     notes: z.string().optional(),
     assignments: z.array(billAssignmentSchema).default([]),
     totalInstallments: z.coerce.number().int().min(2).max(24).optional(),
