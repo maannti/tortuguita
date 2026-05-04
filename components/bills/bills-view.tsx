@@ -183,7 +183,15 @@ export function BillsView({ month, monthKey, availableMonths, regularBills, cred
                   className="flex items-center justify-between px-4 py-3.5 active:bg-white/20 transition-colors"
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-2.5 h-2.5 rounded-full flex-shrink-0 shadow-sm" style={{ backgroundColor: bill.billTypeColor }} />
+                    <div
+                      className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                      style={{ backgroundColor: `${bill.billTypeColor}22` }}
+                    >
+                      {bill.billTypeIcon
+                        ? <span className="text-lg leading-none">{bill.billTypeIcon}</span>
+                        : <span className="w-3 h-3 rounded-full" style={{ backgroundColor: bill.billTypeColor }} />
+                      }
+                    </div>
                     <div className="min-w-0">
                       <p className="text-sm font-medium truncate">{bill.label}</p>
                       <p className="text-xs text-muted-foreground">{bill.billTypeName} · {bill.budgetDate}</p>
