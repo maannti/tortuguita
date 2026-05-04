@@ -61,10 +61,10 @@ export function SettingsHub({ creditCards, categories }: Props) {
 
       <div className="px-4 space-y-5">
 
-        {/* ── Hogar ── */}
+        {/* ── Espacios ── */}
         {organizations.length > 0 && (
           <section>
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2 px-1">Hogar</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2 px-1">Espacios</p>
             <div className="glass rounded-2xl divide-y divide-white/60 overflow-hidden">
               {organizations.map((org) => {
                 const isActive = org.id === session?.user?.currentOrganizationId
