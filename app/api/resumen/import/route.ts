@@ -38,18 +38,19 @@ export async function POST(request: NextRequest) {
     const validOrg = userOrgs.find(o => o.id === organizationId)
     if (!validOrg) return NextResponse.json({ error: "Invalid space" }, { status: 403 })
 
-    // Load the billType (CC card) to get billing period
-    const billType = await prisma.billType.findFirst({
-      where: { organizationId, isCreditCard: true },
-    })
+    // Load the billType (CC card) to get billing period.
+    // Cards can belong to any org the user has access to — the target org (organizationId)
+    // is where bills get created, but the card itself may live in a different space.
+    const userOrgIds = userOrgs.map(o => o.id)
 
-    // We'll look up each billType per transaction (user may use different cards)
-    // Cache them
-    const billTypeCache = new Map<string, typeof billType>()
+    const billTypeCache = new Map<string, { id: string; currentClosingDate: Date | null; currentDueDate: Date | null; nextClosingDate: Date | null; nextDueDate: Date | null } | null>()
     const getBillType = async (id: string) => {
       if (billTypeCache.has(id)) return billTypeCache.get(id)!
-      const bt = await prisma.billType.findFirst({ where: { id, organizationId } })
-      if (bt) billTypeCache.set(id, bt)
+      const bt = await prisma.billType.findFirst({
+        where: { id, organizationId: { in: userOrgIds }, isCreditCard: true },
+        select: { id: true, currentClosingDate: true, currentDueDate: true, nextClosingDate: true, nextDueDate: true },
+      })
+      billTypeCache.set(id, bt)
       return bt
     }
 
