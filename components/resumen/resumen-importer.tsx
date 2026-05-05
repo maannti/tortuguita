@@ -56,7 +56,7 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
   const [usdRateError, setUsdRateError] = useState(false)
 
   // Done step
-  const [importResult, setImportResult] = useState<{ imported: number; errors?: string[] } | null>(null)
+  const [importResult, setImportResult] = useState<{ imported: number; duplicates?: number; errors?: string[] } | null>(null)
 
   const orgCcCards = ccCards.filter(c => c.organizationId === selectedOrgId)
   const orgMembers = members.filter(m => m.organizationId === selectedOrgId)
@@ -70,7 +70,7 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
     return {
       incluir: ov.incluir ?? tx.incluir,
       descripcion: ov.descripcion ?? tx.descripcion,
-      categoria: "categoria" in ov ? ov.categoria : tx.categoriasugerida,
+      categoria: "categoria" in ov ? ov.categoria : tx.categoriaSugerida,
       usarUSD: ov.usarUSD ?? defaultUsarUSD,
     }
   }
@@ -168,10 +168,11 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
         montoUSD: tx.montoUSD,
         tipo: tx.tipo,
         cuotaTotal: tx.cuotaActual === 1 ? tx.cuotaTotal : null,
-        usarUSD: false, // already converted above — always store as ARS
+        usarUSD: false,
         billTypeId: selectedCardId,
         categoryId: ov.categoria ?? null,
         userId,
+        comprobante: tx.comprobante ?? null,
       }
     })
 
@@ -311,6 +312,15 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
                 </div>
               </div>
 
+              {/* Privacy notice */}
+              <p className="text-[11px] text-muted-foreground/70 text-center leading-relaxed px-2">
+                El PDF es procesado por IA (Anthropic) y no se almacena en la app.
+                Anthropic puede retenerlo hasta 30 días por razones de seguridad.{" "}
+                <a href="https://www.anthropic.com/privacy" target="_blank" rel="noopener" className="underline underline-offset-2">
+                  Política de privacidad
+                </a>
+              </p>
+
               {/* CTA */}
               <button
                 type="button"
@@ -338,6 +348,11 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
             <>
               {/* Summary header */}
               <div className="rounded-2xl bg-muted/40 px-4 py-4 space-y-2">
+                {parsed.banco && (
+                  <span className="inline-flex items-center text-[11px] font-medium px-2 py-0.5 rounded-full bg-foreground/8 text-muted-foreground border border-border/50">
+                    {parsed.banco}
+                  </span>
+                )}
                 <p className="text-sm font-semibold">
                   {parsed.periodoDesde && parsed.periodoHasta
                     ? `Período: ${new Date(parsed.periodoDesde + "T12:00:00").toLocaleDateString("es-AR", { day: "numeric", month: "long" })} → ${new Date(parsed.periodoHasta + "T12:00:00").toLocaleDateString("es-AR", { day: "numeric", month: "long", year: "numeric" })}`
@@ -542,6 +557,7 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
                 </p>
                 <p className="text-sm text-muted-foreground mt-1">
                   {importResult.imported} gasto{importResult.imported !== 1 ? "s" : ""} creado{importResult.imported !== 1 ? "s" : ""}
+                  {importResult.duplicates ? ` · ${importResult.duplicates} duplicado${importResult.duplicates !== 1 ? "s" : ""} ignorado${importResult.duplicates !== 1 ? "s" : ""}` : ""}
                 </p>
               </div>
               {importResult.errors && importResult.errors.length > 0 && (
