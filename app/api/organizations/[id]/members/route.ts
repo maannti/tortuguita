@@ -15,7 +15,7 @@ export async function GET(
     const { id } = await params
 
     const isOwner = await isOrganizationOwner(session.user.id, id)
-    if (!isOwner) return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    if (!isOwner) return NextResponse.json({ error: "No tenés permisos para ver los miembros" }, { status: 403 })
 
     const memberships = await prisma.userOrganization.findMany({
       where: { organizationId: id },
@@ -33,7 +33,7 @@ export async function GET(
     )
   } catch (error) {
     console.error("Error fetching members:", error)
-    return NextResponse.json({ error: "Failed to fetch members" }, { status: 500 })
+    return NextResponse.json({ error: "Error al obtener los miembros" }, { status: 500 })
   }
 }
 
@@ -48,10 +48,10 @@ export async function DELETE(
 
     const { id } = await params
     const targetUserId = request.nextUrl.searchParams.get("userId")
-    if (!targetUserId) return NextResponse.json({ error: "userId required" }, { status: 400 })
+    if (!targetUserId) return NextResponse.json({ error: "Falta el ID del miembro a remover" }, { status: 400 })
 
     const isOwner = await isOrganizationOwner(session.user.id, id)
-    if (!isOwner) return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    if (!isOwner) return NextResponse.json({ error: "No tenés permisos para remover miembros" }, { status: 403 })
 
     // Cannot remove yourself (owner)
     if (targetUserId === session.user.id)
@@ -59,7 +59,7 @@ export async function DELETE(
 
     // Verify target is actually a member
     const membership = await verifyOrganizationMembership(targetUserId, id)
-    if (!membership) return NextResponse.json({ error: "Member not found" }, { status: 404 })
+    if (!membership) return NextResponse.json({ error: "El miembro no pertenece a este espacio" }, { status: 404 })
 
     await prisma.userOrganization.delete({
       where: { userId_organizationId: { userId: targetUserId, organizationId: id } },
@@ -68,6 +68,6 @@ export async function DELETE(
     return NextResponse.json({ message: "Member removed" })
   } catch (error) {
     console.error("Error removing member:", error)
-    return NextResponse.json({ error: "Failed to remove member" }, { status: 500 })
+    return NextResponse.json({ error: "Error al remover el miembro. Intentá de nuevo." }, { status: 500 })
   }
 }
