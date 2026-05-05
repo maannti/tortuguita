@@ -114,7 +114,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
   const billTypeId = isCreditCard ? cardId : categoryId
 
   const canSave = !!label.trim() && amount > 0 && !!paymentMethod &&
-    (isCreditCard ? (ccCards.length === 0 || !!cardId) : !!categoryId)
+    (isCreditCard ? !!cardId : !!categoryId)
 
   function buildAssignments(): Array<{ userId: string; percentage: number }> {
     if (splitMode === "mine") return [{ userId: currentUserId, percentage: 100 }]
@@ -317,6 +317,21 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
               ))}
             </div>
           </div>
+
+          {/* Tarjetas de crédito — sin tarjetas configuradas */}
+          {isCreditCard && ccCards.length === 0 && (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+              No tenés tarjetas configuradas para este espacio.{" "}
+              <button
+                type="button"
+                className="font-semibold underline underline-offset-2"
+                onClick={() => router.push(`/cards?spaceId=${selectedOrgId}`)}
+              >
+                Agregá una tarjeta
+              </button>{" "}
+              antes de cargar un gasto con crédito.
+            </div>
+          )}
 
           {/* Tarjetas de crédito */}
           {isCreditCard && ccCards.length > 0 && (
