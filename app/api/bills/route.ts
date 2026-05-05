@@ -78,7 +78,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error("Error fetching bills:", error)
     return NextResponse.json(
-      { error: "Failed to fetch bills" },
+      { error: "Error al obtener los gastos" },
       { status: 500 }
     )
   }
@@ -113,7 +113,7 @@ export async function POST(request: NextRequest) {
     })
 
     if (!billType) {
-      return NextResponse.json({ error: "Invalid category" }, { status: 400 })
+      return NextResponse.json({ error: "La categoría seleccionada no es válida" }, { status: 400 })
     }
 
     // Verify all assigned users belong to organization via UserOrganization
@@ -123,7 +123,7 @@ export async function POST(request: NextRequest) {
         where: { userId: { in: userIds }, organizationId },
       })
       if (memberships.length !== userIds.length) {
-        return NextResponse.json({ error: "Invalid user assignments" }, { status: 400 })
+        return NextResponse.json({ error: "Uno o más miembros asignados no pertenecen a este espacio" }, { status: 400 })
       }
     }
 
@@ -268,7 +268,7 @@ export async function POST(request: NextRequest) {
 
     console.error("Error creating bill:", error)
     return NextResponse.json(
-      { error: "Failed to create bill" },
+      { error: "Error al crear el gasto. Intentá de nuevo." },
       { status: 500 }
     )
   }
