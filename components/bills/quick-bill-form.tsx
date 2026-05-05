@@ -118,7 +118,8 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
 
   const orgCategories = categories.filter(c => c.organizationId === selectedOrgId)
   const normalCats = orgCategories.filter(c => !c.isCreditCard)
-  const ccCards    = orgCategories.filter(c => c.isCreditCard)
+  // CC cards are user-level, not space-level — show all regardless of selected org
+  const ccCards = categories.filter(c => c.isCreditCard)
   const orgMembers = members.filter(m => m.organizationId === selectedOrgId)
 
   const billTypeId = isCreditCard ? cardId : categoryId
