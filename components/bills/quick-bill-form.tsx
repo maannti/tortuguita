@@ -171,7 +171,13 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
       if (!res.ok) { const err = await res.json(); throw new Error(err.error || "Error al guardar") }
       const dest = isEdit ? `/bills/${initialData!.id}` : "/bills"
       router.push(dest); router.refresh()
-    } catch (err) { setError(err instanceof Error ? err.message : "Error inesperado") } finally { setIsLoading(false) }
+    } catch (err) {
+      if (err instanceof TypeError && err.message.includes("fetch")) {
+        setError("Error de conexión. Revisá tu conexión e intentá de nuevo.")
+      } else {
+        setError(err instanceof Error ? err.message : "Error inesperado. Intentá de nuevo.")
+      }
+    } finally { setIsLoading(false) }
   }
 
   const otherMembers = orgMembers.filter((m) => m.id !== currentUserId)
@@ -200,6 +206,17 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
     return { type: "next", dueDate: formatShortDate(nextDue), closingDate: formatShortDate(nextClosing) }
   })()
 
+  // Build a hint about what's missing when canSave is false
+  const saveHint = (() => {
+    if (!label.trim() && amount <= 0) return "Completá la descripción y el monto para guardar"
+    if (!label.trim()) return "Ingresá una descripción para guardar"
+    if (amount <= 0) return "Ingresá el monto para guardar"
+    if (!paymentMethod) return "Seleccioná un medio de pago"
+    if (isCreditCard && !cardId) return "Seleccioná una tarjeta"
+    if (!isCreditCard && !categoryId) return "Seleccioná una categoría"
+    return null
+  })()
+
   return (
     <form onSubmit={handleSubmit} className="flex flex-col min-h-[calc(100dvh-7rem)]">
       {/* Header */}
@@ -216,6 +233,9 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
       <div className="flex-1 overflow-y-auto">
         <div className="px-4 py-5 pb-28 space-y-5">
           {error && <div className="rounded-xl bg-destructive/10 text-destructive text-sm px-4 py-3">{error}</div>}
+          {!canSave && !error && saveHint && (
+            <p className="text-xs text-muted-foreground text-center px-2">{saveHint}</p>
+          )}
 
           {/* Espacio — solo en create mode con múltiples orgs */}
           {!isEdit && organizations.length > 1 && (
