@@ -141,7 +141,11 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
         })
         .catch(() => setUsdRateError(true))
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error inesperado")
+      if (err instanceof TypeError && err.message.includes("fetch")) {
+        setError("Error de conexión. Revisá tu conexión e intentá de nuevo.")
+      } else {
+        setError(err instanceof Error ? err.message : "Error inesperado. Intentá de nuevo.")
+      }
       setStep("upload")
     }
   }
@@ -187,7 +191,11 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
       setImportResult(result)
       setStep("done")
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error inesperado")
+      if (err instanceof TypeError && err.message.includes("fetch")) {
+        setError("Error de conexión. Revisá tu conexión e intentá de nuevo.")
+      } else {
+        setError(err instanceof Error ? err.message : "Error inesperado. Intentá de nuevo.")
+      }
       setStep("review")
     }
   }
@@ -334,6 +342,15 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
                   "Analizar resumen"
                 )}
               </button>
+              {(!selectedFile || !selectedCardId) && step !== "parsing" && (
+                <p className="text-xs text-muted-foreground text-center">
+                  {!selectedCardId && !selectedFile
+                    ? "Seleccioná una tarjeta y subí el PDF para continuar"
+                    : !selectedCardId
+                      ? "Seleccioná una tarjeta para continuar"
+                      : "Subí el PDF del resumen para continuar"}
+                </p>
+              )}
 
               {step === "parsing" && (
                 <p className="text-xs text-center text-muted-foreground animate-pulse">
