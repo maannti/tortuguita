@@ -220,8 +220,8 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
           {/* Espacio — solo en create mode con múltiples orgs */}
           {!isEdit && organizations.length > 1 && (
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Espacio</label>
-              <div className="flex gap-2 flex-wrap">
+              <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">¿En qué espacio cargás este gasto?</label>
+              <div className="grid grid-cols-2 gap-2">
                 {organizations.map((org) => {
                   const isSelected = selectedOrgId === org.id
                   return (
@@ -229,17 +229,22 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
                       key={org.id}
                       type="button"
                       onClick={() => { setSelectedOrgId(org.id); setCategoryId(""); setCardId("") }}
-                      className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-sm font-medium transition-all ${isSelected ? "border-primary bg-primary/5 text-foreground" : "border-border bg-background text-muted-foreground hover:border-foreground/30"}`}
+                      className={`flex items-center gap-3 px-4 py-3.5 rounded-2xl border-2 text-sm font-medium transition-all active:scale-[0.97] ${
+                        isSelected
+                          ? "border-primary bg-primary/8 text-foreground shadow-sm"
+                          : "border-border bg-background text-muted-foreground hover:border-foreground/20"
+                      }`}
                     >
                       <div
-                        className="w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 transition-all"
+                        className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 transition-all"
                         style={{ backgroundColor: isSelected ? "#9D8189" : "#9D818920" }}
                       >
                         {org.isPersonal
-                          ? <User className="h-3 w-3" style={{ color: isSelected ? "#fff" : "#9D8189" }} />
-                          : <Home className="h-3 w-3" style={{ color: isSelected ? "#fff" : "#9D8189" }} />}
+                          ? <User className="h-4 w-4" style={{ color: isSelected ? "#fff" : "#9D8189" }} />
+                          : <Home className="h-4 w-4" style={{ color: isSelected ? "#fff" : "#9D8189" }} />}
                       </div>
-                      {org.name}
+                      <span className="flex-1 text-left leading-tight">{org.name}</span>
+                      {isSelected && <Check className="h-4 w-4 text-primary flex-shrink-0" />}
                     </button>
                   )
                 })}
@@ -287,34 +292,57 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
             )}
           </div>
 
-          {/* Categoría — dropdown */}
-          {normalCats.length > 0 && (
+          {/* Categoría — siempre visible cuando no es crédito */}
+          {!isCreditCard && (
             <div className="space-y-1.5">
               <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Categoría</label>
-              <div className="flex gap-2">
-                <button type="button" onClick={() => setExpandedCats(o => !o)}
-                  className={`flex-1 flex items-center gap-2 rounded-xl border bg-background px-3 py-2.5 text-sm text-left transition-colors ${expandedCats ? "border-primary ring-2 ring-primary/20" : "border-border hover:border-foreground/30"}`}>
-                  {(() => {
-                    const sel = normalCats.find(c => c.id === categoryId)
-                    return sel ? (
-                      <>
-                        {sel.icon
-                          ? <span className="text-base leading-none flex-shrink-0">{sel.icon}</span>
-                          : <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: sel.color || "#6b7280" }} />}
-                        <span className="flex-1 font-medium text-foreground">{sel.name}</span>
-                      </>
-                    ) : (
-                      <span className="flex-1 text-muted-foreground">Seleccioná una categoría</span>
-                    )
-                  })()}
-                  <ChevronDown className={`h-4 w-4 text-muted-foreground flex-shrink-0 transition-transform ${expandedCats ? "rotate-180" : ""}`} />
-                </button>
-                <button type="button" onClick={() => router.push(`/categories/new?spaceId=${selectedOrgId}&returnTo=${encodeURIComponent("/bills/new")}`)} title="Nueva categoría"
-                  className="w-11 rounded-xl border border-border bg-background flex items-center justify-center hover:border-foreground/30 transition-colors">
-                  <Plus className="h-4 w-4 text-muted-foreground" />
-                </button>
-              </div>
-              {expandedCats && (
+              {normalCats.length === 0 ? (
+                <div className="rounded-xl border-2 border-dashed border-border px-4 py-4 flex items-center justify-between gap-3">
+                  <p className="text-sm text-muted-foreground">No hay categorías en este espacio</p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const selectedOrg = organizations.find(o => o.id === selectedOrgId)
+                      router.push(`/categories/new?spaceId=${selectedOrgId}&spaceName=${encodeURIComponent(selectedOrg?.name ?? "")}&returnTo=${encodeURIComponent("/bills/new")}`)
+                    }}
+                    className="flex items-center gap-1.5 text-sm font-semibold text-primary whitespace-nowrap flex-shrink-0"
+                  >
+                    <Plus className="h-4 w-4" />Crear una
+                  </button>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <button type="button" onClick={() => setExpandedCats(o => !o)}
+                    className={`flex-1 flex items-center gap-2 rounded-xl border bg-background px-3 py-2.5 text-sm text-left transition-colors ${expandedCats ? "border-primary ring-2 ring-primary/20" : "border-border hover:border-foreground/30"}`}>
+                    {(() => {
+                      const sel = normalCats.find(c => c.id === categoryId)
+                      return sel ? (
+                        <>
+                          {sel.icon
+                            ? <span className="text-base leading-none flex-shrink-0">{sel.icon}</span>
+                            : <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: sel.color || "#6b7280" }} />}
+                          <span className="flex-1 font-medium text-foreground">{sel.name}</span>
+                        </>
+                      ) : (
+                        <span className="flex-1 text-muted-foreground">Seleccioná una categoría</span>
+                      )
+                    })()}
+                    <ChevronDown className={`h-4 w-4 text-muted-foreground flex-shrink-0 transition-transform ${expandedCats ? "rotate-180" : ""}`} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const selectedOrg = organizations.find(o => o.id === selectedOrgId)
+                      router.push(`/categories/new?spaceId=${selectedOrgId}&spaceName=${encodeURIComponent(selectedOrg?.name ?? "")}&returnTo=${encodeURIComponent("/bills/new")}`)
+                    }}
+                    title="Nueva categoría"
+                    className="w-11 rounded-xl border border-border bg-background flex items-center justify-center hover:border-foreground/30 transition-colors"
+                  >
+                    <Plus className="h-4 w-4 text-muted-foreground" />
+                  </button>
+                </div>
+              )}
+              {expandedCats && normalCats.length > 0 && (
                 <div className="rounded-xl border border-primary/30 bg-background overflow-hidden shadow-sm">
                   {normalCats.map((cat, i) => (
                     <button key={cat.id} type="button"

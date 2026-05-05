@@ -37,10 +37,11 @@ interface Props {
   mode: "create" | "edit"
   initialData?: { id: string; name: string; color: string | null; icon: string | null }
   organizationId?: string
+  spaceName?: string
   returnTo?: string
 }
 
-export function CategoryFormV2({ mode, initialData, organizationId, returnTo }: Props) {
+export function CategoryFormV2({ mode, initialData, organizationId, spaceName, returnTo }: Props) {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -112,6 +113,14 @@ export function CategoryFormV2({ mode, initialData, organizationId, returnTo }: 
       <div className="flex-1 overflow-y-auto">
         <div className="px-4 py-5 pb-28 space-y-6">
           {error && <div className="rounded-xl bg-destructive/10 text-destructive text-sm px-4 py-3">{error}</div>}
+
+          {/* Space context banner */}
+          {mode === "create" && spaceName && (
+            <div className="rounded-xl bg-muted/60 px-4 py-3 flex items-center gap-2 text-sm text-muted-foreground">
+              <span className="text-base leading-none">🏠</span>
+              <span>Estás creando esta categoría en <span className="font-semibold text-foreground">{spaceName}</span></span>
+            </div>
+          )}
 
           {/* Preview */}
           <div className="glass rounded-2xl px-4 py-3.5 flex items-center gap-3">
