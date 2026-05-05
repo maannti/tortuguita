@@ -297,7 +297,7 @@ export function SettingsHub({ creditCards, categories }: Props) {
 
       {/* ── Space management dialog ── */}
       <Dialog open={!!managingOrg} onOpenChange={(open) => { if (!open) { setManagingOrg(null); setDeleteConfirm(false); setManageError(null) } }}>
-        <DialogContent className="rounded-3xl border-border/40 bg-card w-[min(calc(100vw-2rem),24rem)] p-6 [&>.absolute]:hidden inset-auto left-1/2 top-[40%] -translate-x-1/2 -translate-y-1/2 max-h-[80dvh] overflow-y-auto">
+        <DialogContent className="rounded-3xl border-border/40 bg-card w-[min(calc(100vw-2rem),24rem)] p-6 [&>.absolute]:hidden inset-auto left-1/2 top-24 -translate-x-1/2 max-h-[70dvh] overflow-y-auto">
           <DialogHeader className="text-left gap-1 pb-2">
             <DialogTitle style={{ fontFamily: "var(--font-fraunces, serif)" }}>
               {managingOrg?.name}
