@@ -58,7 +58,10 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
   // Done step
   const [importResult, setImportResult] = useState<{ imported: number; duplicates?: number; errors?: string[] } | null>(null)
 
-  const orgCcCards = ccCards.filter(c => c.organizationId === selectedOrgId)
+  // Show ALL cards the user has access to (not filtered by space).
+  // The target space (selectedOrgId) determines where bills are created,
+  // but the card selection is about which statement you're uploading.
+  const orgCcCards = ccCards
   const orgMembers = members.filter(m => m.organizationId === selectedOrgId)
 
   // ── Helpers ──────────────────────────────────────────────────────────────
@@ -113,7 +116,17 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
       formData.append("pdf", selectedFile)
 
       const res = await fetch("/api/resumen/parse", { method: "POST", body: formData })
-      if (!res.ok) { const d = await res.json(); throw new Error(d.error || "Error al procesar") }
+      if (!res.ok) {
+        if (res.status === 504 || res.status === 524) {
+          throw new Error("El análisis tardó demasiado. Intentá de nuevo — los PDFs grandes a veces necesitan más tiempo.")
+        }
+        try {
+          const d = await res.json()
+          throw new Error(d.error || "Error al procesar el resumen")
+        } catch {
+          throw new Error("Error al procesar el resumen. Verificá que el PDF sea un resumen de tarjeta válido.")
+        }
+      }
       const data: ResumenParseResult = await res.json()
 
       // Auto-map titulares to members
@@ -245,19 +258,24 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
               {organizations.length > 1 && (
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Espacio</label>
-                  <div className="flex gap-2 flex-wrap">
-                    {organizations.map(org => (
-                      <button key={org.id} type="button"
-                        onClick={() => { setSelectedOrgId(org.id); setSelectedCardId("") }}
-                        className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-sm font-medium transition-all ${selectedOrgId === org.id ? "border-primary bg-primary/5 text-foreground" : "border-border bg-background text-muted-foreground"}`}>
-                        <div className="w-5 h-5 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: selectedOrgId === org.id ? MAUVE : `${MAUVE}20` }}>
-                          {org.isPersonal
-                            ? <User className="h-3 w-3" style={{ color: selectedOrgId === org.id ? "#fff" : MAUVE }} />
-                            : <Home className="h-3 w-3" style={{ color: selectedOrgId === org.id ? "#fff" : MAUVE }} />}
-                        </div>
-                        {org.name}
-                      </button>
-                    ))}
+                  <div className="grid grid-cols-2 gap-2">
+                    {organizations.map(org => {
+                      const isSelected = selectedOrgId === org.id
+                      return (
+                        <button key={org.id} type="button"
+                          onClick={() => { setSelectedOrgId(org.id); setSelectedCardId("") }}
+                          className={`flex items-center gap-3 rounded-2xl border-2 px-4 py-3.5 text-sm text-left transition-all active:scale-[0.97] ${isSelected ? "border-primary bg-primary/5 text-foreground" : "border-border bg-background text-muted-foreground"}`}>
+                          <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
+                            style={{ backgroundColor: isSelected ? MAUVE : `${MAUVE}20` }}>
+                            {org.isPersonal
+                              ? <User className="h-4 w-4" style={{ color: isSelected ? "#fff" : MAUVE }} />
+                              : <Home className="h-4 w-4" style={{ color: isSelected ? "#fff" : MAUVE }} />}
+                          </div>
+                          <span className="font-medium truncate">{org.name}</span>
+                          {isSelected && <Check className="h-4 w-4 ml-auto flex-shrink-0 text-primary" />}
+                        </button>
+                      )
+                    })}
                   </div>
                 </div>
               )}
