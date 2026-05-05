@@ -52,8 +52,8 @@ INSTRUCCIONES DE EXTRACCIÓN:
 3. DEVOLUCIONES de compras (Refund, Devolución con monto negativo):
    - SÍ incluirlas
    - tipo: "devolucion"
-   - incluir: false por default (el usuario decide)
-   - el monto va como positivo en el campo correspondiente
+   - incluir: true (restan al balance, el usuario puede desactivarlas)
+   - el monto va como positivo en el campo correspondiente (el sistema lo convierte a negativo)
 
 4. CUOTAS DEL MES:
    - Si el formato es "01/N" (primera cuota): incluir, tipo "cuota", cuotaActual: 1, cuotaTotal: N
