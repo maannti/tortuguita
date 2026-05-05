@@ -37,9 +37,10 @@ interface Props {
   mode: "create" | "edit"
   initialData?: { id: string; name: string; color: string | null; icon: string | null }
   organizationId?: string
+  returnTo?: string
 }
 
-export function CategoryFormV2({ mode, initialData, organizationId }: Props) {
+export function CategoryFormV2({ mode, initialData, organizationId, returnTo }: Props) {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -82,18 +83,20 @@ export function CategoryFormV2({ mode, initialData, organizationId }: Props) {
         body: JSON.stringify({ name: name.trim(), color, icon: finalEmoji, isCreditCard: false, organizationId: organizationId || undefined }),
       })
       if (!res.ok) { const err = await res.json(); throw new Error(err.error || "Error al guardar") }
-      const backPath = organizationId ? `/categories?spaceId=${organizationId}` : "/categories"
-      router.push(backPath); router.refresh()
+      const dest = returnTo || (organizationId ? `/categories?spaceId=${organizationId}` : "/categories")
+      router.push(dest); router.refresh()
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error inesperado")
     } finally { setIsLoading(false) }
   }
 
+  const backPath = returnTo || (organizationId ? `/categories?spaceId=${organizationId}` : "/categories")
+
   return (
     <form onSubmit={handleSubmit} className="flex flex-col min-h-[calc(100dvh-3.5rem)]">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b sticky top-0 bg-background/95 backdrop-blur-sm z-10">
-        <button type="button" onClick={() => router.push(organizationId ? `/categories?spaceId=${organizationId}` : "/categories")}
+        <button type="button" onClick={() => router.push(backPath)}
           className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
           <ChevronLeft className="h-4 w-4" />Volver
         </button>
