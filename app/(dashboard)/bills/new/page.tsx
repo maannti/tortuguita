@@ -13,7 +13,7 @@ export default async function NewBillPage() {
   const [categories, memberships, incomeRows] = await Promise.all([
     prisma.billType.findMany({
       where: { organizationId: { in: orgIds } },
-      select: { id: true, name: true, color: true, icon: true, isCreditCard: true, organizationId: true },
+      select: { id: true, name: true, color: true, icon: true, isCreditCard: true, organizationId: true, currentClosingDate: true, currentDueDate: true, nextClosingDate: true, nextDueDate: true },
       orderBy: { name: "asc" },
     }),
     prisma.userOrganization.findMany({
