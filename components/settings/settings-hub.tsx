@@ -307,19 +307,28 @@ export function SettingsHub({ creditCards, categories }: Props) {
         <section>
           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2 px-1">Configuración</p>
           <div className="glass rounded-2xl divide-y divide-white/60 overflow-hidden">
-            {[
-              { label: "Ingresos del mes", desc: "División proporcional de gastos", href: "/settings/organization" },
-              { label: "Perfil",           desc: "Nombre, contraseña",              href: "/settings/profile" },
-            ].map((item) => (
-              <button key={item.label} onClick={() => router.push(item.href)}
-                className="w-full flex items-center justify-between px-4 py-3.5 text-left hover:bg-white/30 transition-colors">
-                <div>
-                  <p className="text-sm font-medium">{item.label}</p>
-                  <p className="text-xs text-muted-foreground">{item.desc}</p>
-                </div>
-                <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-              </button>
-            ))}
+            {(() => {
+              const sharedOrgs = organizations.filter(o => !o.isPersonal)
+              const incomeHref = sharedOrgs.length === 1
+                ? `/settings/organization?spaceId=${sharedOrgs[0].id}`
+                : "/settings/organization"
+              const items = [
+                ...(sharedOrgs.length > 0
+                  ? [{ label: "Ingresos del mes", desc: "División proporcional de gastos", href: incomeHref }]
+                  : []),
+                { label: "Perfil", desc: "Nombre, contraseña", href: "/settings/profile" },
+              ]
+              return items.map((item) => (
+                <button key={item.label} onClick={() => router.push(item.href)}
+                  className="w-full flex items-center justify-between px-4 py-3.5 text-left hover:bg-white/30 transition-colors">
+                  <div>
+                    <p className="text-sm font-medium">{item.label}</p>
+                    <p className="text-xs text-muted-foreground">{item.desc}</p>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                </button>
+              ))
+            })()}
           </div>
         </section>
 
