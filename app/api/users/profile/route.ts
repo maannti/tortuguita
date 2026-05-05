@@ -35,9 +35,16 @@ export async function PATCH(request: NextRequest) {
     await prisma.user.update({ where: { id: session.user.id }, data: updateData })
     return NextResponse.json({ ok: true })
   } catch (error) {
-    if (error instanceof z.ZodError) return NextResponse.json({ error: error.issues[0].message }, { status: 400 })
+    if (error instanceof z.ZodError) {
+      // Translate common Zod validation errors to Spanish
+      const msg = error.issues[0].message
+      const translated = msg.includes("min") ? "La contraseña debe tener al menos 6 caracteres"
+        : msg.includes("max") ? "El nombre es demasiado largo"
+        : "Datos inválidos. Revisá los campos e intentá de nuevo."
+      return NextResponse.json({ error: translated }, { status: 400 })
+    }
     console.error("Error updating profile:", error)
-    return NextResponse.json({ error: "Error al guardar" }, { status: 500 })
+    return NextResponse.json({ error: "Error al guardar. Intentá de nuevo." }, { status: 500 })
   }
 }
 
