@@ -4,12 +4,12 @@ export default function AuthLayout({
   children: React.ReactNode
 }) {
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="relative min-h-screen">
       {/* Warm mauve-to-blush gradient */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[hsl(345,18%,12%)] via-[hsl(343,16%,20%)] to-[hsl(351,22%,28%)]" />
+      <div className="fixed inset-0 bg-gradient-to-br from-[hsl(345,18%,12%)] via-[hsl(343,16%,20%)] to-[hsl(351,22%,28%)]" />
 
-      {/* Decorative blobs */}
-      <div className="absolute inset-0 overflow-hidden">
+      {/* Decorative blobs — fixed so they don't scroll */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
         {/* Soft rose orb */}
         <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-[#F4ACB7]/10 blur-3xl" />
         {/* Sage accent bottom-left */}
@@ -26,8 +26,11 @@ export default function AuthLayout({
         <div className="absolute bottom-32 left-16 w-1 h-1 bg-[#F4ACB7]/40 rounded-full" />
       </div>
 
-      <div className="w-full max-w-sm relative z-10">
-        {children}
+      {/* Scrollable content */}
+      <div className="relative z-10 flex min-h-screen items-center justify-center p-4 py-10">
+        <div className="w-full max-w-sm">
+          {children}
+        </div>
       </div>
     </div>
   )
