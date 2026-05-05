@@ -13,7 +13,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
-import { Trash2 } from "lucide-react"
+import { Trash2, X } from "lucide-react"
 import { useTranslations } from "@/components/providers/language-provider"
 
 interface DeleteBillButtonProps {
