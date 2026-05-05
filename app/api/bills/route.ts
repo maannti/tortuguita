@@ -6,6 +6,7 @@ import { z } from "zod"
 import { Prisma } from "@prisma/client"
 import { randomUUID } from "crypto"
 import { calculateBudgetDate, type BillingPeriod } from "@/lib/budget-date"
+import { getUserOrganizations } from "@/lib/organization-utils"
 
 export async function GET(request: NextRequest) {
   try {
@@ -88,52 +89,44 @@ export async function POST(request: NextRequest) {
   try {
     const session = await auth()
 
-    if (!session?.user?.currentOrganizationId || !session?.user?.id) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      )
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
     const body = await request.json()
-    const data = billSchema.parse(body)
+    const { organizationId: bodyOrgId, ...rest } = body
+    const data = billSchema.parse(rest)
+
+    // Validate organizationId from body
+    const userOrgs = await getUserOrganizations(session.user.id)
+    const validOrg = bodyOrgId
+      ? userOrgs.find(o => o.id === bodyOrgId)
+      : userOrgs[0]
+    if (!validOrg) {
+      return NextResponse.json({ error: "Invalid space" }, { status: 403 })
+    }
+    const organizationId = validOrg.id
+    const userId = session.user.id
 
     // Verify billType belongs to organization
     const billType = await prisma.billType.findFirst({
-      where: {
-        id: data.billTypeId,
-        organizationId: session.user.currentOrganizationId,
-      },
+      where: { id: data.billTypeId, organizationId },
     })
 
     if (!billType) {
-      return NextResponse.json(
-        { error: "Invalid category" },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: "Invalid category" }, { status: 400 })
     }
 
     // Verify all assigned users belong to organization via UserOrganization
     if (data.assignments && data.assignments.length > 0) {
       const userIds = data.assignments.map((a) => a.userId)
       const memberships = await prisma.userOrganization.findMany({
-        where: {
-          userId: { in: userIds },
-          organizationId: session.user.currentOrganizationId,
-        },
+        where: { userId: { in: userIds }, organizationId },
       })
-
       if (memberships.length !== userIds.length) {
-        return NextResponse.json(
-          { error: "Invalid user assignments" },
-          { status: 400 }
-        )
+        return NextResponse.json({ error: "Invalid user assignments" }, { status: 400 })
       }
     }
-
-    // Extract session values for use in transaction (TypeScript narrowing)
-    const organizationId = session.user.currentOrganizationId
-    const userId = session.user.id
 
     // Check if creating installments
     const totalInstallments = data.totalInstallments || 1
