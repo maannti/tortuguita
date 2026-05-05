@@ -435,4 +435,79 @@ Response: [bill1, bill2, bill3] con status 201
 
 ---
 
+## Manejo de errores
+
+### Principio general
+
+Todos los mensajes visibles al usuario están **en español**. No se expone ningún mensaje de Prisma, Zod ni texto en inglés al frontend.
+
+### Patrón en API routes
+
+Cada ruta sigue este orden:
+
+1. Autenticación: `if (!session?.user?.id) return { error: "Unauthorized" }` — este error no llega a usuarios normales porque el middleware protege las rutas.
+2. Validación de permisos: si el recurso no pertenece al usuario → `{ error: "Gasto no encontrado" }` (404) o `{ error: "No tenés permisos…" }` (403).
+3. Validación de datos: Zod lanza `ZodError` → se captura y se devuelve `{ error: msg }` (400). Mensajes de Zod en inglés se traducen antes de devolver al cliente.
+4. Errores de DB: `try/catch` envuelve toda la lógica → `{ error: "Error al … Intentá de nuevo." }` (500).
+
+### Mensajes específicos por ruta
+
+| Ruta | Error | Código | Mensaje |
+|---|---|---|---|
+| `POST /api/bills` | Categoría inválida | 400 | "La categoría seleccionada no es válida" |
+| `POST /api/bills` | Miembros inválidos | 400 | "Uno o más miembros asignados no pertenecen a este espacio" |
+| `GET/PATCH/DELETE /api/bills/[id]` | No encontrado | 404 | "Gasto no encontrado" |
+| `GET/PATCH/DELETE /api/bill-types/[id]` | No encontrado | 404 | "Categoría no encontrada" |
+| `DELETE /api/bill-types/[id]` | Tiene gastos asociados | 409 | `{ error: "has_bills", count: N }` — el cliente muestra diálogo de confirmación |
+| `DELETE /api/organizations/[id]/members` | No es miembro | 404 | "El miembro no pertenece a este espacio" |
+| `DELETE /api/organizations/[id]/members` | Quererse remover a uno mismo | 400 | "No podés removerte a vos mismo. Eliminá el espacio." |
+| `PATCH /api/users/profile` | Contraseña actual incorrecta | 400 | "Contraseña actual incorrecta" |
+| `POST /api/resumen/parse` | JSON inválido de Claude | 422 | "No se pudo interpretar el resumen. Verificá que el PDF sea un resumen de tarjeta de crédito." |
+
+### Errores de red (frontend)
+
+En todos los `catch` de `fetch()`, se distingue `TypeError` (sin conexión) del resto:
+
+```ts
+} catch (err) {
+  if (err instanceof TypeError && err.message.includes("fetch")) {
+    setError("Error de conexión. Revisá tu conexión e intentá de nuevo.")
+  } else {
+    setError(err instanceof Error ? err.message : "Error inesperado. Intentá de nuevo.")
+  }
+}
+```
+
+### Patrón de confirmación en dos pasos (delete)
+
+Las acciones destructivas usan un estado booleano `deleteConfirm` o `leaveConfirm`:
+
+1. Primer click → `setDeleteConfirm(true)` → muestra mensaje de advertencia + botones "Confirmar" / "Cancelar".
+2. Segundo click → llama a la API → en error, muestra el mensaje en el mismo diálogo.
+
+Implementado en: `DeleteCategoryButton`, `BillDetail` (dialog), `SettingsHub` (eliminar/salir espacio), `ProfileContent` (eliminar cuenta).
+
+### Estados vacíos (empty states)
+
+Todas las vistas con listas muestran un estado vacío descriptivo en lugar de una lista vacía:
+
+| Vista | Mensaje | CTA |
+|---|---|---|
+| `/bills` — sin gastos en el mes | "Sin gastos este mes · ¡La tortuguita descansa!" | Botón "Agregar gasto" |
+| `/cuotas` — sin cuotas | "Sin cuotas en [mes] · ¡La tortuguita descansa!" | — |
+| `/categories` — sin categorías | "Sin categorías todavía" | Botón "Agregar" |
+| `/cards` — sin tarjetas | "Sin tarjetas todavía" | Botón "Agregar" |
+| `QuickBillForm` — sin categorías en el espacio | "No hay categorías en este espacio" | Botón "Crear una" → `/categories/new` |
+| `QuickBillForm` — crédito sin tarjetas | Aviso amarillo con link a `/cards` | — |
+
+### Estados deshabilitados
+
+Los botones "Guardar" están deshabilitados mientras faltan campos requeridos, y se muestra un hint textual debajo explicando qué falta:
+
+- `QuickBillForm`: hints dinámicos como "Ingresá la descripción y el monto para guardar", "Seleccioná una tarjeta", etc.
+- `ResumenImporter`: "Seleccioná una tarjeta y subí el PDF para continuar".
+- `CategoryFormV2`: botón deshabilitado hasta que el nombre no esté vacío (sin hint adicional por lo obvio del campo).
+
+---
+
 *Este archivo describe el estado del código tal como existe. Si se agrega una feature importante, actualizarlo.*
