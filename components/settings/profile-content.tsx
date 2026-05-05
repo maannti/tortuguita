@@ -40,11 +40,15 @@ export function ProfileContent({ user }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       })
-      if (!res.ok) { const err = await res.json(); throw new Error(err.error || "Error") }
+      if (!res.ok) { const err = await res.json(); throw new Error(err.error || "Error al guardar el perfil") }
       setSaved(true); setCurrentPassword(""); setNewPassword("")
       setTimeout(() => setSaved(false), 2500)
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al guardar")
+      if (err instanceof TypeError && err.message.includes("fetch")) {
+        setError("Error de conexión. Revisá tu conexión e intentá de nuevo.")
+      } else {
+        setError(err instanceof Error ? err.message : "Error al guardar")
+      }
     } finally { setIsSaving(false) }
   }
 
@@ -53,7 +57,7 @@ export function ProfileContent({ user }: Props) {
     setDeleteError(null)
     try {
       const res = await fetch("/api/users/profile", { method: "DELETE" })
-      if (!res.ok) { const err = await res.json(); throw new Error(err.error || "Error") }
+      if (!res.ok) { const err = await res.json(); throw new Error(err.error || "Error al eliminar la cuenta") }
       await signOut({ callbackUrl: "/login" })
     } catch (err) {
       setDeleteError(err instanceof Error ? err.message : "Error al eliminar")
