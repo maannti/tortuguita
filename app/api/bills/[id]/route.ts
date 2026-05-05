@@ -127,13 +127,21 @@ export async function PATCH(
       )
     }
 
-    // Verify all assigned users belong to organization via UserOrganization
+    // Use provided organizationId (space change) or keep existing
+    const targetOrgId = data.organizationId ?? bill.organizationId
+
+    // Verify target org belongs to the user
+    if (!orgIds.includes(targetOrgId)) {
+      return NextResponse.json({ error: "Espacio no válido" }, { status: 400 })
+    }
+
+    // Verify all assigned users belong to the target organization
     if (data.assignments && data.assignments.length > 0) {
       const userIds = data.assignments.map((a) => a.userId)
       const memberships = await prisma.userOrganization.findMany({
         where: {
           userId: { in: userIds },
-          organizationId: bill.organizationId,
+          organizationId: targetOrgId,
         },
       })
 
@@ -168,6 +176,7 @@ export async function PATCH(
         dueDate: data.dueDate || null,
         billTypeId: data.billTypeId,
         categoryId: data.categoryId || null,
+        organizationId: targetOrgId,
         notes: data.notes,
         assignments: {
           deleteMany: {},

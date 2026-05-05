@@ -22,6 +22,7 @@ export const billSchema = z
     categoryId: z.string().optional().nullable(),
     notes: z.string().optional(),
     assignments: z.array(billAssignmentSchema).default([]),
+    organizationId: z.string().min(1).optional(),
     totalInstallments: z.coerce.number().int().min(2).max(24).optional(),
     currentInstallment: z.coerce.number().int().min(1).optional(),
     installmentGroupId: z.string().optional(),
