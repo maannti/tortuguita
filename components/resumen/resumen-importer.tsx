@@ -50,6 +50,11 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
     usarUSD?: boolean
   }>>({})
 
+  // Exchange rate
+  const [usdRate, setUsdRate] = useState<number | null>(null)
+  const [usdRateUpdatedAt, setUsdRateUpdatedAt] = useState<string | null>(null)
+  const [usdRateError, setUsdRateError] = useState(false)
+
   // Done step
   const [importResult, setImportResult] = useState<{ imported: number; errors?: string[] } | null>(null)
 
@@ -75,10 +80,15 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
   const txList = parsed?.transacciones ?? []
   const selectedTxs = txList.filter(tx => getTx(tx).incluir)
 
+  function resolvedMonto(tx: ParsedTransaction) {
+    const ov = getTx(tx)
+    if (ov.usarUSD && tx.montoUSD !== null && usdRate !== null) return Math.round(tx.montoUSD * usdRate)
+    return ov.usarUSD ? (tx.montoUSD ?? tx.montoARS ?? 0) : (tx.montoARS ?? tx.montoUSD ?? 0)
+  }
+
   function totalImport() {
     return selectedTxs.reduce((sum, tx) => {
-      const ov = getTx(tx)
-      const monto = ov.usarUSD ? (tx.montoUSD ?? tx.montoARS ?? 0) : (tx.montoARS ?? tx.montoUSD ?? 0)
+      const monto = resolvedMonto(tx)
       return sum + (tx.tipo === "devolucion" ? -monto : monto)
     }, 0)
   }
@@ -119,6 +129,15 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
       setParsed(data)
       setTxOverrides({})
       setStep("review")
+
+      // Fetch live USD→ARS official rate (non-blocking)
+      fetch("/api/exchange-rate")
+        .then(r => r.json())
+        .then(d => {
+          if (d.rate) { setUsdRate(d.rate); setUsdRateUpdatedAt(d.updatedAt ?? null) }
+          else setUsdRateError(true)
+        })
+        .catch(() => setUsdRateError(true))
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error inesperado")
       setStep("upload")
@@ -133,14 +152,21 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
     const transacciones = selectedTxs.map(tx => {
       const ov = getTx(tx)
       const userId = titularMap[tx.titular] ?? currentUserId
+
+      // Determine final ARS amount — convert USD at official rate if user chose that path
+      let finalMontoARS = tx.montoARS
+      if (ov.usarUSD && tx.montoUSD !== null && usdRate !== null) {
+        finalMontoARS = Math.round(tx.montoUSD * usdRate)
+      }
+
       return {
         fecha: tx.fecha,
         descripcion: ov.descripcion,
-        montoARS: tx.montoARS,
+        montoARS: finalMontoARS,
         montoUSD: tx.montoUSD,
         tipo: tx.tipo,
-        cuotaTotal: tx.cuotaActual === 1 ? tx.cuotaTotal : null, // only reconstruct for cuota 1/N
-        usarUSD: ov.usarUSD,
+        cuotaTotal: tx.cuotaActual === 1 ? tx.cuotaTotal : null,
+        usarUSD: false, // already converted above — always store as ARS
         billTypeId: selectedCardId,
         categoryId: ov.categoria ?? null,
         userId,
@@ -309,7 +335,7 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
           {step === "review" && parsed && (
             <>
               {/* Summary header */}
-              <div className="rounded-2xl bg-muted/40 px-4 py-4 space-y-1">
+              <div className="rounded-2xl bg-muted/40 px-4 py-4 space-y-2">
                 <p className="text-sm font-semibold">
                   {parsed.periodoDesde && parsed.periodoHasta
                     ? `Período: ${new Date(parsed.periodoDesde + "T12:00:00").toLocaleDateString("es-AR", { day: "numeric", month: "long" })} → ${new Date(parsed.periodoHasta + "T12:00:00").toLocaleDateString("es-AR", { day: "numeric", month: "long", year: "numeric" })}`
@@ -318,6 +344,26 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
                 <p className="text-xs text-muted-foreground">
                   {txList.length} transacciones encontradas · {selectedTxs.length} seleccionadas · {formatARS(totalImport())}
                 </p>
+                {/* Exchange rate chip */}
+                {usdRate !== null ? (
+                  <div className="flex items-center gap-1.5">
+                    <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-100">
+                      <span>USD oficial</span>
+                      <span className="font-semibold">{formatARS(usdRate)}</span>
+                    </span>
+                    {usdRateUpdatedAt && (
+                      <span className="text-[10px] text-muted-foreground">
+                        {new Date(usdRateUpdatedAt).toLocaleDateString("es-AR", { day: "numeric", month: "short" })}
+                      </span>
+                    )}
+                  </div>
+                ) : usdRateError ? (
+                  <span className="text-[11px] text-amber-700 flex items-center gap-1">
+                    <AlertTriangle className="h-3 w-3" />No se pudo obtener el tipo de cambio oficial
+                  </span>
+                ) : (
+                  <span className="text-[11px] text-muted-foreground animate-pulse">Obteniendo tipo de cambio...</span>
+                )}
               </div>
 
               {/* Titular mapping */}
@@ -363,10 +409,11 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
               <div className="space-y-2">
                 {txList.map(tx => {
                   const ov = getTx(tx)
-                  const monto = ov.usarUSD ? (tx.montoUSD ?? tx.montoARS ?? 0) : (tx.montoARS ?? tx.montoUSD ?? 0)
                   const hasUSD = tx.montoUSD !== null
                   const hasARS = tx.montoARS !== null
                   const isDevolucion = tx.tipo === "devolucion"
+                  const monto = resolvedMonto(tx)
+                  const convertedARS = hasUSD && usdRate !== null ? Math.round((tx.montoUSD ?? 0) * usdRate) : null
 
                   return (
                     <div
@@ -432,12 +479,14 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
                               </div>
 
                               {/* USD toggle */}
-                              {hasUSD && hasARS && (
+                              {hasUSD && (
                                 <button type="button"
                                   onClick={() => setTxOv(tx.id, { usarUSD: !ov.usarUSD })}
                                   className={`text-xs px-2 py-1 rounded-lg border transition-colors ${ov.usarUSD ? "bg-blue-50 border-blue-200 text-blue-700" : "border-border text-muted-foreground"}`}
                                 >
-                                  {ov.usarUSD ? "USD" : "ARS"}
+                                  {ov.usarUSD
+                                    ? `U$S ${tx.montoUSD?.toFixed(2)} × oficial`
+                                    : hasARS ? "Usar ARS del resumen" : `U$S ${tx.montoUSD?.toFixed(2)}`}
                                 </button>
                               )}
                             </div>
@@ -448,12 +497,19 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
                         <div className="flex-shrink-0 text-right">
                           <p className={`text-sm font-semibold ${isDevolucion ? "text-green-600" : "text-foreground"}`}
                             style={{ fontFamily: "var(--font-fraunces, serif)" }}>
-                            {hasUSD && !hasARS
-                              ? `${isDevolucion ? "-" : ""}U$S ${monto.toFixed(2)}`
-                              : formatARS(isDevolucion ? -monto : monto)}
+                            {ov.usarUSD && convertedARS !== null
+                              ? formatARS(isDevolucion ? -convertedARS : convertedARS)
+                              : hasUSD && !hasARS
+                                ? `${isDevolucion ? "-" : ""}U$S ${tx.montoUSD?.toFixed(2)}`
+                                : formatARS(isDevolucion ? -monto : monto)}
                           </p>
-                          {hasUSD && hasARS && (
-                            <p className="text-[10px] text-muted-foreground">U$S {tx.montoUSD?.toFixed(2)}</p>
+                          {/* Secondary line */}
+                          {hasUSD && (
+                            <p className="text-[10px] text-muted-foreground">
+                              {ov.usarUSD
+                                ? `U$S ${tx.montoUSD?.toFixed(2)}`
+                                : convertedARS !== null ? `≈ ${formatARS(convertedARS)} al oficial` : `U$S ${tx.montoUSD?.toFixed(2)}`}
+                            </p>
                           )}
                         </div>
                       </div>
