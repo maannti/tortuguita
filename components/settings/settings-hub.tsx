@@ -45,6 +45,8 @@ export function SettingsHub({ creditCards, categories }: Props) {
   const [isSaving, setIsSaving] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState(false)
+  const [leaveConfirm, setLeaveConfirm] = useState(false)
+  const [isLeaving, setIsLeaving] = useState(false)
   const [manageError, setManageError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
 
@@ -105,6 +107,7 @@ export function SettingsHub({ creditCards, categories }: Props) {
     setManagingOrg(org)
     setEditName(org.name)
     setDeleteConfirm(false)
+    setLeaveConfirm(false)
     setManageError(null)
     setCopied(false)
   }
@@ -139,6 +142,20 @@ export function SettingsHub({ creditCards, categories }: Props) {
       router.refresh()
     } catch { setManageError("Error al eliminar") }
     finally { setIsDeleting(false) }
+  }
+
+  const leaveSpace = async () => {
+    if (!managingOrg) return
+    setIsLeaving(true)
+    setManageError(null)
+    try {
+      const res = await fetch(`/api/organizations/${managingOrg.id}/leave`, { method: "POST" })
+      if (!res.ok) { const d = await res.json(); setManageError(d.error || "Error al salir"); return }
+      setOrganizations(prev => prev.filter(o => o.id !== managingOrg.id))
+      setManagingOrg(null)
+      router.refresh()
+    } catch { setManageError("Error al salir del espacio") }
+    finally { setIsLeaving(false) }
   }
 
   const copyCode = (code: string) => {
@@ -354,7 +371,7 @@ export function SettingsHub({ creditCards, categories }: Props) {
       </div>
 
       {/* ── Space management dialog ── */}
-      <Dialog open={!!managingOrg} onOpenChange={(open) => { if (!open) { setManagingOrg(null); setDeleteConfirm(false); setManageError(null) } }}>
+      <Dialog open={!!managingOrg} onOpenChange={(open) => { if (!open) { setManagingOrg(null); setDeleteConfirm(false); setLeaveConfirm(false); setManageError(null) } }}>
         <DialogContent className="rounded-3xl border-border/40 bg-card w-[min(calc(100vw-2rem),24rem)] p-6 [&>.absolute]:hidden inset-auto left-1/2 top-24 -translate-x-1/2 max-h-[70dvh] overflow-y-auto">
           <DialogHeader className="text-left gap-1 pb-2">
             <DialogTitle style={{ fontFamily: "var(--font-fraunces, serif)" }}>
@@ -408,6 +425,40 @@ export function SettingsHub({ creditCards, categories }: Props) {
             )}
 
             {manageError && <p className="text-xs text-destructive">{manageError}</p>}
+
+            {/* Leave — only for non-owner members of shared spaces */}
+            {managingOrg?.role !== "owner" && !managingOrg?.isPersonal && (
+              <div className="pt-1 border-t border-border/40">
+                {!leaveConfirm ? (
+                  <button
+                    onClick={() => setLeaveConfirm(true)}
+                    className="w-full flex items-center gap-2 py-2.5 text-sm font-medium text-destructive active:scale-[0.98] transition-all"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Salir del espacio
+                  </button>
+                ) : (
+                  <div className="space-y-2">
+                    <p className="text-sm text-destructive font-medium">¿Salir de "{managingOrg?.name}"? Vas a perder acceso a los gastos compartidos.</p>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={leaveSpace}
+                        disabled={isLeaving}
+                        className="flex-1 rounded-full bg-destructive text-white py-2.5 text-sm font-semibold disabled:opacity-50 active:scale-[0.97] transition-all"
+                      >
+                        {isLeaving ? "Saliendo…" : "Salir"}
+                      </button>
+                      <button
+                        onClick={() => setLeaveConfirm(false)}
+                        className="flex-1 rounded-full bg-muted text-muted-foreground py-2.5 text-sm font-medium active:scale-[0.97] transition-all"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Delete — only for owners, with confirmation step */}
             {managingOrg?.role === "owner" && (
