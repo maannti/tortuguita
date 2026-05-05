@@ -9,7 +9,7 @@ interface PageProps { searchParams: Promise<{ spaceId?: string }> }
 
 export default async function CategoriesPage({ searchParams }: PageProps) {
   const session = await auth()
-  if (!session?.user?.id) return <div>Unauthorized</div>
+  if (!session?.user?.id) return <div className="p-8 text-center text-muted-foreground">Sesión no válida. Volvé a iniciar sesión.</div>
 
   const params = await searchParams
   const userOrgs = await getUserOrganizations(session.user.id)
@@ -17,7 +17,7 @@ export default async function CategoriesPage({ searchParams }: PageProps) {
   // If spaceId provided: show categories for that space
   if (params.spaceId) {
     const org = userOrgs.find(o => o.id === params.spaceId)
-    if (!org) return <div>Espacio no encontrado</div>
+    if (!org) return <div className="p-8 text-center text-muted-foreground">Espacio no encontrado.</div>
 
     const categories = await prisma.billType.findMany({
       where: { organizationId: org.id, isCreditCard: false },

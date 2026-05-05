@@ -12,7 +12,7 @@ interface PageProps {
 
 export default async function BillsPage({ searchParams }: PageProps) {
   const session = await auth()
-  if (!session?.user?.id) return <div>Unauthorized</div>
+  if (!session?.user?.id) return <div className="p-8 text-center text-muted-foreground">Sesión no válida. Volvé a iniciar sesión.</div>
 
   // Resolve active space IDs from cookie (written by SpacesProvider on toggle)
   const cookieStore = await cookies()
