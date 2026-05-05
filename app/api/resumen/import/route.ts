@@ -13,10 +13,11 @@ const transactionSchema = z.object({
   montoUSD: z.number().nullable(),
   tipo: z.enum(["compra", "cuota", "debito_automatico", "devolucion"]),
   cuotaTotal: z.number().nullable(),
-  usarUSD: z.boolean().default(false), // si true, guardar en USD (como monto en ARS al equivalente)
-  billTypeId: z.string().min(1),       // id de la tarjeta CC en el sistema
-  categoryId: z.string().nullable(),   // categoría de gasto opcional
-  userId: z.string().min(1),           // miembro asignado
+  usarUSD: z.boolean().default(false),
+  billTypeId: z.string().min(1),
+  categoryId: z.string().nullable(),
+  userId: z.string().min(1),
+  comprobante: z.string().nullable().optional(), // banco voucher/ID for deduplication
 })
 
 const importSchema = z.object({
@@ -80,9 +81,29 @@ export async function POST(request: NextRequest) {
         if (finalAmount === 0) { errors.push(`Monto cero, ignorado: ${tx.descripcion}`); continue }
 
         const totalInstallments = tx.cuotaTotal ?? 1
+        const externalRef = tx.comprobante ?? null
+
+        // ── Dedup check ──────────────────────────────────────────────────────
+        // Skip if a bill with the same card + comprobante + installment already exists
+        if (externalRef) {
+          const existing = await prisma.bill.findUnique({
+            where: {
+              billTypeId_externalRef_currentInstallment: {
+                billTypeId: tx.billTypeId,
+                externalRef,
+                currentInstallment: 1, // cuota 1 is always the anchor
+              },
+            },
+            select: { id: true },
+          })
+          if (existing) {
+            errors.push(`Duplicado ignorado: ${tx.descripcion} (comprobante ${externalRef})`)
+            continue
+          }
+        }
+        // ─────────────────────────────────────────────────────────────────────
 
         if (totalInstallments > 1) {
-          // Create all installments as a group
           const installmentGroupId = randomUUID()
           const amountPerCuota = Math.round((finalAmount / totalInstallments) * 100) / 100
 
@@ -105,6 +126,7 @@ export async function POST(request: NextRequest) {
                 totalInstallments,
                 currentInstallment: i,
                 installmentGroupId,
+                externalRef: externalRef ?? undefined,
                 assignments: {
                   create: [{ userId: tx.userId, percentage: 100 }],
                 },
@@ -124,6 +146,7 @@ export async function POST(request: NextRequest) {
               categoryId: tx.categoryId || null,
               organizationId,
               userId: tx.userId,
+              externalRef: externalRef ?? undefined,
               assignments: {
                 create: [{ userId: tx.userId, percentage: 100 }],
               },
@@ -137,9 +160,12 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    const duplicates = errors.filter(e => e.startsWith("Duplicado ignorado:"))
+    const realErrors = errors.filter(e => !e.startsWith("Duplicado ignorado:"))
     return NextResponse.json({
       imported: created.length,
-      errors: errors.length > 0 ? errors : undefined,
+      duplicates: duplicates.length > 0 ? duplicates.length : undefined,
+      errors: realErrors.length > 0 ? realErrors : undefined,
     }, { status: 201 })
   } catch (error) {
     if (error instanceof z.ZodError) return NextResponse.json({ error: error.issues[0].message }, { status: 400 })
