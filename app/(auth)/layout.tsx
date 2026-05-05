@@ -4,7 +4,7 @@ export default function AuthLayout({
   children: React.ReactNode
 }) {
   return (
-    <div className="h-screen overflow-y-auto relative">
+    <div className="h-dvh overflow-y-auto relative">
       {/* Background — fixed so it doesn't scroll */}
       <div className="fixed inset-0 bg-gradient-to-br from-[hsl(345,18%,12%)] via-[hsl(343,16%,20%)] to-[hsl(351,22%,28%)]" />
 
@@ -21,8 +21,9 @@ export default function AuthLayout({
         <div className="absolute bottom-32 left-16 w-1 h-1 bg-[#F4ACB7]/40 rounded-full" />
       </div>
 
-      {/* Content — scrolls within h-screen container */}
-      <div className="relative z-10 flex min-h-full flex-col items-center justify-center p-4 py-10">
+      {/* Content — scrolls within h-dvh container */}
+      <div className="relative z-10 flex min-h-full flex-col items-center justify-center p-4 pt-10"
+        style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 2.5rem)" }}>
         <div className="w-full max-w-sm">
           {children}
         </div>
