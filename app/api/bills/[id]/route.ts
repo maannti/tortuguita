@@ -62,7 +62,7 @@ export async function GET(
 
     if (!bill) {
       return NextResponse.json(
-        { error: "Bill not found" },
+        { error: "Gasto no encontrado" },
         { status: 404 }
       )
     }
@@ -71,7 +71,7 @@ export async function GET(
   } catch (error) {
     console.error("Error fetching bill:", error)
     return NextResponse.json(
-      { error: "Failed to fetch bill" },
+      { error: "Error al obtener el gasto" },
       { status: 500 }
     )
   }
@@ -107,7 +107,7 @@ export async function PATCH(
 
     if (!bill) {
       return NextResponse.json(
-        { error: "Bill not found" },
+        { error: "Gasto no encontrado" },
         { status: 404 }
       )
     }
@@ -122,7 +122,7 @@ export async function PATCH(
 
     if (!billType) {
       return NextResponse.json(
-        { error: "Invalid category" },
+        { error: "La categoría seleccionada no es válida" },
         { status: 400 }
       )
     }
@@ -139,7 +139,7 @@ export async function PATCH(
 
       if (memberships.length !== userIds.length) {
         return NextResponse.json(
-          { error: "Invalid user assignments" },
+          { error: "Uno o más miembros asignados no pertenecen a este espacio" },
           { status: 400 }
         )
       }
@@ -211,7 +211,7 @@ export async function PATCH(
 
     console.error("Error updating bill:", error)
     return NextResponse.json(
-      { error: "Failed to update bill" },
+      { error: "Error al actualizar el gasto. Intentá de nuevo." },
       { status: 500 }
     )
   }
@@ -244,7 +244,7 @@ export async function DELETE(
 
     if (!bill) {
       return NextResponse.json(
-        { error: "Bill not found" },
+        { error: "Gasto no encontrado" },
         { status: 404 }
       )
     }
@@ -253,11 +253,11 @@ export async function DELETE(
       where: { id },
     })
 
-    return NextResponse.json({ message: "Bill deleted successfully" })
+    return NextResponse.json({ message: "Gasto eliminado correctamente" })
   } catch (error) {
     console.error("Error deleting bill:", error)
     return NextResponse.json(
-      { error: "Failed to delete bill" },
+      { error: "Error al eliminar el gasto. Intentá de nuevo." },
       { status: 500 }
     )
   }
