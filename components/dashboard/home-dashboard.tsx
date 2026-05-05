@@ -1,9 +1,9 @@
 "use client"
 import { CardIcon, isNetworkId, NetworkId, BANKS } from "@/components/ui/card-network"
-import { useState, useRef } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { ChevronLeft, ChevronRight, Plus, FileText } from "lucide-react"
+import { ChevronLeft, ChevronRight, Plus } from "lucide-react"
 import { MonthPicker } from "@/components/ui/month-picker"
 import { useSpaces } from "@/lib/spaces-context"
 
@@ -42,25 +42,9 @@ function capitalize(s: string) { return s.charAt(0).toUpperCase() + s.slice(1) }
 
 export function HomeDashboard({ month, monthKey, availableMonths, spaces }: Props) {
   const router = useRouter()
-  const [showActions, setShowActions] = useState(false)
   const [showPicker, setShowPicker] = useState(false)
-  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const { activeSpaceIds } = useSpaces()
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    if (file.size > 10 * 1024 * 1024) { alert("El archivo no puede superar 10MB"); return }
-    const reader = new FileReader()
-    reader.onload = (ev) => {
-      const base64 = (ev.target?.result as string).split(",")[1]
-      sessionStorage.setItem("pendingImport", JSON.stringify({ name: file.name, type: file.type, data: base64 }))
-      router.push("/ai")
-    }
-    reader.readAsDataURL(file)
-    e.target.value = ""
-  }
 
   const currentIndex = availableMonths.indexOf(monthKey)
   const prevMonth = currentIndex < availableMonths.length - 1 ? availableMonths[currentIndex + 1] : null
@@ -76,7 +60,6 @@ export function HomeDashboard({ month, monthKey, availableMonths, spaces }: Prop
 
   return (
     <div className="pb-28">
-      <input ref={fileInputRef} type="file" accept=".pdf,.csv,.txt,image/*" onChange={handleFileChange} className="hidden" />
 
       {/* ── Hero card ── */}
       <div className="px-4 pt-5 pb-2">
@@ -239,55 +222,11 @@ export function HomeDashboard({ month, monthKey, availableMonths, spaces }: Prop
 
       {/* FAB */}
       <button
-        onClick={() => setShowActions(true)}
+        onClick={() => router.push("/bills/new")}
         className="fixed bottom-24 right-4 z-30 flex items-center justify-center w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 active:scale-95 transition-transform"
       >
         <Plus className="h-6 w-6" />
       </button>
-
-      {/* Action sheet */}
-      {showActions && (
-        <>
-          <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm" onClick={() => setShowActions(false)} />
-          <div className="fixed bottom-0 left-0 right-0 z-50 px-4 pb-10 pt-2 animate-in slide-in-from-bottom-4 duration-200">
-            <div className="bg-background rounded-2xl overflow-hidden shadow-xl">
-              <div className="px-4 py-3 border-b">
-                <p className="text-xs text-muted-foreground text-center font-medium">¿Qué querés hacer?</p>
-              </div>
-              <button
-                onClick={() => { setShowActions(false); router.push("/bills/new") }}
-                className="w-full flex items-center gap-3 px-4 py-4 text-left hover:bg-muted/50 transition-colors border-b"
-              >
-                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-                  <Plus className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold">Nuevo gasto</p>
-                  <p className="text-xs text-muted-foreground">Cargá un gasto manualmente</p>
-                </div>
-              </button>
-              <button
-                onClick={() => { setShowActions(false); setTimeout(() => fileInputRef.current?.click(), 100) }}
-                className="w-full flex items-center gap-3 px-4 py-4 text-left hover:bg-muted/50 transition-colors"
-              >
-                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-                  <FileText className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold">Importar resumen</p>
-                  <p className="text-xs text-muted-foreground">PDF, imagen o CSV del banco / tarjeta</p>
-                </div>
-              </button>
-            </div>
-            <button
-              onClick={() => setShowActions(false)}
-              className="mt-3 w-full bg-background rounded-2xl py-4 text-sm font-semibold text-muted-foreground"
-            >
-              Cancelar
-            </button>
-          </div>
-        </>
-      )}
 
       {/* Month picker */}
       {showPicker && (
