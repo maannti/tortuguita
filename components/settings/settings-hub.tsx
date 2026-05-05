@@ -29,12 +29,15 @@ export function SettingsHub({ creditCards, categories }: Props) {
   const [mounted, setMounted] = useState(false)
   const [organizations, setOrganizations] = useState<Organization[]>([])
 
-  // Create space
+  // Create / join space
   const [showNewSpace, setShowNewSpace] = useState(false)
+  const [spaceMode, setSpaceMode] = useState<"create" | "join">("create")
   const [newSpaceName, setNewSpaceName] = useState("")
   const [newSpacePersonal, setNewSpacePersonal] = useState(false)
   const [isCreating, setIsCreating] = useState(false)
   const [createError, setCreateError] = useState<string | null>(null)
+  const [joinCode, setJoinCode] = useState("")
+  const [isJoining, setIsJoining] = useState(false)
 
   // Manage space dialog
   const [managingOrg, setManagingOrg] = useState<Organization | null>(null)
@@ -75,6 +78,26 @@ export function SettingsHub({ creditCards, categories }: Props) {
       router.refresh()
     } catch { setCreateError("Error al crear espacio") }
     finally { setIsCreating(false) }
+  }
+
+  const joinSpace = async () => {
+    if (!joinCode.trim()) return
+    setIsJoining(true)
+    setCreateError(null)
+    try {
+      const res = await fetch("/api/organizations/join", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ joinCode: joinCode.trim().toUpperCase() }),
+      })
+      if (!res.ok) { const d = await res.json(); setCreateError(d.error || "Código inválido"); return }
+      const org: Organization = await res.json()
+      setOrganizations(prev => [...prev, { ...org, memberCount: org.memberCount ?? 1 }])
+      setJoinCode(""); setShowNewSpace(false); setSpaceMode("create")
+      if (!activeSpaceIds.has(org.id)) toggleSpace(org.id)
+      router.refresh()
+    } catch { setCreateError("Error al unirse al espacio") }
+    finally { setIsJoining(false) }
   }
 
   const openManage = (org: Organization, e: React.MouseEvent) => {
@@ -158,39 +181,65 @@ export function SettingsHub({ creditCards, categories }: Props) {
             </button>
           </div>
 
-          {/* Create space form */}
+          {/* Create / join space form */}
           {showNewSpace && (
             <div className="glass rounded-2xl px-4 py-4 mb-3 space-y-3">
-              <p className="text-sm font-medium" style={{ fontFamily: "var(--font-fraunces, serif)" }}>Nuevo espacio</p>
-              <input
-                type="text"
-                placeholder="Nombre del espacio"
-                value={newSpaceName}
-                onChange={e => setNewSpaceName(e.target.value)}
-                onKeyDown={e => e.key === "Enter" && createSpace()}
-                className="w-full rounded-xl border border-border/50 bg-background px-3 py-2.5 text-sm outline-none focus:border-primary transition-colors"
-              />
-              <button
-                type="button"
-                onClick={() => setNewSpacePersonal(v => !v)}
-                className="flex items-center gap-3 w-full"
-              >
-                <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors ${newSpacePersonal ? "bg-primary/10" : "bg-muted"}`}>
-                  {newSpacePersonal ? <User className="h-4 w-4 text-primary" /> : <Home className="h-4 w-4 text-muted-foreground" />}
-                </div>
-                <div className="text-left">
-                  <p className="text-sm font-medium">{newSpacePersonal ? "Personal" : "Compartido"}</p>
-                  <p className="text-xs text-muted-foreground">{newSpacePersonal ? "Solo vos" : "Con otras personas · genera código de invitación"}</p>
-                </div>
-              </button>
-              {createError && <p className="text-xs text-destructive">{createError}</p>}
-              <button
-                onClick={createSpace}
-                disabled={isCreating || !newSpaceName.trim()}
-                className="w-full rounded-full bg-primary text-primary-foreground py-2.5 text-sm font-semibold disabled:opacity-50 active:scale-[0.97] transition-all"
-              >
-                {isCreating ? "Creando…" : "Crear espacio"}
-              </button>
+              {/* Mode tabs */}
+              <div className="flex rounded-xl bg-muted/60 p-1 gap-1">
+                {(["create", "join"] as const).map((m) => (
+                  <button key={m} onClick={() => { setSpaceMode(m); setCreateError(null) }}
+                    className={`flex-1 py-1.5 rounded-lg text-sm font-medium transition-all ${spaceMode === m ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"}`}>
+                    {m === "create" ? "Crear" : "Unirse"}
+                  </button>
+                ))}
+              </div>
+
+              {spaceMode === "create" ? (
+                <>
+                  <input
+                    type="text"
+                    placeholder="Nombre del espacio"
+                    value={newSpaceName}
+                    onChange={e => setNewSpaceName(e.target.value)}
+                    onKeyDown={e => e.key === "Enter" && createSpace()}
+                    className="w-full rounded-xl border border-border/50 bg-background px-3 py-2.5 text-sm outline-none focus:border-primary transition-colors"
+                  />
+                  <button type="button" onClick={() => setNewSpacePersonal(v => !v)} className="flex items-center gap-3 w-full">
+                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors ${newSpacePersonal ? "bg-primary/10" : "bg-muted"}`}>
+                      {newSpacePersonal ? <User className="h-4 w-4 text-primary" /> : <Home className="h-4 w-4 text-muted-foreground" />}
+                    </div>
+                    <div className="text-left">
+                      <p className="text-sm font-medium">{newSpacePersonal ? "Personal" : "Compartido"}</p>
+                      <p className="text-xs text-muted-foreground">{newSpacePersonal ? "Solo vos" : "Con otras personas · genera código de invitación"}</p>
+                    </div>
+                  </button>
+                  {createError && <p className="text-xs text-destructive">{createError}</p>}
+                  <button onClick={createSpace} disabled={isCreating || !newSpaceName.trim()}
+                    className="w-full rounded-full bg-primary text-primary-foreground py-2.5 text-sm font-semibold disabled:opacity-50 active:scale-[0.97] transition-all">
+                    {isCreating ? "Creando…" : "Crear espacio"}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-2">Ingresá el código que te compartieron</p>
+                    <input
+                      type="text"
+                      placeholder="Ej: ABC123"
+                      value={joinCode}
+                      onChange={e => setJoinCode(e.target.value.toUpperCase())}
+                      onKeyDown={e => e.key === "Enter" && joinSpace()}
+                      maxLength={8}
+                      className="w-full rounded-xl border border-border/50 bg-background px-3 py-2.5 text-sm font-mono uppercase outline-none focus:border-primary transition-colors tracking-widest"
+                    />
+                  </div>
+                  {createError && <p className="text-xs text-destructive">{createError}</p>}
+                  <button onClick={joinSpace} disabled={isJoining || !joinCode.trim()}
+                    className="w-full rounded-full bg-primary text-primary-foreground py-2.5 text-sm font-semibold disabled:opacity-50 active:scale-[0.97] transition-all">
+                    {isJoining ? "Uniéndose…" : "Unirse"}
+                  </button>
+                </>
+              )}
             </div>
           )}
 
