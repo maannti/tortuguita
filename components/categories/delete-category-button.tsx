@@ -124,7 +124,7 @@ export function DeleteCategoryButton({ id, name }: DeleteCategoryButtonProps) {
                 Cancelar
               </Button>
               <Button variant="destructive" onClick={() => handleDelete(true)} disabled={isLoading}>
-                {isLoading ? "Eliminando..." : `Eliminar todo (${billCount + 1})`}
+                {isLoading ? "Eliminando..." : "Sí, eliminar todo"}
               </Button>
             </DialogFooter>
           </>
