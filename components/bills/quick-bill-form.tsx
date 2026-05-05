@@ -166,7 +166,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
           ...(isCreditCard && installments > 1 ? { totalInstallments: installments } : {}),
           assignments: buildAssignments(),
           notes: notes.trim() || "",
-          ...(!isEdit ? { organizationId: selectedOrgId } : {}),
+          organizationId: selectedOrgId,
         }),
       })
       if (!res.ok) { const err = await res.json(); throw new Error(err.error || "Error al guardar") }
@@ -238,10 +238,10 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
             <p className="text-xs text-muted-foreground text-center px-2">{saveHint}</p>
           )}
 
-          {/* Espacio — solo en create mode con múltiples orgs */}
-          {!isEdit && organizations.length > 1 && (
+          {/* Espacio */}
+          {organizations.length > 1 && (
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">¿En qué espacio cargás este gasto?</label>
+              <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Espacio</label>
               <div className="grid grid-cols-2 gap-2">
                 {organizations.map((org) => {
                   const isSelected = selectedOrgId === org.id
