@@ -1,7 +1,7 @@
 "use client"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { ChevronLeft, Check, CreditCard, Banknote, Wallet, Ellipsis, ChevronDown, Plus } from "lucide-react"
+import { ChevronLeft, Check, CreditCard, Banknote, Wallet, Ellipsis, ChevronDown, Plus, User, Home } from "lucide-react"
 import { CardIcon, isNetworkId, BANKS, NetworkId } from "@/components/ui/card-network"
 
 interface Category { id: string; name: string; color: string | null; icon: string | null; isCreditCard: boolean; organizationId: string }
@@ -187,17 +187,28 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
           {!isEdit && organizations.length > 1 && (
             <div className="space-y-1.5">
               <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Espacio</label>
-              <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${Math.min(organizations.length, 3)}, 1fr)` }}>
-                {organizations.map((org) => (
-                  <button
-                    key={org.id}
-                    type="button"
-                    onClick={() => { setSelectedOrgId(org.id); setCategoryId(""); setCardId("") }}
-                    className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border text-sm font-medium transition-all ${selectedOrgId === org.id ? "border-primary bg-primary/5 text-foreground" : "border-border bg-background text-muted-foreground hover:border-foreground/30"}`}
-                  >
-                    {org.isPersonal ? "👤" : "🏠"} {org.name}
-                  </button>
-                ))}
+              <div className="flex gap-2 flex-wrap">
+                {organizations.map((org) => {
+                  const isSelected = selectedOrgId === org.id
+                  return (
+                    <button
+                      key={org.id}
+                      type="button"
+                      onClick={() => { setSelectedOrgId(org.id); setCategoryId(""); setCardId("") }}
+                      className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-sm font-medium transition-all ${isSelected ? "border-primary bg-primary/5 text-foreground" : "border-border bg-background text-muted-foreground hover:border-foreground/30"}`}
+                    >
+                      <div
+                        className="w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 transition-all"
+                        style={{ backgroundColor: isSelected ? "#9D8189" : "#9D818920" }}
+                      >
+                        {org.isPersonal
+                          ? <User className="h-3 w-3" style={{ color: isSelected ? "#fff" : "#9D8189" }} />
+                          : <Home className="h-3 w-3" style={{ color: isSelected ? "#fff" : "#9D8189" }} />}
+                      </div>
+                      {org.name}
+                    </button>
+                  )
+                })}
               </div>
             </div>
           )}
@@ -371,12 +382,12 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
           </div>
 
           {/* División */}
-          {members.length > 1 && (
+          {orgMembers.length > 1 && (
             <div className="space-y-2">
               <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">División</label>
               <div className="space-y-2">
                 {[
-                  { value: "income", label: "Gasto común", desc: hasIncomes ? members.map(m => { const inc = memberIncomes[m.id] || 0; return `${m.name?.split(" ")[0]} ${Math.round((inc / totalIncome) * 100)}%` }).join(" · ") : "Configurar ingresos en Config →" },
+                  { value: "income", label: "Gasto común", desc: hasIncomes ? orgMembers.map(m => { const inc = memberIncomes[m.id] || 0; return `${m.name?.split(" ")[0]} ${Math.round((inc / totalIncome) * 100)}%` }).join(" · ") : "Configurar ingresos en Config →" },
                   { value: "equal",  label: "50/50",        desc: "Partes iguales" },
                   { value: "mine",   label: "Solo mío",     desc: "100% a mi cargo" },
                   ...otherMembers.map(m => ({ value: m.id, label: `Solo de ${m.name?.split(" ")[0]}`, desc: "100% a cargo de ellos" })),
@@ -391,7 +402,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
               {amount > 0 && (
                 <div className="rounded-xl bg-muted/50 px-4 py-3 space-y-1.5">
                   <p className="text-xs text-muted-foreground font-medium">{installments > 1 ? `Cuota mensual de ${formatARS(amountPerInstallment)}` : "División del gasto"}</p>
-                  {members.map((m) => { const share = getMemberShare(m.id); if (share <= 0) return null; return (<div key={m.id} className="flex justify-between items-center"><span className="text-sm text-muted-foreground">{m.name}</span><span className="text-sm font-semibold">{formatARS(share)}</span></div>) })}
+                  {orgMembers.map((m) => { const share = getMemberShare(m.id); if (share <= 0) return null; return (<div key={m.id} className="flex justify-between items-center"><span className="text-sm text-muted-foreground">{m.name}</span><span className="text-sm font-semibold">{formatARS(share)}</span></div>) })}
                 </div>
               )}
             </div>

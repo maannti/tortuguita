@@ -1,18 +1,26 @@
 "use client"
 
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
 import { User, Home, Check } from "lucide-react"
 import { LogoWordmark } from "@/components/ui/logo"
 import { useSpaces } from "@/lib/spaces-context"
 import { cn } from "@/lib/utils"
 
+// Pages where the global space selector should be hidden (form has its own)
+const HIDE_SELECTOR_PATHS = ["/bills/new", "/cuotas/new"]
+function hideSelector(pathname: string) {
+  return HIDE_SELECTOR_PATHS.some(p => pathname === p) ||
+    /^\/bills\/[^/]+\/edit$/.test(pathname)
+}
+
 const MAUVE = "#9D8189"
 const MAUVE_DARK = "#4A3540"
 
 export function SimpleHeader() {
   const router = useRouter()
+  const pathname = usePathname()
   const { spaces, activeSpaceIds, toggleSpace, isHydrated } = useSpaces()
   const [open, setOpen] = useState(false)
   const wrapperRef = useRef<HTMLDivElement>(null)
@@ -33,7 +41,7 @@ export function SimpleHeader() {
     router.refresh()
   }
 
-  const showSpaces = spaces.length > 1 && isHydrated
+  const showSpaces = spaces.length > 1 && isHydrated && !hideSelector(pathname)
 
   return (
     <header
