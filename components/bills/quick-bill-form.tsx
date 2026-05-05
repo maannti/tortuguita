@@ -4,7 +4,13 @@ import { useRouter } from "next/navigation"
 import { ChevronLeft, Check, CreditCard, Banknote, Wallet, Ellipsis, ChevronDown, Plus, User, Home } from "lucide-react"
 import { CardIcon, isNetworkId, BANKS, NetworkId } from "@/components/ui/card-network"
 
-interface Category { id: string; name: string; color: string | null; icon: string | null; isCreditCard: boolean; organizationId: string }
+interface Category {
+  id: string; name: string; color: string | null; icon: string | null; isCreditCard: boolean; organizationId: string
+  currentClosingDate?: Date | string | null
+  currentDueDate?: Date | string | null
+  nextClosingDate?: Date | string | null
+  nextDueDate?: Date | string | null
+}
 interface Member { id: string; name: string | null; email: string | null; organizationId: string }
 interface Organization { id: string; name: string; isPersonal: boolean }
 interface InitialData {
@@ -47,6 +53,10 @@ function formatARS(n: number) { return new Intl.NumberFormat("es-AR", { style: "
 function parseAmount(s: string): number { return parseFloat(s.replace(/\./g, "").replace(",", ".")) || 0 }
 function formatDisplay(n: number): string { if (!n) return ""; const [int, dec] = n.toString().split("."); const f = int.replace(/\B(?=(\d{3})+(?!\d))/g, "."); return dec ? `${f},${dec}` : f }
 function formatDateDisplay(iso: string): string { if (!iso) return ""; const [y, m, d] = iso.split("-"); return `${d}/${m}/${y.slice(2)}` }
+function formatShortDate(d: Date | string | null | undefined): string {
+  if (!d) return ""
+  return new Date(d).toLocaleDateString("es-AR", { day: "numeric", month: "short" })
+}
 
 /** Infer a simple splitMode from saved assignments */
 function inferSplitMode(assignments: Array<{ userId: string; percentage: number }>, currentUserId: string, members: Member[]): string {
@@ -165,6 +175,30 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
   }
 
   const otherMembers = orgMembers.filter((m) => m.id !== currentUserId)
+
+  // Billing period feedback for credit card + selected card + date
+  const selectedCard = isCreditCard && cardId ? ccCards.find(c => c.id === cardId) : null
+  type BillingFeedback =
+    | { type: "current"; dueDate: string; closingDate: string }
+    | { type: "next";    dueDate: string; closingDate: string }
+    | { type: "no-next" }
+    | { type: "no-period" }
+    | null
+  const billingFeedback: BillingFeedback = (() => {
+    if (!selectedCard || !paymentDate) return null
+    const payment = new Date(paymentDate + "T12:00:00")
+    const closing = selectedCard.currentClosingDate ? new Date(selectedCard.currentClosingDate) : null
+    const due     = selectedCard.currentDueDate     ? new Date(selectedCard.currentDueDate)     : null
+    if (!closing || !due) return { type: "no-period" }
+    // normalize to midnight for comparison
+    const p = new Date(payment); p.setHours(0,0,0,0)
+    const c = new Date(closing); c.setHours(0,0,0,0)
+    if (p <= c) return { type: "current", dueDate: formatShortDate(due), closingDate: formatShortDate(closing) }
+    const nextDue     = selectedCard.nextDueDate     ? new Date(selectedCard.nextDueDate)     : null
+    const nextClosing = selectedCard.nextClosingDate ? new Date(selectedCard.nextClosingDate) : null
+    if (!nextDue) return { type: "no-next" }
+    return { type: "next", dueDate: formatShortDate(nextDue), closingDate: formatShortDate(nextClosing) }
+  })()
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col min-h-[calc(100dvh-7rem)]">
@@ -361,6 +395,47 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
             </div>
           </div>
+
+          {/* Billing period feedback */}
+          {billingFeedback && (
+            <div className={`flex items-start gap-2.5 rounded-xl px-3.5 py-3 text-sm ${
+              billingFeedback.type === "current"   ? "bg-[#D8E2DC]/60 text-[#3a5a45]" :
+              billingFeedback.type === "next"      ? "bg-[#FFE5D9]/70 text-[#7a4520]" :
+              billingFeedback.type === "no-next"   ? "bg-amber-50 text-amber-800 border border-amber-200" :
+              "bg-amber-50 text-amber-800 border border-amber-200"
+            }`}>
+              <span className="mt-px text-base leading-none flex-shrink-0">
+                {billingFeedback.type === "current" ? "✓" :
+                 billingFeedback.type === "next"    ? "→" : "⚠"}
+              </span>
+              <div>
+                {billingFeedback.type === "current" && (
+                  <>
+                    <p className="font-medium leading-snug">Entra en el período actual</p>
+                    <p className="text-xs opacity-75 mt-0.5">Cierre {billingFeedback.closingDate} · vence {billingFeedback.dueDate}</p>
+                  </>
+                )}
+                {billingFeedback.type === "next" && (
+                  <>
+                    <p className="font-medium leading-snug">Entra en el próximo período</p>
+                    <p className="text-xs opacity-75 mt-0.5">Ya pasó el cierre · vence {billingFeedback.dueDate}</p>
+                  </>
+                )}
+                {billingFeedback.type === "no-next" && (
+                  <>
+                    <p className="font-medium leading-snug">Fecha posterior al cierre actual</p>
+                    <p className="text-xs opacity-75 mt-0.5">Configurá el próximo período de la tarjeta en <span className="underline">Tarjetas</span></p>
+                  </>
+                )}
+                {billingFeedback.type === "no-period" && (
+                  <>
+                    <p className="font-medium leading-snug">Esta tarjeta no tiene período configurado</p>
+                    <p className="text-xs opacity-75 mt-0.5">Configuralo en <button type="button" className="underline font-semibold" onClick={() => router.push("/cards")}>Tarjetas</button> para ver el impacto correcto</p>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Cuotas */}
           {isCreditCard && (
