@@ -65,11 +65,13 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
 
   function getTx(tx: ParsedTransaction) {
     const ov = txOverrides[tx.id] ?? {}
+    // Default usarUSD=true when there's no ARS amount (pure USD transaction)
+    const defaultUsarUSD = tx.montoARS === null && tx.montoUSD !== null
     return {
       incluir: ov.incluir ?? tx.incluir,
       descripcion: ov.descripcion ?? tx.descripcion,
       categoria: "categoria" in ov ? ov.categoria : tx.categoriasugerida,
-      usarUSD: ov.usarUSD ?? false,
+      usarUSD: ov.usarUSD ?? defaultUsarUSD,
     }
   }
 
@@ -478,15 +480,13 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
                                 <ChevronDown className="h-3 w-3 absolute right-1.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
                               </div>
 
-                              {/* USD toggle */}
-                              {hasUSD && (
+                              {/* USD toggle — solo cuando hay ambas monedas */}
+                              {hasUSD && hasARS && (
                                 <button type="button"
                                   onClick={() => setTxOv(tx.id, { usarUSD: !ov.usarUSD })}
                                   className={`text-xs px-2 py-1 rounded-lg border transition-colors ${ov.usarUSD ? "bg-blue-50 border-blue-200 text-blue-700" : "border-border text-muted-foreground"}`}
                                 >
-                                  {ov.usarUSD
-                                    ? `U$S ${tx.montoUSD?.toFixed(2)} × oficial`
-                                    : hasARS ? "Usar ARS del resumen" : `U$S ${tx.montoUSD?.toFixed(2)}`}
+                                  {ov.usarUSD ? `U$S ${tx.montoUSD?.toFixed(2)} → oficial` : "ARS del resumen"}
                                 </button>
                               )}
                             </div>
@@ -497,18 +497,20 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
                         <div className="flex-shrink-0 text-right">
                           <p className={`text-sm font-semibold ${isDevolucion ? "text-green-600" : "text-foreground"}`}
                             style={{ fontFamily: "var(--font-fraunces, serif)" }}>
-                            {ov.usarUSD && convertedARS !== null
-                              ? formatARS(isDevolucion ? -convertedARS : convertedARS)
-                              : hasUSD && !hasARS
-                                ? `${isDevolucion ? "-" : ""}U$S ${tx.montoUSD?.toFixed(2)}`
-                                : formatARS(isDevolucion ? -monto : monto)}
+                            {ov.usarUSD
+                              ? convertedARS !== null
+                                ? formatARS(isDevolucion ? -convertedARS : convertedARS)
+                                : `U$S ${tx.montoUSD?.toFixed(2)}` // rate not loaded yet
+                              : formatARS(isDevolucion ? -(tx.montoARS ?? 0) : (tx.montoARS ?? 0))}
                           </p>
                           {/* Secondary line */}
                           {hasUSD && (
                             <p className="text-[10px] text-muted-foreground">
                               {ov.usarUSD
                                 ? `U$S ${tx.montoUSD?.toFixed(2)}`
-                                : convertedARS !== null ? `≈ ${formatARS(convertedARS)} al oficial` : `U$S ${tx.montoUSD?.toFixed(2)}`}
+                                : convertedARS !== null
+                                  ? `≈ ${formatARS(convertedARS)} al oficial`
+                                  : null}
                             </p>
                           )}
                         </div>
