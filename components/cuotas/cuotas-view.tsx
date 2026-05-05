@@ -1,7 +1,7 @@
 "use client"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { Plus, CreditCard, ChevronLeft, ChevronRight } from "lucide-react"
+import { Plus, CreditCard, ChevronLeft, ChevronRight, FileText } from "lucide-react"
 import { isNetworkId, CardIcon, BANKS, NetworkId } from "@/components/ui/card-network"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
@@ -189,6 +189,13 @@ export function CuotasView({ cards, monthLabel, monthKey, prevMonth, nextMonth }
           )}
         </div>
       )}
+
+      {/* Importar resumen */}
+      <Link href="/resumen"
+        className="fixed bottom-24 right-20 z-30 flex items-center gap-1.5 px-4 h-11 rounded-full bg-background border border-border text-muted-foreground text-sm font-medium shadow-sm active:scale-95 transition-transform">
+        <FileText className="h-4 w-4" />
+        Importar
+      </Link>
 
       <Link href="/cuotas/new"
         className="fixed bottom-24 right-4 z-30 flex items-center justify-center w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 active:scale-95 transition-transform">
