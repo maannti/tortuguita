@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { QuickBillForm } from "@/components/bills/quick-bill-form"
 import { notFound } from "next/navigation"
 import { format, startOfMonth, endOfMonth } from "date-fns"
+import { getUserOrganizations } from "@/lib/organization-utils"
 
 export default async function EditBillPage({
   params,
@@ -12,34 +13,35 @@ export default async function EditBillPage({
   const session = await auth()
   const { id } = await params
 
-  if (!session?.user?.currentOrganizationId || !session?.user?.id) {
+  if (!session?.user?.id) {
     return <div>Unauthorized</div>
   }
 
-  const orgId = session.user.currentOrganizationId
+  const userOrgs = await getUserOrganizations(session.user.id)
+  const orgIds = userOrgs.map(o => o.id)
   const now = new Date()
 
   const [bill, categories, memberships, incomeRows] = await Promise.all([
     prisma.bill.findFirst({
-      where: { id, organizationId: orgId },
+      where: { id, organizationId: { in: orgIds } },
       include: {
         billType: { select: { isCreditCard: true } },
         assignments: { select: { userId: true, percentage: true } },
       },
     }),
     prisma.billType.findMany({
-      where: { organizationId: orgId },
+      where: { organizationId: { in: orgIds } },
       select: { id: true, name: true, color: true, icon: true, isCreditCard: true },
       orderBy: { name: "asc" },
     }),
     prisma.userOrganization.findMany({
-      where: { organizationId: orgId },
+      where: { organizationId: { in: orgIds } },
       include: { user: { select: { id: true, name: true, email: true } } },
       orderBy: { user: { name: "asc" } },
     }),
     prisma.income.groupBy({
       by: ["userId"],
-      where: { organizationId: orgId, incomeDate: { gte: startOfMonth(now), lte: endOfMonth(now) } },
+      where: { organizationId: { in: orgIds }, incomeDate: { gte: startOfMonth(now), lte: endOfMonth(now) } },
       _sum: { amount: true },
     }),
   ])
