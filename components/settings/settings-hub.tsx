@@ -3,7 +3,7 @@ import { signOut, useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { useTheme } from "next-themes"
 import { useEffect, useState } from "react"
-import { ChevronRight, Sun, Moon, LogOut, User, Home, Check, CreditCard, Tag, Plus, X, Copy, Trash2, Settings2 } from "lucide-react"
+import { ChevronRight, Sun, Moon, LogOut, User, Home, Check, CreditCard, Tag, Plus, X, Copy, Trash2, Settings2, UserMinus } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { useSpaces } from "@/lib/spaces-context"
 
@@ -49,6 +49,11 @@ export function SettingsHub({ creditCards, categories }: Props) {
   const [isLeaving, setIsLeaving] = useState(false)
   const [manageError, setManageError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+
+  // Members management (owner only)
+  type Member = { userId: string; name: string | null; email: string | null; role: string }
+  const [members, setMembers] = useState<Member[]>([])
+  const [removingMemberId, setRemovingMemberId] = useState<string | null>(null)
 
   useEffect(() => { setMounted(true) }, [])
   useEffect(() => {
@@ -110,6 +115,29 @@ export function SettingsHub({ creditCards, categories }: Props) {
     setLeaveConfirm(false)
     setManageError(null)
     setCopied(false)
+    setMembers([])
+    // Load members for shared spaces where current user is owner
+    if (!org.isPersonal && org.role === "owner") {
+      fetch(`/api/organizations/${org.id}/members`)
+        .then(r => r.ok ? r.json() : [])
+        .then(setMembers)
+        .catch(() => {})
+    }
+  }
+
+  const removeMember = async (userId: string) => {
+    if (!managingOrg) return
+    setRemovingMemberId(userId)
+    setManageError(null)
+    try {
+      const res = await fetch(`/api/organizations/${managingOrg.id}/members?userId=${userId}`, { method: "DELETE" })
+      if (!res.ok) { const d = await res.json(); setManageError(d.error || "Error al remover"); return }
+      setMembers(prev => prev.filter(m => m.userId !== userId))
+      setOrganizations(prev => prev.map(o =>
+        o.id === managingOrg.id ? { ...o, memberCount: o.memberCount - 1 } : o
+      ))
+    } catch { setManageError("Error al remover miembro") }
+    finally { setRemovingMemberId(null) }
   }
 
   const saveRename = async () => {
@@ -398,6 +426,42 @@ export function SettingsHub({ creditCards, categories }: Props) {
                   </div>
                 </button>
                 <p className="text-xs text-muted-foreground mt-1.5 px-1">Compartí este código para que otros se unan al espacio.</p>
+              </div>
+            )}
+
+            {/* Members list — shared spaces, owner only */}
+            {managingOrg?.role === "owner" && !managingOrg?.isPersonal && members.length > 0 && (
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Miembros</p>
+                <div className="space-y-1">
+                  {members.map((m) => {
+                    const isMe = m.userId === session?.user?.id
+                    return (
+                      <div key={m.userId} className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-muted/40">
+                        <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 bg-primary/10">
+                          <User className="h-3.5 w-3.5 text-primary" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{m.name || m.email}</p>
+                          {m.role === "owner" && (
+                            <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Owner</p>
+                          )}
+                        </div>
+                        {!isMe && (
+                          <button
+                            onClick={() => removeMember(m.userId)}
+                            disabled={removingMemberId === m.userId}
+                            className="w-7 h-7 flex items-center justify-center rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 active:scale-95 transition-all disabled:opacity-40"
+                          >
+                            {removingMemberId === m.userId
+                              ? <span className="text-xs">…</span>
+                              : <UserMinus className="h-3.5 w-3.5" />}
+                          </button>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
               </div>
             )}
 
