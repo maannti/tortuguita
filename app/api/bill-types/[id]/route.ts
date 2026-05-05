@@ -73,18 +73,40 @@ export async function DELETE(
     if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
     const { id } = await params
+    const force = new URL(request.url).searchParams.get("force") === "true"
     const orgIds = await getOrgIds(session.user.id)
 
     const billType = await prisma.billType.findFirst({
       where: { id, organizationId: { in: orgIds } },
     })
-
     if (!billType) return NextResponse.json({ error: "Bill type not found" }, { status: 404 })
 
-    await prisma.billType.delete({ where: { id } })
+    // Count associated bills (as primary billTypeId or as CC categoryId)
+    const billCount = await prisma.bill.count({
+      where: { OR: [{ billTypeId: id }, { categoryId: id }] },
+    })
+
+    if (billCount > 0 && !force) {
+      return NextResponse.json(
+        { error: "has_bills", count: billCount },
+        { status: 409 }
+      )
+    }
+
+    // Force delete: remove bills first, then the bill type
+    if (billCount > 0) {
+      await prisma.$transaction([
+        prisma.billAssignment.deleteMany({ where: { bill: { OR: [{ billTypeId: id }, { categoryId: id }] } } }),
+        prisma.bill.deleteMany({ where: { OR: [{ billTypeId: id }, { categoryId: id }] } }),
+        prisma.billType.delete({ where: { id } }),
+      ])
+    } else {
+      await prisma.billType.delete({ where: { id } })
+    }
+
     return NextResponse.json({ message: "Bill type deleted successfully" })
   } catch (error) {
     console.error("Error deleting bill type:", error)
-    return NextResponse.json({ error: "Failed to delete bill type" }, { status: 500 })
+    return NextResponse.json({ error: "No se pudo eliminar la categoría" }, { status: 500 })
   }
 }
