@@ -13,7 +13,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
-import { X, Trash2 } from "lucide-react"
+import { Trash2 } from "lucide-react"
 import { useTranslations } from "@/components/providers/language-provider"
 
 interface DeleteBillButtonProps {
@@ -43,7 +43,7 @@ export function DeleteBillButton({ id, label, iconOnly, asMenuItem, fullWidth, r
 
       if (!response.ok) {
         const data = await response.json()
-        setError(data.error || "Failed to delete bill")
+        setError(data.error || "Error al eliminar el gasto")
         return
       }
 
@@ -53,8 +53,8 @@ export function DeleteBillButton({ id, label, iconOnly, asMenuItem, fullWidth, r
       } else {
         router.refresh()
       }
-    } catch (error) {
-      setError("Failed to delete bill")
+    } catch {
+      setError("Error de conexión. Revisá tu conexión e intentá de nuevo.")
     } finally {
       setIsLoading(false)
     }
@@ -86,27 +86,33 @@ export function DeleteBillButton({ id, label, iconOnly, asMenuItem, fullWidth, r
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Delete Bill</DialogTitle>
-          <DialogDescription>
-            Are you sure you want to delete the bill "{label}"? This action
-            cannot be undone.
-          </DialogDescription>
+      <DialogContent className="rounded-3xl border-border/40 bg-card w-[calc(100%-2rem)] max-w-sm p-6 [&>.absolute]:hidden">
+        <DialogHeader className="items-center text-center gap-4 pb-1">
+          <div className="w-14 h-14 rounded-full bg-destructive/10 flex items-center justify-center">
+            <Trash2 className="h-6 w-6 text-destructive" />
+          </div>
+          <div className="space-y-1.5">
+            <DialogTitle className="text-xl" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
+              Eliminar gasto
+            </DialogTitle>
+            <DialogDescription className="text-sm text-muted-foreground leading-relaxed">
+              ¿Eliminás <span className="font-medium text-foreground">"{label}"</span>? Esta acción no se puede deshacer.
+            </DialogDescription>
+          </div>
         </DialogHeader>
         {error && (
-          <div className="p-3 text-sm text-red-500 bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded-md">
-            {error}
-          </div>
+          <p className="text-sm text-destructive text-center pt-1">{error}</p>
         )}
-        <DialogFooter>
-          <Button variant="outline" onClick={() => setIsOpen(false)} disabled={isLoading}>
-            Cancel
+        <div className="flex flex-col gap-2.5 pt-2">
+          <Button variant="destructive" onClick={handleDelete} disabled={isLoading}
+            className="w-full rounded-full py-3.5 text-sm font-semibold disabled:opacity-50">
+            {isLoading ? "Eliminando…" : "Eliminar"}
           </Button>
-          <Button variant="destructive" onClick={handleDelete} disabled={isLoading}>
-            {isLoading ? "Deleting..." : "Delete"}
+          <Button variant="outline" onClick={() => setIsOpen(false)} disabled={isLoading}
+            className="w-full rounded-full py-3.5 text-sm font-medium border-0 bg-muted text-muted-foreground hover:bg-muted/80">
+            Cancelar
           </Button>
-        </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   )
