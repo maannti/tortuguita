@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma"
 import { CuotasView } from "@/components/cuotas/cuotas-view"
 import { format, parse, startOfMonth, endOfMonth, addMonths, subMonths } from "date-fns"
 import { es } from "date-fns/locale"
+import { getUserOrganizations } from "@/lib/organization-utils"
+import { cookies } from "next/headers"
 
 type InstallmentBillSummary = {
   id: string; amount: number; budgetDate: string; currentInstallment: number; isPast: boolean
@@ -21,8 +23,15 @@ interface PageProps { searchParams: Promise<{ month?: string }> }
 
 export default async function CuotasPage({ searchParams }: PageProps) {
   const session = await auth()
-  if (!session?.user?.currentOrganizationId) return <div>Unauthorized</div>
-  const orgId = session.user.currentOrganizationId
+  if (!session?.user?.id) return <div>Unauthorized</div>
+
+  const userOrgs = await getUserOrganizations(session.user.id)
+  const allOrgIds = userOrgs.map(o => o.id)
+  const cookieStore = await cookies()
+  const activeSpaceCookie = cookieStore.get("activeSpaceIds")?.value
+  const activeIds = activeSpaceCookie ? activeSpaceCookie.split(",").filter(Boolean) : []
+  const orgIds = activeIds.length > 0 ? allOrgIds.filter(id => activeIds.includes(id)) : allOrgIds
+
   const params = await searchParams
 
   const now = new Date()
@@ -40,7 +49,7 @@ export default async function CuotasPage({ searchParams }: PageProps) {
     // All installment bills that overlap the selected month
     prisma.bill.findMany({
       where: {
-        organizationId: orgId,
+        organizationId: { in: orgIds },
         totalInstallments: { gt: 1 },
         installmentGroupId: { not: null },
         budgetDate: { gte: monthStart, lte: monthEnd },
@@ -54,7 +63,7 @@ export default async function CuotasPage({ searchParams }: PageProps) {
     // Single CC bills in selected month
     prisma.bill.findMany({
       where: {
-        organizationId: orgId,
+        organizationId: { in: orgIds },
         billType: { isCreditCard: true },
         totalInstallments: { lte: 1 },
         budgetDate: { gte: monthStart, lte: monthEnd },
@@ -66,7 +75,7 @@ export default async function CuotasPage({ searchParams }: PageProps) {
       orderBy: { budgetDate: "asc" },
     }),
     prisma.billType.findMany({
-      where: { organizationId: orgId, isCreditCard: true },
+      where: { organizationId: { in: allOrgIds }, isCreditCard: true },
       orderBy: { name: "asc" },
     }),
   ])
@@ -74,7 +83,7 @@ export default async function CuotasPage({ searchParams }: PageProps) {
   // For each installment group found in this month, also fetch the full plan
   const groupIds = [...new Set(installmentBills.map(b => b.installmentGroupId!))]
   const allGroupBills = groupIds.length > 0 ? await prisma.bill.findMany({
-    where: { organizationId: orgId, installmentGroupId: { in: groupIds } },
+    where: { organizationId: { in: orgIds }, installmentGroupId: { in: groupIds } },
     select: { id: true, amount: true, budgetDate: true, currentInstallment: true, installmentGroupId: true, totalInstallments: true, label: true },
     orderBy: { currentInstallment: "asc" },
   }) : []

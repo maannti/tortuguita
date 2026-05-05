@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { billSchema } from "@/lib/validations/bill"
 import { z } from "zod"
 import { calculateBudgetDate, type BillingPeriod } from "@/lib/budget-date"
+import { getUserOrganizations } from "@/lib/organization-utils"
 
 export async function GET(
   request: NextRequest,
@@ -12,7 +13,7 @@ export async function GET(
   try {
     const session = await auth()
 
-    if (!session?.user?.currentOrganizationId) {
+    if (!session?.user?.id) {
       return NextResponse.json(
         { error: "Unauthorized" },
         { status: 401 }
@@ -20,11 +21,13 @@ export async function GET(
     }
 
     const { id } = await params
+    const userOrgs = await getUserOrganizations(session.user.id)
+    const orgIds = userOrgs.map(o => o.id)
 
     const bill = await prisma.bill.findFirst({
       where: {
         id,
-        organizationId: session.user.currentOrganizationId,
+        organizationId: { in: orgIds },
       },
       include: {
         billType: true,
@@ -81,7 +84,7 @@ export async function PATCH(
   try {
     const session = await auth()
 
-    if (!session?.user?.currentOrganizationId) {
+    if (!session?.user?.id) {
       return NextResponse.json(
         { error: "Unauthorized" },
         { status: 401 }
@@ -92,10 +95,13 @@ export async function PATCH(
     const body = await request.json()
     const data = billSchema.parse(body)
 
+    const userOrgs = await getUserOrganizations(session.user.id)
+    const orgIds = userOrgs.map(o => o.id)
+
     const bill = await prisma.bill.findFirst({
       where: {
         id,
-        organizationId: session.user.currentOrganizationId,
+        organizationId: { in: orgIds },
       },
     })
 
@@ -106,11 +112,11 @@ export async function PATCH(
       )
     }
 
-    // Verify billType belongs to organization
+    // Verify billType belongs to any of the user's organizations
     const billType = await prisma.billType.findFirst({
       where: {
         id: data.billTypeId,
-        organizationId: session.user.currentOrganizationId,
+        organizationId: { in: orgIds },
       },
     })
 
@@ -127,7 +133,7 @@ export async function PATCH(
       const memberships = await prisma.userOrganization.findMany({
         where: {
           userId: { in: userIds },
-          organizationId: session.user.currentOrganizationId,
+          organizationId: bill.organizationId,
         },
       })
 
@@ -218,7 +224,7 @@ export async function DELETE(
   try {
     const session = await auth()
 
-    if (!session?.user?.currentOrganizationId) {
+    if (!session?.user?.id) {
       return NextResponse.json(
         { error: "Unauthorized" },
         { status: 401 }
@@ -226,11 +232,13 @@ export async function DELETE(
     }
 
     const { id } = await params
+    const userOrgs = await getUserOrganizations(session.user.id)
+    const orgIds = userOrgs.map(o => o.id)
 
     const bill = await prisma.bill.findFirst({
       where: {
         id,
-        organizationId: session.user.currentOrganizationId,
+        organizationId: { in: orgIds },
       },
     })
 
