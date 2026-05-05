@@ -25,12 +25,12 @@ export async function GET(
       where: { id, organizationId: { in: orgIds } },
     })
 
-    if (!billType) return NextResponse.json({ error: "Bill type not found" }, { status: 404 })
+    if (!billType) return NextResponse.json({ error: "Categoría no encontrada" }, { status: 404 })
 
     return NextResponse.json(billType)
   } catch (error) {
     console.error("Error fetching bill type:", error)
-    return NextResponse.json({ error: "Failed to fetch bill type" }, { status: 500 })
+    return NextResponse.json({ error: "Error al obtener la categoría" }, { status: 500 })
   }
 }
 
@@ -51,7 +51,7 @@ export async function PATCH(
       where: { id, organizationId: { in: orgIds } },
     })
 
-    if (!billType) return NextResponse.json({ error: "Bill type not found" }, { status: 404 })
+    if (!billType) return NextResponse.json({ error: "Categoría no encontrada" }, { status: 404 })
 
     const updated = await prisma.billType.update({ where: { id }, data })
     return NextResponse.json(updated)
@@ -60,7 +60,7 @@ export async function PATCH(
       return NextResponse.json({ error: error.issues[0].message }, { status: 400 })
     }
     console.error("Error updating bill type:", error)
-    return NextResponse.json({ error: "Failed to update bill type" }, { status: 500 })
+    return NextResponse.json({ error: "Error al actualizar la categoría. Intentá de nuevo." }, { status: 500 })
   }
 }
 
@@ -79,7 +79,7 @@ export async function DELETE(
     const billType = await prisma.billType.findFirst({
       where: { id, organizationId: { in: orgIds } },
     })
-    if (!billType) return NextResponse.json({ error: "Bill type not found" }, { status: 404 })
+    if (!billType) return NextResponse.json({ error: "Categoría no encontrada" }, { status: 404 })
 
     // Count associated bills (as primary billTypeId or as CC categoryId)
     const billCount = await prisma.bill.count({
