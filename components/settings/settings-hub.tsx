@@ -83,7 +83,11 @@ export function SettingsHub({ creditCards, categories }: Props) {
       // Auto-activate the new space
       if (!activeSpaceIds.has(org.id)) toggleSpace(org.id)
       router.refresh()
-    } catch { setCreateError("Error al crear espacio") }
+    } catch (err) {
+      setCreateError(err instanceof TypeError && (err as TypeError).message.includes("fetch")
+        ? "Error de conexión. Revisá tu conexión e intentá de nuevo."
+        : "Error al crear espacio. Intentá de nuevo.")
+    }
     finally { setIsCreating(false) }
   }
 
@@ -103,7 +107,11 @@ export function SettingsHub({ creditCards, categories }: Props) {
       setJoinCode(""); setShowNewSpace(false); setSpaceMode("create")
       if (!activeSpaceIds.has(org.id)) toggleSpace(org.id)
       router.refresh()
-    } catch { setCreateError("Error al unirse al espacio") }
+    } catch (err) {
+      setCreateError(err instanceof TypeError && (err as TypeError).message.includes("fetch")
+        ? "Error de conexión. Revisá tu conexión e intentá de nuevo."
+        : "Error al unirse al espacio. Intentá de nuevo.")
+    }
     finally { setIsJoining(false) }
   }
 
@@ -136,7 +144,7 @@ export function SettingsHub({ creditCards, categories }: Props) {
       setOrganizations(prev => prev.map(o =>
         o.id === managingOrg.id ? { ...o, memberCount: o.memberCount - 1 } : o
       ))
-    } catch { setManageError("Error al remover miembro") }
+    } catch { setManageError("Error de conexión. Revisá tu conexión e intentá de nuevo.") }
     finally { setRemovingMemberId(null) }
   }
 
@@ -154,7 +162,7 @@ export function SettingsHub({ creditCards, categories }: Props) {
       setOrganizations(prev => prev.map(o => o.id === managingOrg.id ? { ...o, name: editName.trim() } : o))
       setManagingOrg(prev => prev ? { ...prev, name: editName.trim() } : null)
       router.refresh()
-    } catch { setManageError("Error al guardar") }
+    } catch { setManageError("Error de conexión. Revisá tu conexión e intentá de nuevo.") }
     finally { setIsSaving(false) }
   }
 
@@ -168,7 +176,7 @@ export function SettingsHub({ creditCards, categories }: Props) {
       setOrganizations(prev => prev.filter(o => o.id !== managingOrg.id))
       setManagingOrg(null)
       router.refresh()
-    } catch { setManageError("Error al eliminar") }
+    } catch { setManageError("Error de conexión. Revisá tu conexión e intentá de nuevo.") }
     finally { setIsDeleting(false) }
   }
 
@@ -182,7 +190,7 @@ export function SettingsHub({ creditCards, categories }: Props) {
       setOrganizations(prev => prev.filter(o => o.id !== managingOrg.id))
       setManagingOrg(null)
       router.refresh()
-    } catch { setManageError("Error al salir del espacio") }
+    } catch { setManageError("Error de conexión. Revisá tu conexión e intentá de nuevo.") }
     finally { setIsLeaving(false) }
   }
 
