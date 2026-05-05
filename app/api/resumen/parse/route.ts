@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { anthropic, MODEL } from "@/lib/anthropic"
 
-export const maxDuration = 60
+export const maxDuration = 300
 
 export interface ParsedTransaction {
   id: string               // temporal, para el frontend
