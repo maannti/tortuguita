@@ -23,7 +23,7 @@ interface PageProps { searchParams: Promise<{ month?: string }> }
 
 export default async function CuotasPage({ searchParams }: PageProps) {
   const session = await auth()
-  if (!session?.user?.id) return <div>Unauthorized</div>
+  if (!session?.user?.id) return <div className="p-8 text-center text-muted-foreground">Sesión no válida. Volvé a iniciar sesión.</div>
 
   const userOrgs = await getUserOrganizations(session.user.id)
   const allOrgIds = userOrgs.map(o => o.id)
