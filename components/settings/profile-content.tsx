@@ -1,7 +1,8 @@
 "use client"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { ChevronLeft, Check } from "lucide-react"
+import { signOut } from "next-auth/react"
+import { ChevronLeft, Check, Trash2 } from "lucide-react"
 
 interface Props {
   user: { name?: string | null; email?: string | null; image?: string | null }
@@ -19,6 +20,9 @@ export function ProfileContent({ user }: Props) {
   const [isSaving, setIsSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [deleteConfirm, setDeleteConfirm] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
@@ -42,6 +46,19 @@ export function ProfileContent({ user }: Props) {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al guardar")
     } finally { setIsSaving(false) }
+  }
+
+  async function handleDelete() {
+    setIsDeleting(true)
+    setDeleteError(null)
+    try {
+      const res = await fetch("/api/users/profile", { method: "DELETE" })
+      if (!res.ok) { const err = await res.json(); throw new Error(err.error || "Error") }
+      await signOut({ callbackUrl: "/login" })
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : "Error al eliminar")
+      setIsDeleting(false)
+    }
   }
 
   return (
@@ -117,6 +134,43 @@ export function ProfileContent({ user }: Props) {
         >
           {saved ? <><Check className="h-4 w-4" />Guardado</> : isSaving ? "Guardando..." : "Guardar cambios"}
         </button>
+
+        {/* Zona de peligro */}
+        <div className="pt-4 mt-2 border-t border-border/40 space-y-3">
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Zona de peligro</p>
+          {deleteError && <div className="rounded-xl bg-destructive/10 text-destructive text-sm px-4 py-3">{deleteError}</div>}
+          {!deleteConfirm ? (
+            <button
+              type="button"
+              onClick={() => setDeleteConfirm(true)}
+              className="w-full flex items-center justify-center gap-2 rounded-xl border border-destructive/30 py-3 text-sm font-medium text-destructive hover:bg-destructive/5 active:scale-[0.98] transition-all"
+            >
+              <Trash2 className="h-4 w-4" />
+              Eliminar mi cuenta
+            </button>
+          ) : (
+            <div className="rounded-xl border border-destructive/40 bg-destructive/5 p-4 space-y-3">
+              <p className="text-sm text-destructive font-medium">¿Estás seguro? Esta acción borra tu cuenta y todos tus datos. No se puede deshacer.</p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                  className="flex-1 rounded-full bg-destructive text-white py-2.5 text-sm font-semibold disabled:opacity-50 active:scale-[0.97] transition-all"
+                >
+                  {isDeleting ? "Eliminando…" : "Sí, eliminar"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setDeleteConfirm(false); setDeleteError(null) }}
+                  className="flex-1 rounded-full bg-muted text-muted-foreground py-2.5 text-sm font-medium active:scale-[0.97] transition-all"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </form>
     </div>
   )
