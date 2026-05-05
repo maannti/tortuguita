@@ -31,12 +31,12 @@ export default async function EditBillPage({
     }),
     prisma.billType.findMany({
       where: { organizationId: { in: orgIds } },
-      select: { id: true, name: true, color: true, icon: true, isCreditCard: true },
+      select: { id: true, name: true, color: true, icon: true, isCreditCard: true, organizationId: true },
       orderBy: { name: "asc" },
     }),
     prisma.userOrganization.findMany({
       where: { organizationId: { in: orgIds } },
-      include: { user: { select: { id: true, name: true, email: true } } },
+      select: { organizationId: true, user: { select: { id: true, name: true, email: true } } },
       orderBy: { user: { name: "asc" } },
     }),
     prisma.income.groupBy({
@@ -48,11 +48,12 @@ export default async function EditBillPage({
 
   if (!bill) notFound()
 
-  const members = memberships.map((m) => m.user)
+  const members = memberships.map((m) => ({ ...m.user, organizationId: m.organizationId }))
   const memberIncomes = incomeRows.reduce((acc: Record<string, number>, r) => {
     acc[r.userId] = Number(r._sum.amount || 0)
     return acc
   }, {})
+  const organizations = userOrgs.map(o => ({ id: o.id, name: o.name, isPersonal: o.isPersonal }))
 
   return (
     <QuickBillForm
@@ -61,6 +62,7 @@ export default async function EditBillPage({
       members={members}
       memberIncomes={memberIncomes}
       currentUserId={session.user.id}
+      organizations={organizations}
       backHref={`/bills/${id}`}
       initialData={{
         id: bill.id,
@@ -76,6 +78,7 @@ export default async function EditBillPage({
           userId: a.userId,
           percentage: Number(a.percentage),
         })),
+        organizationId: bill.organizationId,
       }}
     />
   )

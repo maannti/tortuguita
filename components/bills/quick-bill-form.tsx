@@ -4,8 +4,9 @@ import { useRouter } from "next/navigation"
 import { ChevronLeft, Check, CreditCard, Banknote, Wallet, Ellipsis, ChevronDown, Plus } from "lucide-react"
 import { CardIcon, isNetworkId, BANKS, NetworkId } from "@/components/ui/card-network"
 
-interface Category { id: string; name: string; color: string | null; icon: string | null; isCreditCard: boolean }
-interface Member { id: string; name: string | null; email: string | null }
+interface Category { id: string; name: string; color: string | null; icon: string | null; isCreditCard: boolean; organizationId: string }
+interface Member { id: string; name: string | null; email: string | null; organizationId: string }
+interface Organization { id: string; name: string; isPersonal: boolean }
 interface InitialData {
   id: string
   label: string
@@ -17,12 +18,14 @@ interface InitialData {
   totalInstallments: number | null
   notes: string | null
   assignments: Array<{ userId: string; percentage: number }>
+  organizationId?: string
 }
 interface Props {
   categories: Category[]
   members: Member[]
   memberIncomes: Record<string, number>
   currentUserId: string
+  organizations: Organization[]
   backHref?: string
   defaultInstallments?: number
   mode?: "create" | "edit"
@@ -59,9 +62,14 @@ function inferSplitMode(assignments: Array<{ userId: string; percentage: number 
   return "income"  // default a proporcional si no encaja
 }
 
-export function QuickBillForm({ categories, members, memberIncomes, currentUserId, backHref, defaultInstallments, mode = "create", initialData }: Props) {
+export function QuickBillForm({ categories, members, memberIncomes, currentUserId, organizations, backHref, defaultInstallments, mode = "create", initialData }: Props) {
   const router = useRouter()
   const isEdit = mode === "edit"
+
+  // Space selection (only in create mode; edit uses the bill's existing org)
+  const [selectedOrgId, setSelectedOrgId] = useState<string>(
+    initialData?.organizationId ?? organizations[0]?.id ?? ""
+  )
 
   // Derive initial payment method from initialData
   const initPaymentMethod: PaymentMethod | "" = initialData
@@ -98,8 +106,10 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
   const totalIncome = Object.values(memberIncomes).reduce((s, v) => s + v, 0)
   const hasIncomes = totalIncome > 0
 
-  const normalCats = categories.filter(c => !c.isCreditCard)
-  const ccCards    = categories.filter(c => c.isCreditCard)
+  const orgCategories = categories.filter(c => c.organizationId === selectedOrgId)
+  const normalCats = orgCategories.filter(c => !c.isCreditCard)
+  const ccCards    = orgCategories.filter(c => c.isCreditCard)
+  const orgMembers = members.filter(m => m.organizationId === selectedOrgId)
 
   const billTypeId = isCreditCard ? cardId : categoryId
 
@@ -108,20 +118,20 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
 
   function buildAssignments(): Array<{ userId: string; percentage: number }> {
     if (splitMode === "mine") return [{ userId: currentUserId, percentage: 100 }]
-    if (members.length <= 1) return [{ userId: currentUserId, percentage: 100 }]
-    const specific = members.find((m) => m.id === splitMode)
+    if (orgMembers.length <= 1) return [{ userId: currentUserId, percentage: 100 }]
+    const specific = orgMembers.find((m) => m.id === splitMode)
     if (specific) return [{ userId: specific.id, percentage: 100 }]
     if (splitMode === "income" && hasIncomes) {
       let dist = 0
-      return members.map((m, i) => {
+      return orgMembers.map((m, i) => {
         const inc = memberIncomes[m.id] || 0
-        const pct = i === members.length - 1 ? 100 - dist : Math.round((inc / totalIncome) * 100)
+        const pct = i === orgMembers.length - 1 ? 100 - dist : Math.round((inc / totalIncome) * 100)
         dist += pct
         return { userId: m.id, percentage: pct }
       })
     }
-    const share = Math.floor(100 / members.length); const rem = 100 - share * members.length
-    return members.map((m, i) => ({ userId: m.id, percentage: i === 0 ? share + rem : share }))
+    const share = Math.floor(100 / orgMembers.length); const rem = 100 - share * orgMembers.length
+    return orgMembers.map((m, i) => ({ userId: m.id, percentage: i === 0 ? share + rem : share }))
   }
 
   function getMemberShare(memberId: string): number { const a = buildAssignments().find(a => a.userId === memberId); if (!a) return 0; return (amountPerInstallment * a.percentage) / 100 }
@@ -145,6 +155,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
           ...(isCreditCard && installments > 1 ? { totalInstallments: installments } : {}),
           assignments: buildAssignments(),
           notes: notes.trim() || "",
+          ...(!isEdit ? { organizationId: selectedOrgId } : {}),
         }),
       })
       if (!res.ok) { const err = await res.json(); throw new Error(err.error || "Error al guardar") }
@@ -153,7 +164,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
     } catch (err) { setError(err instanceof Error ? err.message : "Error inesperado") } finally { setIsLoading(false) }
   }
 
-  const otherMembers = members.filter((m) => m.id !== currentUserId)
+  const otherMembers = orgMembers.filter((m) => m.id !== currentUserId)
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col min-h-[calc(100dvh-7rem)]">
@@ -171,6 +182,25 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
       <div className="flex-1 overflow-y-auto">
         <div className="px-4 py-5 pb-28 space-y-5">
           {error && <div className="rounded-xl bg-destructive/10 text-destructive text-sm px-4 py-3">{error}</div>}
+
+          {/* Espacio — solo en create mode con múltiples orgs */}
+          {!isEdit && organizations.length > 1 && (
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Espacio</label>
+              <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${Math.min(organizations.length, 3)}, 1fr)` }}>
+                {organizations.map((org) => (
+                  <button
+                    key={org.id}
+                    type="button"
+                    onClick={() => { setSelectedOrgId(org.id); setCategoryId(""); setCardId("") }}
+                    className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border text-sm font-medium transition-all ${selectedOrgId === org.id ? "border-primary bg-primary/5 text-foreground" : "border-border bg-background text-muted-foreground hover:border-foreground/30"}`}
+                  >
+                    {org.isPersonal ? "👤" : "🏠"} {org.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Descripción */}
           <div className="space-y-1.5">
@@ -234,7 +264,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
                   })()}
                   <ChevronDown className={`h-4 w-4 text-muted-foreground flex-shrink-0 transition-transform ${expandedCats ? "rotate-180" : ""}`} />
                 </button>
-                <button type="button" onClick={() => router.push("/categories/new")} title="Nueva categoría"
+                <button type="button" onClick={() => router.push(`/categories/new?spaceId=${selectedOrgId}&returnTo=${encodeURIComponent("/bills/new")}`)} title="Nueva categoría"
                   className="w-11 rounded-xl border border-border bg-background flex items-center justify-center hover:border-foreground/30 transition-colors">
                   <Plus className="h-4 w-4 text-muted-foreground" />
                 </button>
