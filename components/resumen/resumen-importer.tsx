@@ -62,7 +62,9 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
   // The target space (selectedOrgId) determines where bills are created,
   // but the card selection is about which statement you're uploading.
   const orgCcCards = ccCards
-  const orgMembers = members.filter(m => m.organizationId === selectedOrgId)
+  // Deduplicate members across all spaces — a user may appear once per org they belong to.
+  // Titular assignment is not space-restricted; show every unique person the user shares with.
+  const orgMembers = members.filter((m, i, arr) => arr.findIndex(x => x.id === m.id) === i)
 
   // ── Helpers ──────────────────────────────────────────────────────────────
 
