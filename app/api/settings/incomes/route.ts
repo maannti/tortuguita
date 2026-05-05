@@ -2,31 +2,40 @@ import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { startOfMonth } from "date-fns"
+import { getUserOrganizations } from "@/lib/organization-utils"
 
 // PUT /api/settings/incomes
-// Body: { members: [{ userId, amount }] }
-// Upserts income records for the current month per member using a shared "Sueldo" IncomeType
+// Body: { organizationId, members: [{ userId, amount }] }
 export async function PUT(request: NextRequest) {
   try {
     const session = await auth()
-    if (!session?.user?.currentOrganizationId || !session?.user?.id) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const orgId = session.user.currentOrganizationId
-    const { members } = await request.json() as { members: { userId: string; amount: number }[] }
+    const { organizationId, members } = await request.json() as {
+      organizationId: string
+      members: { userId: string; amount: number }[]
+    }
 
-    if (!Array.isArray(members)) {
+    if (!organizationId || !Array.isArray(members)) {
       return NextResponse.json({ error: "Invalid payload" }, { status: 400 })
+    }
+
+    // Validate user is a member of this org
+    const userOrgs = await getUserOrganizations(session.user.id)
+    const org = userOrgs.find(o => o.id === organizationId)
+    if (!org) {
+      return NextResponse.json({ error: "Organization not found" }, { status: 404 })
     }
 
     // Find or create a "Sueldo" income type for this org
     let incomeType = await prisma.incomeType.findFirst({
-      where: { organizationId: orgId, name: "Sueldo" },
+      where: { organizationId, name: "Sueldo" },
     })
     if (!incomeType) {
       incomeType = await prisma.incomeType.create({
-        data: { name: "Sueldo", organizationId: orgId, isRecurring: true },
+        data: { name: "Sueldo", organizationId, isRecurring: true },
       })
     }
 
@@ -37,7 +46,7 @@ export async function PUT(request: NextRequest) {
       members.map(async ({ userId, amount }) => {
         const existing = await prisma.income.findFirst({
           where: {
-            organizationId: orgId,
+            organizationId,
             userId,
             incomeTypeId: incomeType.id,
             incomeDate: { gte: monthStart },
@@ -55,7 +64,7 @@ export async function PUT(request: NextRequest) {
               amount,
               incomeDate: monthStart,
               incomeTypeId: incomeType.id,
-              organizationId: orgId,
+              organizationId,
               userId,
             },
           })
