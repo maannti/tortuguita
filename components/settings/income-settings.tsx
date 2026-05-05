@@ -5,6 +5,7 @@ import { Check } from "lucide-react"
 interface Member { id: string; name: string | null; email: string | null }
 
 interface Props {
+  organizationId: string
   members: Member[]
   initialIncomes: Record<string, number>
 }
@@ -20,7 +21,7 @@ function formatARS(n: number) {
   return new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(Math.round(n))
 }
 
-export function IncomeSettings({ members, initialIncomes }: Props) {
+export function IncomeSettings({ organizationId, members, initialIncomes }: Props) {
   const [amounts, setAmounts] = useState<Record<string, string>>(
     Object.fromEntries(members.map((m) => [m.id, formatDisplay(initialIncomes[m.id] || 0)]))
   )
@@ -39,6 +40,7 @@ export function IncomeSettings({ members, initialIncomes }: Props) {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          organizationId,
           members: members.map((m) => ({ userId: m.id, amount: parseAmount(amounts[m.id] || "0") })),
         }),
       })
