@@ -12,12 +12,11 @@ export async function GET(request: NextRequest) {
   try {
     const session = await auth()
 
-    if (!session?.user?.currentOrganizationId) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      )
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
+
+    const orgIds = await getUserOrganizations(session.user.id).then(orgs => orgs.map(o => o.id))
 
     const searchParams = request.nextUrl.searchParams
     const billTypeId = searchParams.get("billTypeId")
@@ -26,7 +25,7 @@ export async function GET(request: NextRequest) {
     const endDate = searchParams.get("endDate")
 
     const where: Prisma.BillWhereInput = {
-      organizationId: session.user.currentOrganizationId,
+      organizationId: { in: orgIds },
     }
 
     if (billTypeId) {
