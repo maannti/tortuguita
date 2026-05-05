@@ -8,101 +8,147 @@ export interface ParsedTransaction {
   id: string               // temporal, para el frontend
   fecha: string            // "YYYY-MM-DD"
   descripcionRaw: string   // tal como aparece en el resumen
-  descripcion: string      // nombre limpio normalizado por Claude
+  descripcion: string      // nombre limpio normalizado
   montoARS: number | null
   montoUSD: number | null
   tipo: "compra" | "cuota" | "debito_automatico" | "devolucion"
-  titular: string          // nombre completo del titular en el resumen
+  titular: string          // nombre del titular/tarjeta al que pertenece
   cuotaActual: number | null
   cuotaTotal: number | null
-  categoriasugerida: string | null
-  incluir: boolean         // default: true (excepto ignorados)
-  nota: string | null      // aviso especial (ej: "posible duplicado", "reconstruye 6 cuotas")
+  comprobante: string | null  // ID externo del banco (NRO CUPÓN, COMPROBANTE, VOUCHER, etc.)
+  categoriaSugerida: string | null
+  incluir: boolean
+  nota: string | null
 }
 
 export interface ResumenParseResult {
-  titulares: string[]          // ej: ["MARCOS SANTIAGO FACUNDO", "LUNA SOFIA"]
-  periodoDesde: string | null  // "YYYY-MM-DD"
-  periodoHasta: string | null  // "YYYY-MM-DD" (fecha de cierre)
+  banco: string | null             // banco detectado (ej: "Santander", "ICBC", "Galicia")
+  titulares: string[]              // nombres de titulares/tarjetas detectados
+  periodoDesde: string | null      // "YYYY-MM-DD"
+  periodoHasta: string | null      // "YYYY-MM-DD" (fecha de cierre)
   transacciones: ParsedTransaction[]
 }
 
-const PARSE_PROMPT = `Sos un asistente especializado en parsear resúmenes de tarjeta de crédito argentinos.
-Vas a recibir el texto de un resumen de cuenta de tarjeta de crédito ICBC Mastercard (u otro banco argentino).
+const PARSE_PROMPT = `Sos un experto en parsear resúmenes de tarjetas de crédito argentinas de cualquier banco.
+Vas a recibir un PDF de resumen de cuenta. Puede ser de cualquier banco: Santander, ICBC, Galicia, HSBC, Supervielle, Patagonia, BBVA, Macro, Naranja X, American Express, u otros.
 
-Tu tarea es extraer TODAS las transacciones del detalle del mes y devolver un JSON estructurado.
+Tu tarea es identificar y extraer SOLO las transacciones de tarjeta de crédito (consumos/compras) y devolver JSON estructurado.
 
-INSTRUCCIONES DE EXTRACCIÓN:
+━━━ QUÉ EXTRAER ━━━
 
-1. INCLUIR estas transacciones:
-   - "Compras del Mes" (ARS y/o USD)
-   - "Débitos Automáticos"
-   - "Cuotas del Mes" (SOLO las de cuota 1/N — las demás son seguimiento de cuotas ya registradas)
+INCLUIR:
+• Compras y consumos del período (en pesos y/o dólares)
+• Débitos automáticos en tarjeta de crédito
+• Cuota 1/N de compras en cuotas (primera aparición = nueva compra)
+• Devoluciones / bonificaciones / reintegros
 
-2. IGNORAR completamente (no incluirlas en el array):
-   - SU PAGO / PAGO RECIBIDO
-   - SALDO ANTERIOR
-   - SALDO PENDIENTE
-   - SUBTOTAL
-   - Percepciones fiscales (PERCEPCION IVA, PERCEP AFIP, PERC IIBB, RG 4815, etc.)
-   - Devoluciones de percepciones (DEV PER, DEV PERC)
-   - Intereses y financiación
-   - Cualquier línea que sea un ajuste contable o impuesto del banco
+NO INCLUIR (ignorar completamente):
+• Pagos recibidos / abono del resumen anterior
+• Saldo anterior / saldo pendiente / subtotales
+• Percepciones impositivas (IVA, AFIP, IIBB, SIRCREB, Imp. País, RG 4815, RG 5272, etc.)
+• Devoluciones de percepciones (DEV PER, DEV PERC)
+• Intereses, financiación, cargos por mora
+• Movimientos de cuenta corriente / caja de ahorro / débito
+• Transferencias bancarias entre cuentas
+• Inversiones (plazos fijos, fondos comunes)
+• Seguros sobre saldo deudor
+• Impuesto de sellos
+• Cualquier ajuste contable del banco sin comercio asociado
 
-3. DEVOLUCIONES de compras (Refund, Devolución con monto negativo):
-   - SÍ incluirlas
-   - tipo: "devolucion"
-   - incluir: true (restan al balance, el usuario puede desactivarlas)
-   - el monto va como positivo en el campo correspondiente (el sistema lo convierte a negativo)
+━━━ CUOTAS ━━━
 
-4. CUOTAS DEL MES:
-   - Si el formato es "01/N" (primera cuota): incluir, tipo "cuota", cuotaActual: 1, cuotaTotal: N
-   - Si el formato es "02/N" o mayor: incluir con incluir: false y nota: "Cuota X/Y - ya debería estar registrada"
-   - El monto en el resumen es el de UNA cuota, no el total
+El formato varía por banco:
+• "01/12" o "1/12" en la descripción (ICBC, Macro)
+• Columna separada "Cuota" con "01 de 12" o "1 de 12" (Santander, Galicia)
+• "C:01/12" o "(1/12)" en la descripción (otros)
 
-5. NORMALIZACIÓN DE NOMBRES:
-   - "MERPAGO*BIDCOM" → "Bidcom"
-   - "PAYU*AR*UBER" → "Uber"
-   - "DLO*PEDIDOSYA BURG" → "PedidosYa Burger"
-   - "DLO*PRIMEVIDEO" → "Prime Video"
-   - "APPLE.COM/BILL" → "Apple"
-   - "CLAUDE.AI SUBSCR" → "Claude AI"
-   - "SOUNDIIZ PREMIUM" → "Soundiiz"
-   - "SWISS MEDICAL PREPAGO" → "Swiss Medical"
-   - Eliminar prefijos MERPAGO*, DLO*, PAYU*AR*, etc.
-   - Mantener el nombre del comercio reconocible
+Regla:
+• cuotaActual = 1 → nueva compra → incluir: true, tipo: "cuota"
+• cuotaActual > 1 → ya debería estar registrada → incluir: false, nota: "Cuota X/Y - ya registrada"
+• El monto es el de UNA cuota (no el total)
 
-6. CATEGORÍAS SUGERIDAS (sugerir solo una de estas según el comercio):
-   "Comida", "Transporte", "Salud", "Tecnología", "Entretenimiento", "Ropa", "Hogar", "Viajes", "Supermercado", "Educación", "Servicios", "Otros"
+━━━ DEVOLUCIONES Y BONIFICACIONES ━━━
 
-7. FECHAS: convertir DD-MMM-YY a YYYY-MM-DD
-   - Los meses en español: Ene=01, Feb=02, Mar=03, Abr=04, May=05, Jun=06, Jul=07, Ago=08, Sep=09, Oct=10, Nov=11, Dic=12
-   - El año: si dice "26" → "2026", "25" → "2025", etc.
+Caso normal: tipo "devolucion", incluir: true, monto como positivo.
 
-8. MONTOS:
-   - Usar punto como separador decimal en el JSON (43449,00 → 43449.00)
-   - Si la transacción está en la columna PESOS: montoARS = valor, montoUSD = null
-   - Si está solo en la columna DÓLARES: montoARS = null, montoUSD = valor
-   - Si tiene ambas: llenar ambas
+Caso especial — MISMA transacción con bonificación/descuento (mismo comprobante/voucher o descripción que dice "Bonif.", "Descuento", "Reintegro" sobre una compra del mismo período):
+• Consolidar en UNA sola transacción
+• monto neto = compra - bonificación (siempre positivo)
+• descripcion = "NombreComercio (bonif. -$X.XXX aplicada)"
+• tipo: "compra"
+• NO crear dos entradas separadas
 
-9. TITULARES: detectar todos los titulares (TOTAL TITULAR X, TOTAL ADICIONAL Y) y asignar cada transacción al titular que aparece antes de ella en el documento.
+━━━ COMPROBANTE / ID EXTERNO ━━━
 
-DEVUELVE SOLO JSON VÁLIDO, sin markdown, sin explicaciones. Formato:
+Cada banco usa un identificador distinto para cada operación:
+• ICBC: columna "NRO CUPON" o "CUPÓN"
+• Santander: columna "COMPROBANTE"
+• Galicia: columna "NRO. OPERACIÓN" o "REFERENCIA"
+• HSBC, Supervielle, otros: puede llamarse "VOUCHER", "REF", "TICKET", "NRO OP", etc.
+
+Extraé siempre este ID en el campo "comprobante". Si no existe columna identificadora, usar null.
+
+━━━ TITULARES ━━━
+
+Detectá a quién pertenece cada transacción. Los bancos lo indican de formas distintas:
+• "TOTAL TITULAR: JUAN PEREZ" / "TOTAL ADICIONAL: MARIA PEREZ" (ICBC)
+• "Tarjeta terminada en 7723 | Adriana Rosa Boces" (Santander)
+• Secciones por titular con subtotal
+
+Usá el nombre más corto y reconocible (ej: "Adriana Rosa Boces", no "ADRIANA ROSA BOCES TARJETA TERMINADA EN 7723").
+
+━━━ NORMALIZACIÓN DE DESCRIPCIONES ━━━
+
+Limpiar prefijos de procesadores de pago y normalizar nombres:
+• MERPAGO* / MP* → quitar prefijo
+• DLO* → quitar prefijo
+• PAYU*AR* → quitar prefijo
+• AMZN* → "Amazon"
+• APPLE.COM/BILL → "Apple"
+• NETFLIX.COM → "Netflix"
+• SPOTIFY → "Spotify"
+• CLAUDE.AI → "Claude AI"
+• Mantener el nombre del comercio reconocible en español cuando sea posible
+
+━━━ CATEGORÍAS SUGERIDAS ━━━
+
+Elegir UNA de: "Comida", "Transporte", "Salud", "Tecnología", "Entretenimiento", "Ropa", "Hogar", "Viajes", "Supermercado", "Educación", "Servicios", "Otros"
+
+━━━ FECHAS ━━━
+
+Normalizar a YYYY-MM-DD. Formatos posibles:
+• DD/MM/YY o DD/MM/YYYY (Santander, Galicia)
+• DD-MMM-YY con meses en español: Ene=01 Feb=02 Mar=03 Abr=04 May=05 Jun=06 Jul=07 Ago=08 Sep=09 Oct=10 Nov=11 Dic=12 (ICBC)
+• Año de 2 dígitos: "24" → 2024, "25" → 2025, "26" → 2026
+
+━━━ MONTOS ━━━
+
+• Separador decimal en JSON: siempre punto (43.449,00 → 43449.00)
+• Solo pesos → montoARS = valor, montoUSD = null
+• Solo dólares → montoARS = null, montoUSD = valor
+• Ambos → llenar los dos campos
+• Montos negativos (devoluciones) → guardar como positivo, tipo: "devolucion"
+
+━━━ FORMATO DE RESPUESTA ━━━
+
+DEVUELVE SOLO JSON VÁLIDO, sin markdown, sin texto adicional:
 {
-  "titulares": ["NOMBRE TITULAR", "NOMBRE ADICIONAL"],
-  "periodoDesde": "YYYY-MM-DD o null",
-  "periodoHasta": "YYYY-MM-DD o null",
+  "banco": "Santander",
+  "titulares": ["Nombre Titular", "Nombre Adicional"],
+  "periodoDesde": "YYYY-MM-DD",
+  "periodoHasta": "YYYY-MM-DD",
   "transacciones": [
     {
       "fecha": "YYYY-MM-DD",
-      "descripcionRaw": "texto original del resumen",
+      "descripcionRaw": "texto exacto del PDF",
       "descripcion": "nombre limpio",
       "montoARS": 43449.00,
       "montoUSD": null,
       "tipo": "compra",
-      "titular": "NOMBRE COMPLETO",
+      "titular": "Nombre del titular",
       "cuotaActual": null,
       "cuotaTotal": null,
+      "comprobante": "003469",
       "categoriaSugerida": "Tecnología",
       "incluir": true,
       "nota": null
@@ -124,7 +170,6 @@ export async function POST(request: NextRequest) {
     if (file.size > maxSizeMB * 1024 * 1024)
       return NextResponse.json({ error: `El PDF no puede superar ${maxSizeMB}MB` }, { status: 400 })
 
-    // Convert to base64
     const arrayBuffer = await file.arrayBuffer()
     const base64 = Buffer.from(arrayBuffer).toString("base64")
 
@@ -137,11 +182,7 @@ export async function POST(request: NextRequest) {
           content: [
             {
               type: "document",
-              source: {
-                type: "base64",
-                media_type: "application/pdf",
-                data: base64,
-              },
+              source: { type: "base64", media_type: "application/pdf", data: base64 },
             },
             {
               type: "text",
@@ -154,14 +195,20 @@ export async function POST(request: NextRequest) {
 
     const rawText = response.content[0].type === "text" ? response.content[0].text : ""
 
-    // Parse JSON — Claude might wrap it in code blocks despite instructions
     let parsed: ResumenParseResult
     try {
-      const cleaned = rawText.replace(/^```json\s*/m, "").replace(/^```\s*/m, "").replace(/```\s*$/m, "").trim()
+      const cleaned = rawText
+        .replace(/^```json\s*/m, "")
+        .replace(/^```\s*/m, "")
+        .replace(/```\s*$/m, "")
+        .trim()
       parsed = JSON.parse(cleaned)
     } catch {
       console.error("Claude response could not be parsed as JSON:", rawText.slice(0, 500))
-      return NextResponse.json({ error: "No se pudo interpretar el resumen. Verificá que el PDF sea un resumen de tarjeta." }, { status: 422 })
+      return NextResponse.json(
+        { error: "No se pudo interpretar el resumen. Verificá que el PDF sea un resumen de tarjeta de crédito." },
+        { status: 422 }
+      )
     }
 
     // Add temporal IDs for frontend keying
