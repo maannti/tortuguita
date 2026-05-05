@@ -162,6 +162,7 @@ model Bill {
   totalInstallments   Int?         // e.g., 12 for 12-cuota plan
   currentInstallment  Int?         // e.g., 1, 2, 3...
   installmentGroupId  String?      // shared ID to group related installments
+  externalRef         String?      // bank voucher/comprobante ID for deduplication on re-import
   createdAt           DateTime     @default(now())
   updatedAt           DateTime     @updatedAt
 
@@ -179,10 +180,11 @@ model Bill {
   @@index([userId])
   @@index([paymentDate])
   @@index([installmentGroupId])
-  // Prevent duplicate installments within the same group (defensive — the
-  // app already does the right thing, but a unique index makes it impossible
-  // to drift via direct DB writes or AI tool retries).
+  @@index([externalRef])
+  // Prevent duplicate installments within the same group
   @@unique([installmentGroupId, currentInstallment])
+  // Prevent re-importing the same bank transaction (billTypeId scopes it per card)
+  @@unique([billTypeId, externalRef, currentInstallment])
 }
 
 model BillAssignment {
