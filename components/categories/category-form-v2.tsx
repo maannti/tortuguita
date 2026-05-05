@@ -87,7 +87,11 @@ export function CategoryFormV2({ mode, initialData, organizationId, spaceName, r
       const dest = returnTo || (organizationId ? `/categories?spaceId=${organizationId}` : "/categories")
       router.push(dest); router.refresh()
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error inesperado")
+      if (err instanceof TypeError && err.message.includes("fetch")) {
+        setError("Error de conexión. Revisá tu conexión e intentá de nuevo.")
+      } else {
+        setError(err instanceof Error ? err.message : "Error inesperado. Intentá de nuevo.")
+      }
     } finally { setIsLoading(false) }
   }
 
