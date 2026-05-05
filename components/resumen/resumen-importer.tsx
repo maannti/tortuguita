@@ -21,7 +21,7 @@ const MAUVE = "#9D8189"
 const CATEGORIAS = ["Comida", "Transporte", "Salud", "Tecnología", "Entretenimiento", "Ropa", "Hogar", "Viajes", "Supermercado", "Educación", "Servicios", "Otros"]
 
 function formatARS(n: number) {
-  return new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(Math.abs(Math.round(n)))
+  return new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(Math.round(n))
 }
 
 type Step = "upload" | "parsing" | "review" | "importing" | "done"
@@ -79,7 +79,7 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
     return selectedTxs.reduce((sum, tx) => {
       const ov = getTx(tx)
       const monto = ov.usarUSD ? (tx.montoUSD ?? tx.montoARS ?? 0) : (tx.montoARS ?? tx.montoUSD ?? 0)
-      return sum + monto
+      return sum + (tx.tipo === "devolucion" ? -monto : monto)
     }, 0)
   }
 
@@ -448,7 +448,9 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
                         <div className="flex-shrink-0 text-right">
                           <p className={`text-sm font-semibold ${isDevolucion ? "text-green-600" : "text-foreground"}`}
                             style={{ fontFamily: "var(--font-fraunces, serif)" }}>
-                            {isDevolucion ? "+" : ""}{hasUSD && !hasARS ? `U$S ${monto.toFixed(2)}` : formatARS(monto)}
+                            {hasUSD && !hasARS
+                              ? `${isDevolucion ? "-" : ""}U$S ${monto.toFixed(2)}`
+                              : formatARS(isDevolucion ? -monto : monto)}
                           </p>
                           {hasUSD && hasARS && (
                             <p className="text-[10px] text-muted-foreground">U$S {tx.montoUSD?.toFixed(2)}</p>
