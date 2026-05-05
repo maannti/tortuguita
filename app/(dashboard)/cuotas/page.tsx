@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { CuotasView } from "@/components/cuotas/cuotas-view"
-import { format, parse, startOfMonth, endOfMonth, addMonths, subMonths } from "date-fns"
+import { format, parse, startOfMonth, endOfMonth, addMonths } from "date-fns"
 import { es } from "date-fns/locale"
 import { getUserOrganizations } from "@/lib/organization-utils"
 import { cookies } from "next/headers"

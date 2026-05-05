@@ -260,7 +260,6 @@ export function SettingsHub({ creditCards, categories }: Props) {
           <div className="glass rounded-2xl divide-y divide-white/60 overflow-hidden">
             {[
               { label: "Ingresos del mes", desc: "División proporcional de gastos", href: "/settings/organization" },
-              { label: "Organización",     desc: "Miembros, código de invitación",  href: "/settings/organization" },
               { label: "Perfil",           desc: "Nombre, contraseña",              href: "/settings/profile" },
             ].map((item) => (
               <button key={item.label} onClick={() => router.push(item.href)}
@@ -298,7 +297,7 @@ export function SettingsHub({ creditCards, categories }: Props) {
 
       {/* ── Space management dialog ── */}
       <Dialog open={!!managingOrg} onOpenChange={(open) => { if (!open) { setManagingOrg(null); setDeleteConfirm(false); setManageError(null) } }}>
-        <DialogContent className="rounded-3xl border-border/40 bg-card w-[min(calc(100vw-2rem),24rem)] p-6 [&>.absolute]:hidden">
+        <DialogContent className="rounded-3xl border-border/40 bg-card w-[min(calc(100vw-2rem),24rem)] p-6 [&>.absolute]:hidden inset-auto left-1/2 top-[40%] -translate-x-1/2 -translate-y-1/2 max-h-[80dvh] overflow-y-auto">
           <DialogHeader className="text-left gap-1 pb-2">
             <DialogTitle style={{ fontFamily: "var(--font-fraunces, serif)" }}>
               {managingOrg?.name}
