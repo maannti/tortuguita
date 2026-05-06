@@ -12,6 +12,7 @@ const transactionSchema = z.object({
   montoARS: z.number().nullable(),
   montoUSD: z.number().nullable(),
   tipo: z.enum(["compra", "cuota", "debito_automatico", "devolucion"]),
+  cuotaActual: z.number().nullable().optional(),
   cuotaTotal: z.number().nullable(),
   usarUSD: z.boolean().default(false),
   billTypeId: z.string().min(1),
@@ -82,17 +83,18 @@ export async function POST(request: NextRequest) {
         if (finalAmount === 0) { errors.push(`Monto cero, ignorado: ${tx.descripcion}`); continue }
 
         const totalInstallments = tx.cuotaTotal ?? 1
+        const cuotaActual = tx.cuotaActual ?? 1
         const externalRef = tx.comprobante ?? null
 
         // ── Dedup check ──────────────────────────────────────────────────────
-        // Skip if a bill with the same card + comprobante + installment already exists
+        // Skip if a bill with the same card + comprobante + this installment already exists
         if (externalRef) {
           const existing = await prisma.bill.findUnique({
             where: {
               billTypeId_externalRef_currentInstallment: {
                 billTypeId: tx.billTypeId,
                 externalRef,
-                currentInstallment: 1, // cuota 1 is always the anchor
+                currentInstallment: cuotaActual,
               },
             },
             select: { id: true },
@@ -105,13 +107,15 @@ export async function POST(request: NextRequest) {
         // ─────────────────────────────────────────────────────────────────────
 
         if (totalInstallments > 1) {
+          // Create from cuotaActual onward — handles both cuota 1 (full series)
+          // and mid-series imports (e.g. cuota 3/6 for new users with no prior imports)
           const installmentGroupId = randomUUID()
           const amountPerCuota = Math.round((finalAmount / totalInstallments) * 100) / 100
 
           const promises = []
-          for (let i = 1; i <= totalInstallments; i++) {
+          for (let i = cuotaActual; i <= totalInstallments; i++) {
             const cuotaPaymentDate = new Date(paymentDate)
-            cuotaPaymentDate.setMonth(cuotaPaymentDate.getMonth() + (i - 1))
+            cuotaPaymentDate.setMonth(cuotaPaymentDate.getMonth() + (i - cuotaActual))
             const { budgetDate: cuotaBudgetDate } = calculateBudgetDate(cuotaPaymentDate, true, billingPeriod)
 
             promises.push(prisma.bill.create({

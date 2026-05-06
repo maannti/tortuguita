@@ -64,8 +64,9 @@ El formato varía por banco:
 
 Regla:
 • cuotaActual = 1 → nueva compra → incluir: true, tipo: "cuota"
-• cuotaActual > 1 → ya debería estar registrada → incluir: false, nota: "Cuota X/Y - ya registrada"
+• cuotaActual > 1 → incluir: true, tipo: "cuota", nota: "Cuota X/Y — puede que ya esté registrada si importaste resúmenes anteriores"
 • El monto es el de UNA cuota (no el total)
+• NUNCA pongas incluir: false por ser cuota > 1. El sistema verifica duplicados automáticamente.
 
 ━━━ DEVOLUCIONES Y BONIFICACIONES ━━━
 
