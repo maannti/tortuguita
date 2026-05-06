@@ -27,7 +27,7 @@ interface Props {
 }
 
 function formatARS(n: number) {
-  return new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(Math.round(n))
+  return new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(n)
 }
 function capitalize(s: string) { return s.charAt(0).toUpperCase() + s.slice(1) }
 
