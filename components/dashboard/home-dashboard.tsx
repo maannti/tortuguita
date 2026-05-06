@@ -37,7 +37,7 @@ export interface SpaceData {
 
 interface Props { month: string; monthKey: string; availableMonths: string[]; spaces: SpaceData[] }
 
-function formatARS(n: number) { return new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(Math.round(n)) }
+function formatARS(n: number) { return new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n) }
 function capitalize(s: string) { return s.charAt(0).toUpperCase() + s.slice(1) }
 
 export function HomeDashboard({ month, monthKey, availableMonths, spaces }: Props) {
