@@ -303,14 +303,6 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
                 className="flex-1 bg-transparent text-sm focus:outline-none"
               />
             </div>
-            {amount > 0 && (
-              <p
-                className="text-right text-2xl font-medium text-foreground/80 pr-1 leading-none"
-                style={{ fontFamily: "var(--font-fraunces, serif)" }}
-              >
-                {formatARS(amount)}
-              </p>
-            )}
           </div>
 
           {/* Categoría — siempre visible cuando no es crédito */}

@@ -50,9 +50,9 @@ function formatARS(n: number) {
   return new Intl.NumberFormat("es-AR", {
     style: "currency",
     currency: "ARS",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(Math.round(n))
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(n)
 }
 
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
@@ -198,13 +198,32 @@ export function BillDetail({ bill }: BillDetailProps) {
 
           {/* Assignments */}
           {bill.assignments.length > 0 && (
-            <div className="rounded-2xl border border-border/50 bg-card px-4 py-1">
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground pt-3 pb-1">
+            <div
+              className="rounded-2xl overflow-hidden px-5 py-4"
+              style={{ background: `linear-gradient(135deg, ${accentColor}12 0%, ${accentColor}22 100%)` }}
+            >
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground text-center mb-3">
                 Distribución
               </p>
-              {bill.assignments.map((a) => (
-                <Row key={a.id} label={a.user.name ?? "—"} value={`${a.percentage}%`} />
-              ))}
+              <div className={`grid gap-3 ${bill.assignments.length === 1 ? "grid-cols-1" : "grid-cols-2"}`}>
+                {bill.assignments.map((a) => {
+                  const memberAmount = (bill.amount * Number(a.percentage)) / 100
+                  return (
+                    <div key={a.id} className="rounded-xl bg-background/60 backdrop-blur-sm px-4 py-3 text-center">
+                      <p className="text-xs text-muted-foreground font-medium truncate mb-1">
+                        {a.user.name ?? "—"}
+                      </p>
+                      <p
+                        className="text-xl font-medium text-foreground leading-none"
+                        style={{ fontFamily: "var(--font-fraunces, serif)" }}
+                      >
+                        {formatARS(memberAmount)}
+                      </p>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">{Math.round(Number(a.percentage))}%</p>
+                    </div>
+                  )
+                })}
+              </div>
             </div>
           )}
         </div>
