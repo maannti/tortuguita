@@ -35,14 +35,31 @@ export interface SpaceData {
   creditCardGroups: CreditCardGroup[]
 }
 
-interface Props { month: string; monthKey: string; availableMonths: string[]; spaces: SpaceData[] }
+interface Props { month: string; monthKey: string; availableMonths: string[]; spaces: SpaceData[]; currentUserId: string }
 
-function formatARS(n: number) { return new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n) }
+function formatARS(n: number) { return new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(n) }
 function capitalize(s: string) { return s.charAt(0).toUpperCase() + s.slice(1) }
 
-export function HomeDashboard({ month, monthKey, availableMonths, spaces }: Props) {
+/** Renders a currency amount with superscript cents. Omits cents when they are "00". */
+function HeroAmount({ amount, className }: { amount: number; className?: string }) {
+  const full = new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount)
+  const commaIdx = full.lastIndexOf(",")
+  const intPart = commaIdx >= 0 ? full.slice(0, commaIdx) : full
+  const decPart = commaIdx >= 0 ? full.slice(commaIdx + 1) : ""
+  return (
+    <span className={className}>
+      {intPart}
+      {decPart && decPart !== "00" && (
+        <sup className="text-[0.42em] align-super leading-none font-medium">,{decPart}</sup>
+      )}
+    </span>
+  )
+}
+
+export function HomeDashboard({ month, monthKey, availableMonths, spaces, currentUserId }: Props) {
   const router = useRouter()
   const [showPicker, setShowPicker] = useState(false)
+  const [showMyPart, setShowMyPart] = useState(false)
 
   const { activeSpaceIds } = useSpaces()
 
@@ -53,6 +70,12 @@ export function HomeDashboard({ month, monthKey, availableMonths, spaces }: Prop
   // Combine data from active spaces
   const activeSpaces = spaces.filter(s => activeSpaceIds.has(s.id))
   const totalAmount = activeSpaces.reduce((s, sp) => s + sp.totalAmount, 0)
+  const myAmount = activeSpaces.reduce((s, sp) => {
+    const me = sp.members.find(m => m.id === currentUserId)
+    return s + (me?.expenses ?? sp.totalAmount)
+  }, 0)
+  const hasSharedSpace = activeSpaces.some(sp => !sp.isPersonal && sp.members.length > 1)
+  const displayAmount = showMyPart ? myAmount : totalAmount
   const recentExpenses = activeSpaces.flatMap(sp => sp.recentExpenses)
   const creditCardGroups = activeSpaces.flatMap(sp => sp.creditCardGroups)
   const members = activeSpaces.length === 1 ? activeSpaces[0].members : []
@@ -97,14 +120,35 @@ export function HomeDashboard({ month, monthKey, availableMonths, spaces }: Prop
             </div>
 
             {/* Big total */}
-            <div className="text-center">
-              <p className="text-[11px] font-medium text-[#9D8189] uppercase tracking-wide mb-1.5">Total del mes</p>
-              <p
-                className="text-5xl font-medium text-[#4A3540] leading-none tracking-tight"
-                style={{ fontFamily: "var(--font-fraunces, serif)" }}
-              >
-                {formatARS(totalAmount)}
-              </p>
+            <div className="text-center space-y-2">
+              <p className="text-[11px] font-medium text-[#9D8189] uppercase tracking-wide">Total del mes</p>
+              <HeroAmount
+                amount={displayAmount}
+                className="text-5xl font-medium text-[#4A3540] leading-none tracking-tight block"
+              />
+              {/* Toggle Total / Mi parte — only shown when a shared space is active */}
+              {hasSharedSpace && (
+                <div className="flex items-center justify-center pt-1">
+                  <div className="flex rounded-full bg-white/40 backdrop-blur-sm p-0.5">
+                    <button
+                      onClick={() => setShowMyPart(false)}
+                      className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-all ${
+                        !showMyPart ? "bg-white/80 text-[#4A3540] shadow-sm" : "text-[#9D8189]"
+                      }`}
+                    >
+                      Total
+                    </button>
+                    <button
+                      onClick={() => setShowMyPart(true)}
+                      className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-all ${
+                        showMyPart ? "bg-white/80 text-[#4A3540] shadow-sm" : "text-[#9D8189]"
+                      }`}
+                    >
+                      Mi parte
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Member split — only shown when exactly 1 space is active */}
