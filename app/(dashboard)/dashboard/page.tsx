@@ -127,6 +127,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       monthKey={format(monthStart, "yyyy-MM")}
       availableMonths={availableMonths}
       spaces={spaces}
+      currentUserId={userId}
     />
   )
 }
