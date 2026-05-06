@@ -1,5 +1,5 @@
 "use client"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { ChevronLeft, Check, CreditCard, Banknote, Wallet, Ellipsis, ChevronDown, Plus, User, Home } from "lucide-react"
 import { CardIcon, isNetworkId, BANKS, NetworkId } from "@/components/ui/card-network"
@@ -110,6 +110,43 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
   )
   const [expandedCats, setExpandedCats] = useState(false)
 
+  // ── Draft persistence (create mode only) ────────────────────────────────
+  const DRAFT_KEY = "new-bill-draft"
+
+  // Restore draft on mount
+  useEffect(() => {
+    if (isEdit) return
+    try {
+      const raw = sessionStorage.getItem(DRAFT_KEY)
+      if (!raw) return
+      const d = JSON.parse(raw)
+      if (d.label)         setLabel(d.label)
+      if (d.amountDisplay) setAmountDisplay(d.amountDisplay)
+      if (d.notes)         setNotes(d.notes)
+      if (d.categoryId)    setCategoryId(d.categoryId)
+      if (d.paymentMethod) setPaymentMethod(d.paymentMethod)
+      // Only restore cardId if the card still exists in the available list
+      // (covers the case where you navigate away to create a card and return)
+      if (d.cardId && categories.some(c => c.id === d.cardId && c.isCreditCard)) setCardId(d.cardId)
+      if (d.installments)  setInstallments(d.installments)
+      if (d.splitMode)     setSplitMode(d.splitMode)
+      if (d.paymentDate)   setPaymentDate(d.paymentDate)
+      if (d.selectedOrgId) setSelectedOrgId(d.selectedOrgId)
+    } catch {}
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Save draft on every change
+  useEffect(() => {
+    if (isEdit) return
+    try {
+      sessionStorage.setItem(DRAFT_KEY, JSON.stringify({
+        label, amountDisplay, notes, categoryId, paymentMethod, cardId,
+        installments, splitMode, paymentDate, selectedOrgId,
+      }))
+    } catch {}
+  }, [label, amountDisplay, notes, categoryId, paymentMethod, cardId, installments, splitMode, paymentDate, selectedOrgId, isEdit])
+  // ─────────────────────────────────────────────────────────────────────────
+
   const isCreditCard = paymentMethod === "credit"
   const amount = parseAmount(amountDisplay)
   const amountPerInstallment = installments > 1 ? amount / installments : amount
@@ -170,6 +207,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
         }),
       })
       if (!res.ok) { const err = await res.json(); throw new Error(err.error || "Error al guardar") }
+      try { sessionStorage.removeItem(DRAFT_KEY) } catch {}
       const dest = isEdit ? `/bills/${initialData!.id}` : "/bills"
       router.push(dest); router.refresh()
     } catch (err) {
@@ -273,9 +311,9 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
             </div>
           )}
 
-          {/* Descripción */}
+          {/* Título del gasto */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Descripción</label>
+            <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Título del gasto</label>
             <input type="text" value={label} onChange={(e) => setLabel(e.target.value)} placeholder="ej. Tele UWU, vinilos, alquiler..." className="w-full rounded-xl border bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" autoFocus={!isEdit} />
           </div>
 
@@ -381,8 +419,8 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
                 <button key={pm.value} type="button"
                   onClick={() => {
                     setPaymentMethod(pm.value)
-                    if (pm.value !== "credit") { setCardId(""); setInstallments(1); setCustomInstallments(""); setCategoryId("") }
-                    else { setCategoryId("") }
+                    if (pm.value !== "credit") { setCardId(""); setInstallments(1); setCustomInstallments("") }
+                    // categoryId se mantiene al cambiar medio de pago para no perder la selección
                   }}
                   className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 text-sm text-left transition-colors ${paymentMethod === pm.value ? "border-primary bg-primary/5 font-medium text-foreground" : "border-border bg-background text-muted-foreground hover:border-foreground/30"}`}>
                   {pm.icon}
