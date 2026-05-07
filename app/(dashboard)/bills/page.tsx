@@ -52,9 +52,9 @@ export default async function BillsPage({ searchParams }: PageProps) {
   // For CC bills without a category: use the card name as fallback.
   // For non-CC bills: use the bill type (same as category for regular bills).
   const catGroupMap = new Map<string, {
-    name: string; color: string; icon: string | null; total: number
+    name: string; color: string; icon: string | null; total: number; totalUSD: number | null
     bills: Array<{
-      id: string; label: string; amount: number; budgetDate: string
+      id: string; label: string; amount: number; amountUSD: number | null; budgetDate: string
       cardName: string | null; currentInstallment: number | null; totalInstallments: number | null
     }>
   }>()
@@ -72,14 +72,17 @@ export default async function BillsPage({ searchParams }: PageProps) {
     }
 
     if (!catGroupMap.has(catName)) {
-      catGroupMap.set(catName, { name: catName, color: catColor, icon: catIcon, total: 0, bills: [] })
+      catGroupMap.set(catName, { name: catName, color: catColor, icon: catIcon, total: 0, totalUSD: null, bills: [] })
     }
     const g = catGroupMap.get(catName)!
+    const billUSD = bill.amountUSD ? Number(bill.amountUSD) : null
     g.total += Number(bill.amount)
+    if (billUSD !== null) g.totalUSD = (g.totalUSD ?? 0) + billUSD
     g.bills.push({
       id: bill.id,
       label: bill.label,
       amount: Number(bill.amount),
+      amountUSD: billUSD,
       budgetDate: format(new Date(bill.budgetDate), "d MMM"),
       cardName: bill.billType.isCreditCard ? bill.billType.name : null,
       currentInstallment: bill.currentInstallment,
@@ -89,6 +92,7 @@ export default async function BillsPage({ searchParams }: PageProps) {
 
   const categoryGroups = Array.from(catGroupMap.values())
   const grandTotal = categoryGroups.reduce((s, g) => s + g.total, 0)
+  const hasAnyUSD = categoryGroups.some(g => g.bills.some(b => b.amountUSD !== null))
 
   return (
     <BillsView
@@ -97,6 +101,7 @@ export default async function BillsPage({ searchParams }: PageProps) {
       availableMonths={availableMonths}
       categoryGroups={categoryGroups}
       grandTotal={grandTotal}
+      hasAnyUSD={hasAnyUSD}
     />
   )
 }
