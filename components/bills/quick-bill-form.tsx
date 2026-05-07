@@ -17,6 +17,7 @@ interface InitialData {
   id: string
   label: string
   amount: number
+  amountUSD?: number | null
   billTypeId: string
   categoryId?: string | null
   isCreditCard: boolean
@@ -94,6 +95,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
   const [error, setError] = useState<string | null>(null)
   const [label, setLabel] = useState(initialData?.label ?? "")
   const [amountDisplay, setAmountDisplay] = useState(initialData ? formatDisplay(initialData.amount) : "")
+  const [amountUSDDisplay, setAmountUSDDisplay] = useState(initialData?.amountUSD ? String(initialData.amountUSD) : "")
   const [notes, setNotes] = useState(initialData?.notes ?? "")
   // For non-CC: categoryId maps to billTypeId. For CC: categoryId maps to the new categoryId field.
   const [categoryId, setCategoryId] = useState(
@@ -121,9 +123,10 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
       const raw = sessionStorage.getItem(DRAFT_KEY)
       if (!raw) return
       const d = JSON.parse(raw)
-      if (d.label)         setLabel(d.label)
-      if (d.amountDisplay) setAmountDisplay(d.amountDisplay)
-      if (d.notes)         setNotes(d.notes)
+      if (d.label)             setLabel(d.label)
+      if (d.amountDisplay)     setAmountDisplay(d.amountDisplay)
+      if (d.amountUSDDisplay)  setAmountUSDDisplay(d.amountUSDDisplay)
+      if (d.notes)             setNotes(d.notes)
       if (d.categoryId)    setCategoryId(d.categoryId)
       if (d.paymentMethod) setPaymentMethod(d.paymentMethod)
       // Only restore cardId if the card still exists in the available list
@@ -141,11 +144,11 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
     if (isEdit) return
     try {
       sessionStorage.setItem(DRAFT_KEY, JSON.stringify({
-        label, amountDisplay, notes, categoryId, paymentMethod, cardId,
+        label, amountDisplay, amountUSDDisplay, notes, categoryId, paymentMethod, cardId,
         installments, splitMode, paymentDate, selectedOrgId,
       }))
     } catch {}
-  }, [label, amountDisplay, notes, categoryId, paymentMethod, cardId, installments, splitMode, paymentDate, selectedOrgId, isEdit])
+  }, [label, amountDisplay, amountUSDDisplay, notes, categoryId, paymentMethod, cardId, installments, splitMode, paymentDate, selectedOrgId, isEdit])
   // ─────────────────────────────────────────────────────────────────────────
 
   const isCreditCard = paymentMethod === "credit"
@@ -198,6 +201,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
         body: JSON.stringify({
           label: label.trim(),
           amount,
+          amountUSD: amountUSDDisplay ? parseFloat(amountUSDDisplay.replace(",", ".")) || null : null,
           paymentDate: new Date(paymentDate + "T12:00:00").toISOString(),
           billTypeId,
           categoryId: isCreditCard ? (categoryId || null) : null,
@@ -339,6 +343,27 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
                 }}
                 onBlur={() => { const n = parseAmount(amountDisplay); if (n > 0) setAmountDisplay(formatDisplay(n)) }}
                 placeholder="0"
+                className="flex-1 bg-transparent text-sm focus:outline-none"
+              />
+            </div>
+          </div>
+
+          {/* Monto en USD — opcional, visible siempre */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Monto en USD <span className="normal-case font-normal">(opcional)</span>
+            </label>
+            <div className="flex items-center gap-2 rounded-xl border bg-background px-4 py-3 focus-within:ring-2 focus-within:ring-primary/30">
+              <span className="text-muted-foreground font-medium text-sm">U$S</span>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={amountUSDDisplay}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/[^0-9.,]/g, "").replace(",", ".")
+                  setAmountUSDDisplay(val)
+                }}
+                placeholder="0.00"
                 className="flex-1 bg-transparent text-sm focus:outline-none"
               />
             </div>
