@@ -110,7 +110,9 @@ export async function POST(request: NextRequest) {
           // Create from cuotaActual onward — handles both cuota 1 (full series)
           // and mid-series imports (e.g. cuota 3/6 for new users with no prior imports)
           const installmentGroupId = randomUUID()
-          const amountPerCuota = Math.round((finalAmount / totalInstallments) * 100) / 100
+          // The parser already extracts the per-cuota amount (see parse route:
+          // "El monto es el de UNA cuota (no el total)"), so we use finalAmount directly.
+          const amountPerCuota = finalAmount
 
           const promises = []
           for (let i = cuotaActual; i <= totalInstallments; i++) {
@@ -118,7 +120,7 @@ export async function POST(request: NextRequest) {
             cuotaPaymentDate.setMonth(cuotaPaymentDate.getMonth() + (i - cuotaActual))
             const { budgetDate: cuotaBudgetDate } = calculateBudgetDate(cuotaPaymentDate, true, billingPeriod)
 
-            const usdPerCuota = tx.montoUSD ? Math.round((tx.montoUSD / totalInstallments) * 100) / 100 : null
+            const usdPerCuota = tx.montoUSD ?? null
             promises.push(prisma.bill.create({
               data: {
                 label: tx.descripcion,
