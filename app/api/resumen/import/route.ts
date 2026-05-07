@@ -118,10 +118,12 @@ export async function POST(request: NextRequest) {
             cuotaPaymentDate.setMonth(cuotaPaymentDate.getMonth() + (i - cuotaActual))
             const { budgetDate: cuotaBudgetDate } = calculateBudgetDate(cuotaPaymentDate, true, billingPeriod)
 
+            const usdPerCuota = tx.montoUSD ? Math.round((tx.montoUSD / totalInstallments) * 100) / 100 : null
             promises.push(prisma.bill.create({
               data: {
                 label: tx.descripcion,
                 amount: amountPerCuota,
+                amountUSD: usdPerCuota,
                 paymentDate: cuotaPaymentDate,
                 budgetDate: cuotaBudgetDate,
                 billTypeId: tx.billTypeId,
@@ -145,6 +147,7 @@ export async function POST(request: NextRequest) {
             data: {
               label: tx.descripcion,
               amount: finalAmount,
+              amountUSD: tx.montoUSD || null,
               paymentDate,
               budgetDate,
               billTypeId: tx.billTypeId,

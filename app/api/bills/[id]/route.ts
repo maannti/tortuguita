@@ -171,6 +171,7 @@ export async function PATCH(
       data: {
         label: data.label,
         amount: data.amount,
+        amountUSD: data.amountUSD ?? null,
         paymentDate: data.paymentDate,
         budgetDate,
         dueDate: data.dueDate || null,
