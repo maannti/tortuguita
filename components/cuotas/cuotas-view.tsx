@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils"
 import { MonthPicker } from "@/components/ui/month-picker"
 
 interface InstallmentBill { id: string; amount: number; budgetDate: string; currentInstallment: number; isPast: boolean }
-interface InstallmentGroup { groupId: string; label: string; totalInstallments: number; bills: InstallmentBill[]; memberNames: string[] }
+interface InstallmentGroup { groupId: string; label: string; totalInstallments: number; minInstallment: number; bills: InstallmentBill[]; memberNames: string[] }
 interface CardData { typeName: string; typeColor: string; typeIcon: string | null; installmentGroups: InstallmentGroup[]; singleBills: Array<{ id: string; label: string; amount: number; budgetDate: string }>; monthTotal: number }
 interface Props {
   cards: CardData[]
@@ -109,7 +109,9 @@ export function CuotasView({ cards, monthLabel, monthKey, prevMonth, nextMonth }
           {/* Installment groups */}
           {current.installmentGroups.map((group) => {
             const upcoming = group.bills.filter(b => !b.isPast)
-            const paidCount = group.bills.filter(b => b.isPast).length
+            // Count cuotas paid before first DB record (minInstallment - 1) + recorded past cuotas
+            const priorPaid = group.minInstallment - 1
+            const paidCount = priorPaid + group.bills.filter(b => b.isPast).length
             const progress = paidCount / group.totalInstallments
             return (
               <div key={group.groupId} className="glass rounded-2xl overflow-hidden">
