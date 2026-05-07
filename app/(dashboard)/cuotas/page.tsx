@@ -60,12 +60,12 @@ export default async function CuotasPage({ searchParams }: PageProps) {
       },
       orderBy: [{ installmentGroupId: "asc" }, { currentInstallment: "asc" }],
     }),
-    // Single CC bills in selected month
+    // Single CC bills in selected month (totalInstallments is nullable; NULL means single purchase)
     prisma.bill.findMany({
       where: {
         organizationId: { in: orgIds },
         billType: { isCreditCard: true },
-        totalInstallments: { lte: 1 },
+        OR: [{ totalInstallments: null }, { totalInstallments: { lte: 1 } }],
         budgetDate: { gte: monthStart, lte: monthEnd },
       },
       include: {
