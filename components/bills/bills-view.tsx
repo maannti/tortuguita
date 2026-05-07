@@ -3,8 +3,9 @@
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { useState, useEffect } from "react"
-import { ChevronLeft, ChevronRight, Plus, CreditCard } from "lucide-react"
+import { ChevronLeft, ChevronRight, Plus, CreditCard, ChevronDown } from "lucide-react"
 import { MonthPicker } from "@/components/ui/month-picker"
+import { cn } from "@/lib/utils"
 
 interface BillItem {
   id: string; label: string; amount: number; amountUSD: number | null; budgetDate: string
@@ -31,6 +32,7 @@ export function BillsView({ month, monthKey, availableMonths, categoryGroups, gr
   const [showPicker, setShowPicker] = useState(false)
   const [showUSD, setShowUSD] = useState(false)
   const [usdRate, setUsdRate] = useState<number | null>(null)
+  const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set())
 
   const currentIndex = availableMonths.indexOf(monthKey)
   const prevMonth = currentIndex < availableMonths.length - 1 ? availableMonths[currentIndex + 1] : null
@@ -130,10 +132,20 @@ export function BillsView({ month, monthKey, availableMonths, categoryGroups, gr
         {categoryGroups.length > 0 ? (
           categoryGroups.map((group) => {
             const usdLabel = groupUSDDisplay(group)
+            const isCollapsed = collapsedCategories.has(group.name)
+            const toggleCollapse = () => setCollapsedCategories(prev => {
+              const next = new Set(prev)
+              if (next.has(group.name)) next.delete(group.name)
+              else next.add(group.name)
+              return next
+            })
             return (
               <section key={group.name}>
                 {/* Category header */}
-                <div className="flex items-center justify-between mb-2.5 px-1">
+                <button
+                  onClick={toggleCollapse}
+                  className="w-full flex items-center justify-between mb-2.5 px-1 active:opacity-70 transition-opacity"
+                >
                   <div className="flex items-center gap-2">
                     <div
                       className="size-7 rounded-lg flex items-center justify-center flex-shrink-0"
@@ -148,13 +160,16 @@ export function BillsView({ month, monthKey, availableMonths, categoryGroups, gr
                       {group.name}
                     </h2>
                   </div>
-                  <span className="text-sm font-medium text-muted-foreground">
-                    {showUSD && usdLabel ? usdLabel : formatARS(group.total)}
-                  </span>
-                </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-muted-foreground">
+                      {showUSD && usdLabel ? usdLabel : formatARS(group.total)}
+                    </span>
+                    <ChevronDown className={cn("h-3.5 w-3.5 text-muted-foreground transition-transform duration-200", isCollapsed && "-rotate-90")} />
+                  </div>
+                </button>
 
                 {/* Bills list */}
-                <div className="glass rounded-2xl overflow-hidden divide-y divide-white/60">
+                {!isCollapsed && <div className="glass rounded-2xl overflow-hidden divide-y divide-white/60">
                   {group.bills.map((bill) => {
                     const usdBill = billUSDDisplay(bill)
                     return (
@@ -197,7 +212,7 @@ export function BillsView({ month, monthKey, availableMonths, categoryGroups, gr
                       </Link>
                     )
                   })}
-                </div>
+                </div>}
               </section>
             )
           })
