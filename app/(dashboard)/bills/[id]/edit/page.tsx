@@ -68,6 +68,7 @@ export default async function EditBillPage({
         id: bill.id,
         label: bill.label,
         amount: Number(bill.amount),
+        amountUSD: bill.amountUSD ? Number(bill.amountUSD) : null,
         billTypeId: bill.billTypeId,
         categoryId: bill.categoryId,
         isCreditCard: bill.billType.isCreditCard,
