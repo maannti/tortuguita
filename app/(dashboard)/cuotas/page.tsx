@@ -10,7 +10,7 @@ type InstallmentBillSummary = {
   id: string; amount: number; budgetDate: string; currentInstallment: number; isPast: boolean
 }
 type InstallmentGroup = {
-  groupId: string; label: string; totalInstallments: number; bills: InstallmentBillSummary[]; memberNames: string[]
+  groupId: string; label: string; totalInstallments: number; minInstallment: number; bills: InstallmentBillSummary[]; memberNames: string[]
 }
 type CardEntry = {
   typeName: string; typeColor: string; typeIcon: string | null
@@ -88,6 +88,14 @@ export default async function CuotasPage({ searchParams }: PageProps) {
     orderBy: { currentInstallment: "asc" },
   }) : []
 
+  // Pre-compute minInstallment per group (to count cuotas paid before first DB record)
+  const groupMinInstallment = new Map<string, number>()
+  for (const bill of allGroupBills) {
+    const gId = bill.installmentGroupId!
+    const prev = groupMinInstallment.get(gId) ?? Infinity
+    groupMinInstallment.set(gId, Math.min(prev, bill.currentInstallment!))
+  }
+
   const groupMap = new Map<string, InstallmentGroup>()
   for (const bill of installmentBills) {
     const gId = bill.installmentGroupId!
@@ -96,6 +104,7 @@ export default async function CuotasPage({ searchParams }: PageProps) {
         groupId: gId,
         label: bill.label,
         totalInstallments: bill.totalInstallments!,
+        minInstallment: groupMinInstallment.get(gId) ?? 1,
         bills: [],
         memberNames: bill.assignments.map((a) => a.user.name || "").filter(Boolean),
       })
@@ -103,6 +112,7 @@ export default async function CuotasPage({ searchParams }: PageProps) {
   }
 
   // Populate each group with all its bills (for progress tracking)
+  // isPast uses current time — not the selected month — so the progress bar is always accurate
   for (const bill of allGroupBills) {
     const group = groupMap.get(bill.installmentGroupId!)
     if (!group) continue
@@ -111,7 +121,7 @@ export default async function CuotasPage({ searchParams }: PageProps) {
       amount: Number(bill.amount),
       budgetDate: format(new Date(bill.budgetDate), "MMMM yyyy", { locale: es }),
       currentInstallment: bill.currentInstallment!,
-      isPast: new Date(bill.budgetDate) < monthStart,
+      isPast: new Date(bill.budgetDate) < now,
     })
   }
 
