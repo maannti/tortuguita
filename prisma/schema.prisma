@@ -164,6 +164,7 @@ model Bill {
   currentInstallment  Int?         // e.g., 1, 2, 3...
   installmentGroupId  String?      // shared ID to group related installments
   externalRef         String?      // bank voucher/comprobante ID for deduplication on re-import
+  isPaid              Boolean      @default(false)
   createdAt           DateTime     @default(now())
   updatedAt           DateTime     @updatedAt
 
