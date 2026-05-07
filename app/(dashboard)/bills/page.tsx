@@ -38,7 +38,7 @@ export default async function BillsPage({ searchParams }: PageProps) {
     }),
     prisma.bill.findMany({
       where: { organizationId: { in: orgIds }, budgetDate: { gte: monthStart, lte: monthEnd } },
-      include: { billType: true },
+      include: { billType: true, category: true },
       orderBy: { budgetDate: "asc" },
     }),
   ])
@@ -47,82 +47,56 @@ export default async function BillsPage({ searchParams }: PageProps) {
   for (const b of allBills) monthSet.add(format(new Date(b.budgetDate), "yyyy-MM"))
   const availableMonths = Array.from(monthSet).sort().reverse()
 
-  const regularBills = bills
-    .filter((b) => !b.billType.isCreditCard)
-    .map((b) => ({
-      id: b.id,
-      label: b.label,
-      amount: Number(b.amount),
-      budgetDate: format(new Date(b.budgetDate), "d MMM"),
-      billTypeName: b.billType.name,
-      billTypeColor: b.billType.color || "#6b7280",
-      billTypeIcon: b.billType.icon || null,
-    }))
+  // Group all bills (CC and non-CC) by their effective expense category.
+  // For CC bills with a category: use the category (Tecnología, Ropa…).
+  // For CC bills without a category: use the card name as fallback.
+  // For non-CC bills: use the bill type (same as category for regular bills).
+  const catGroupMap = new Map<string, {
+    name: string; color: string; icon: string | null; total: number
+    bills: Array<{
+      id: string; label: string; amount: number; budgetDate: string
+      cardName: string | null; currentInstallment: number | null; totalInstallments: number | null
+    }>
+  }>()
 
-  // Group credit card bills by billType — include individual bills for expandable list
-  const ccGroupMap = new Map<
-    string,
-    {
-      name: string
-      color: string
-      icon: string | null
-      monthTotal: number
-      itemCount: number
-      activeInstallmentGroups: Set<string>
-      bills: Array<{
-        id: string
-        label: string
-        amount: number
-        currentInstallment: number | null
-        totalInstallments: number | null
-      }>
+  for (const bill of bills) {
+    let catName: string, catColor: string, catIcon: string | null
+    if (bill.billType.isCreditCard && bill.category) {
+      catName  = bill.category.name
+      catColor = bill.category.color || "#6b7280"
+      catIcon  = bill.category.icon  || null
+    } else {
+      catName  = bill.billType.name
+      catColor = bill.billType.color || "#6b7280"
+      catIcon  = bill.billType.icon  || null
     }
-  >()
 
-  for (const bill of bills.filter((b) => b.billType.isCreditCard)) {
-    if (!ccGroupMap.has(bill.billTypeId)) {
-      ccGroupMap.set(bill.billTypeId, {
-        name: bill.billType.name,
-        color: bill.billType.color || "#f59e0b",
-        icon: bill.billType.icon || null,
-        monthTotal: 0,
-        itemCount: 0,
-        activeInstallmentGroups: new Set(),
-        bills: [],
-      })
+    if (!catGroupMap.has(catName)) {
+      catGroupMap.set(catName, { name: catName, color: catColor, icon: catIcon, total: 0, bills: [] })
     }
-    const g = ccGroupMap.get(bill.billTypeId)!
-    g.monthTotal += Number(bill.amount)
-    g.itemCount += 1
-    if (bill.installmentGroupId) g.activeInstallmentGroups.add(bill.installmentGroupId)
+    const g = catGroupMap.get(catName)!
+    g.total += Number(bill.amount)
     g.bills.push({
       id: bill.id,
       label: bill.label,
       amount: Number(bill.amount),
+      budgetDate: format(new Date(bill.budgetDate), "d MMM"),
+      cardName: bill.billType.isCreditCard ? bill.billType.name : null,
       currentInstallment: bill.currentInstallment,
       totalInstallments: bill.totalInstallments,
     })
   }
 
-  const creditCardGroups = Array.from(ccGroupMap.values()).map((g) => ({
-    name: g.name,
-    color: g.color,
-    icon: g.icon,
-    monthTotal: g.monthTotal,
-    itemCount: g.itemCount,
-    activeInstallmentCount: g.activeInstallmentGroups.size,
-    bills: g.bills,
-  }))
+  const categoryGroups = Array.from(catGroupMap.values())
+  const grandTotal = categoryGroups.reduce((s, g) => s + g.total, 0)
 
   return (
     <BillsView
       month={format(monthStart, "MMMM yyyy", { locale: es })}
       monthKey={format(monthStart, "yyyy-MM")}
       availableMonths={availableMonths}
-      regularBills={regularBills}
-      creditCardGroups={creditCardGroups}
-      regularTotal={regularBills.reduce((s, b) => s + b.amount, 0)}
-      ccTotal={creditCardGroups.reduce((s, g) => s + g.monthTotal, 0)}
+      categoryGroups={categoryGroups}
+      grandTotal={grandTotal}
     />
   )
 }
