@@ -71,6 +71,7 @@ export default async function BillDetailPage({
         id: bill.id,
         label: bill.label,
         amount: Number(bill.amount),
+        amountUSD: bill.amountUSD ? Number(bill.amountUSD) : null,
         paymentDate: formatDate(bill.paymentDate),
         budgetDate: formatDate(bill.budgetDate),
         dueDate: validDate(bill.dueDate) ? formatDate(bill.dueDate!) : null,
