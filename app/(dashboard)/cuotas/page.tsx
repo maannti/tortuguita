@@ -7,7 +7,7 @@ import { getUserOrganizations } from "@/lib/organization-utils"
 import { cookies } from "next/headers"
 
 type InstallmentBillSummary = {
-  id: string; amount: number; budgetDate: string; currentInstallment: number; isPast: boolean
+  id: string; amount: number; amountUSD: number | null; budgetDate: string; currentInstallment: number; isPast: boolean; isPaid: boolean
 }
 type InstallmentGroup = {
   groupId: string; label: string; totalInstallments: number; minInstallment: number; bills: InstallmentBillSummary[]; memberNames: string[]
@@ -15,7 +15,7 @@ type InstallmentGroup = {
 type CardEntry = {
   typeName: string; typeColor: string; typeIcon: string | null
   installmentGroups: InstallmentGroup[]
-  singleBills: Array<{ id: string; label: string; amount: number; budgetDate: string }>
+  singleBills: Array<{ id: string; label: string; amount: number; amountUSD: number | null; budgetDate: string; isPaid: boolean }>
   monthTotal: number
 }
 
@@ -84,7 +84,7 @@ export default async function CuotasPage({ searchParams }: PageProps) {
   const groupIds = [...new Set(installmentBills.map(b => b.installmentGroupId!))]
   const allGroupBills = groupIds.length > 0 ? await prisma.bill.findMany({
     where: { organizationId: { in: orgIds }, installmentGroupId: { in: groupIds } },
-    select: { id: true, amount: true, budgetDate: true, currentInstallment: true, installmentGroupId: true, totalInstallments: true, label: true },
+    select: { id: true, amount: true, amountUSD: true, budgetDate: true, currentInstallment: true, installmentGroupId: true, totalInstallments: true, label: true, isPaid: true },
     orderBy: { currentInstallment: "asc" },
   }) : []
 
@@ -119,9 +119,11 @@ export default async function CuotasPage({ searchParams }: PageProps) {
     group.bills.push({
       id: bill.id,
       amount: Number(bill.amount),
+      amountUSD: bill.amountUSD ? Number(bill.amountUSD) : null,
       budgetDate: format(new Date(bill.budgetDate), "MMMM yyyy", { locale: es }),
       currentInstallment: bill.currentInstallment!,
       isPast: new Date(bill.budgetDate) < now,
+      isPaid: bill.isPaid,
     })
   }
 
@@ -143,7 +145,7 @@ export default async function CuotasPage({ searchParams }: PageProps) {
   for (const bill of singleCCBills) {
     const cardData = byCard.get(bill.billTypeId)
     if (!cardData) continue
-    cardData.singleBills.push({ id: bill.id, label: bill.label, amount: Number(bill.amount), budgetDate: format(new Date(bill.budgetDate), "MMMM yyyy", { locale: es }) })
+    cardData.singleBills.push({ id: bill.id, label: bill.label, amount: Number(bill.amount), amountUSD: bill.amountUSD ? Number(bill.amountUSD) : null, budgetDate: format(new Date(bill.budgetDate), "MMMM yyyy", { locale: es }), isPaid: bill.isPaid })
     cardData.monthTotal += Number(bill.amount)
   }
 
