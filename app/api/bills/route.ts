@@ -162,6 +162,7 @@ export async function POST(request: NextRequest) {
             data: {
               label: data.label,
               amount: amountPerInstallment,
+              amountUSD: data.amountUSD ? Math.round((data.amountUSD / totalInstallments) * 100) / 100 : null,
               paymentDate,
               budgetDate: budgetDateResult.budgetDate,
               dueDate: data.dueDate || null,
@@ -219,6 +220,7 @@ export async function POST(request: NextRequest) {
       data: {
         label: data.label,
         amount: data.amount,
+        amountUSD: data.amountUSD || null,
         paymentDate: data.paymentDate,
         budgetDate,
         dueDate: data.dueDate || null,

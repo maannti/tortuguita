@@ -15,6 +15,7 @@ export const billSchema = z
       .number()
       .positive("Amount must be positive")
       .multipleOf(0.01, "Amount must have at most 2 decimal places"),
+    amountUSD: z.coerce.number().positive().multipleOf(0.01).optional().nullable(),
     paymentDate: z.coerce.date(),
     budgetDate: z.coerce.date().optional(),
     dueDate: z.union([z.coerce.date(), z.null()]).optional(),
