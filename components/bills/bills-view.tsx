@@ -1,29 +1,22 @@
 "use client"
 
-import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { ChevronLeft, ChevronRight, Plus, ChevronDown, ChevronUp } from "lucide-react"
-import { isNetworkId, CardIcon, BANKS, NetworkId } from "@/components/ui/card-network"
+import { useState } from "react"
+import { ChevronLeft, ChevronRight, Plus, CreditCard } from "lucide-react"
 import { MonthPicker } from "@/components/ui/month-picker"
 
-interface RegularBill {
+interface BillItem {
   id: string; label: string; amount: number; budgetDate: string
-  billTypeName: string; billTypeColor: string; billTypeIcon: string | null
+  cardName: string | null; currentInstallment: number | null; totalInstallments: number | null
 }
-interface CCBill {
-  id: string; label: string; amount: number
-  currentInstallment: number | null; totalInstallments: number | null
-}
-interface CCGroup {
-  name: string; color: string; icon: string | null
-  monthTotal: number; itemCount: number; activeInstallmentCount: number
-  bills: CCBill[]
+interface CategoryGroup {
+  name: string; color: string; icon: string | null; total: number; bills: BillItem[]
 }
 interface Props {
   month: string; monthKey: string; availableMonths: string[]
-  regularBills: RegularBill[]; creditCardGroups: CCGroup[]
-  regularTotal: number; ccTotal: number
+  categoryGroups: CategoryGroup[]
+  grandTotal: number
 }
 
 function formatARS(n: number) {
@@ -31,22 +24,12 @@ function formatARS(n: number) {
 }
 function capitalize(s: string) { return s.charAt(0).toUpperCase() + s.slice(1) }
 
-export function BillsView({ month, monthKey, availableMonths, regularBills, creditCardGroups, regularTotal, ccTotal }: Props) {
+export function BillsView({ month, monthKey, availableMonths, categoryGroups, grandTotal }: Props) {
   const router = useRouter()
   const [showPicker, setShowPicker] = useState(false)
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set())
   const currentIndex = availableMonths.indexOf(monthKey)
   const prevMonth = currentIndex < availableMonths.length - 1 ? availableMonths[currentIndex + 1] : null
   const nextMonth = currentIndex > 0 ? availableMonths[currentIndex - 1] : null
-  const grandTotal = regularTotal + ccTotal
-
-  function toggleGroup(name: string) {
-    setExpandedGroups(prev => {
-      const next = new Set(prev)
-      next.has(name) ? next.delete(name) : next.add(name)
-      return next
-    })
-  }
 
   return (
     <div className="pb-28">
@@ -88,129 +71,65 @@ export function BillsView({ month, monthKey, availableMonths, regularBills, cred
       </div>
 
       <div className="px-4 pt-4 space-y-5">
-        {/* Credit card groups */}
-        {creditCardGroups.length > 0 && (
-          <section>
-            <div className="flex items-center justify-between mb-2.5 px-1">
-              <h2 className="text-base font-medium" style={{ fontFamily: "var(--font-fraunces, serif)" }}>Tarjetas</h2>
-              <span className="text-sm text-muted-foreground">{formatARS(ccTotal)}</span>
-            </div>
-            <div className="space-y-2">
-              {creditCardGroups.map((group) => {
-                const expanded = expandedGroups.has(group.name)
-                return (
-                  <div key={group.name} className="glass rounded-2xl overflow-hidden">
-                    {/* Group header — tap to expand */}
-                    <button
-                      type="button"
-                      onClick={() => toggleGroup(group.name)}
-                      className="w-full flex items-center justify-between px-4 py-3.5 active:bg-white/20 transition-colors"
-                    >
-                      <div className="flex items-center gap-3">
-                        <CardIcon
-                          bankId={BANKS.find(b => b.color === group.color)?.id ?? null}
-                          bankColor={group.color}
-                          bankName={group.name}
-                          network={isNetworkId(group.icon) ? group.icon as NetworkId : null}
-                          size="sm"
-                        />
-                        <div className="text-left">
-                          <p className="text-sm font-semibold">{group.name}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {group.activeInstallmentCount > 0
-                              ? `${group.activeInstallmentCount} cuota${group.activeInstallmentCount !== 1 ? "s" : ""} activa${group.activeInstallmentCount !== 1 ? "s" : ""}`
-                              : `${group.itemCount} gasto${group.itemCount !== 1 ? "s" : ""}`}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-base font-medium tabular-nums" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
-                          {formatARS(group.monthTotal)}
-                        </span>
-                        {expanded
-                          ? <ChevronUp className="h-4 w-4 text-muted-foreground" />
-                          : <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                        }
-                      </div>
-                    </button>
-
-                    {/* Individual bills — shown when expanded */}
-                    {expanded && (
-                      <div className="border-t border-white/40 divide-y divide-white/30">
-                        {group.bills.map((bill) => (
-                          <Link
-                            key={bill.id}
-                            href={`/bills/${bill.id}`}
-                            className="flex items-center justify-between px-4 py-3 active:bg-white/20 transition-colors"
-                          >
-                            <div className="min-w-0">
-                              <p className="text-sm font-medium truncate">{bill.label}</p>
-                              {bill.totalInstallments && bill.totalInstallments > 1 && (
-                                <p className="text-xs text-muted-foreground">
-                                  Cuota {bill.currentInstallment} de {bill.totalInstallments}
-                                </p>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-1 ml-3 flex-shrink-0">
-                              <span className="text-sm font-medium tabular-nums" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
-                                {formatARS(bill.amount)}
-                              </span>
-                              <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
-                            </div>
-                          </Link>
-                        ))}
-                      </div>
-                    )}
+        {categoryGroups.length > 0 ? (
+          categoryGroups.map((group) => (
+            <section key={group.name}>
+              {/* Category header */}
+              <div className="flex items-center justify-between mb-2.5 px-1">
+                <div className="flex items-center gap-2">
+                  <div
+                    className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+                    style={{ backgroundColor: `${group.color}22` }}
+                  >
+                    {group.icon
+                      ? <span className="text-sm leading-none">{group.icon}</span>
+                      : <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: group.color }} />
+                    }
                   </div>
-                )
-              })}
-            </div>
-          </section>
-        )}
+                  <h2 className="text-base font-medium text-foreground" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
+                    {group.name}
+                  </h2>
+                </div>
+                <span className="text-sm font-medium text-muted-foreground">{formatARS(group.total)}</span>
+              </div>
 
-        {/* Regular bills */}
-        {regularBills.length > 0 && (
-          <section>
-            <div className="flex items-center justify-between mb-2.5 px-1">
-              <h2 className="text-base font-medium" style={{ fontFamily: "var(--font-fraunces, serif)" }}>Gastos fijos</h2>
-              <span className="text-sm text-muted-foreground">{formatARS(regularTotal)}</span>
-            </div>
-            <div className="glass rounded-2xl overflow-hidden divide-y divide-white/60">
-              {regularBills.map((bill) => (
-                <Link
-                  key={bill.id}
-                  href={`/bills/${bill.id}`}
-                  className="flex items-center justify-between px-4 py-3.5 active:bg-white/20 transition-colors"
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div
-                      className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                      style={{ backgroundColor: `${bill.billTypeColor}22` }}
-                    >
-                      {bill.billTypeIcon
-                        ? <span className="text-lg leading-none">{bill.billTypeIcon}</span>
-                        : <span className="w-3 h-3 rounded-full" style={{ backgroundColor: bill.billTypeColor }} />
-                      }
-                    </div>
-                    <div className="min-w-0">
+              {/* Bills list */}
+              <div className="glass rounded-2xl overflow-hidden divide-y divide-white/60">
+                {group.bills.map((bill) => (
+                  <Link
+                    key={bill.id}
+                    href={`/bills/${bill.id}`}
+                    className="flex items-center justify-between px-4 py-3.5 active:bg-white/20 transition-colors"
+                  >
+                    <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium truncate">{bill.label}</p>
-                      <p className="text-xs text-muted-foreground">{bill.billTypeName} · {bill.budgetDate}</p>
+                      <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                        <span className="text-xs text-muted-foreground">{bill.budgetDate}</span>
+                        {bill.totalInstallments && bill.totalInstallments > 1 && (
+                          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-primary/10 text-primary">
+                            {bill.currentInstallment}/{bill.totalInstallments}
+                          </span>
+                        )}
+                        {bill.cardName && (
+                          <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                            <CreditCard className="h-2.5 w-2.5" />{bill.cardName}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-1 ml-3 flex-shrink-0">
-                    <span className="text-base font-medium tabular-nums" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
-                      {formatARS(bill.amount)}
-                    </span>
-                    <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* Empty state */}
-        {regularBills.length === 0 && creditCardGroups.length === 0 && (
+                    <div className="flex items-center gap-1 ml-3 flex-shrink-0">
+                      <span className="text-base font-medium tabular-nums text-foreground" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
+                        {formatARS(bill.amount)}
+                      </span>
+                      <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </section>
+          ))
+        ) : (
+          /* Empty state */
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <div className="text-5xl mb-4">🐢</div>
             <p className="text-lg font-medium mb-1" style={{ fontFamily: "var(--font-fraunces, serif)" }}>Sin gastos este mes</p>
