@@ -19,6 +19,7 @@ interface BillDetailProps {
     id: string
     label: string
     amount: number
+    amountUSD: number | null
     paymentDate: string
     budgetDate: string
     dueDate: string | null
@@ -137,6 +138,11 @@ export function BillDetail({ bill }: BillDetailProps) {
               >
                 {formatARS(bill.amount)}
               </p>
+              {bill.amountUSD && (
+                <p className="text-sm text-muted-foreground">
+                  U$S {Number(bill.amountUSD).toFixed(2)}
+                </p>
+              )}
               {bill.totalInstallments && bill.currentInstallment && (
                 <p className="text-xs text-muted-foreground pt-0.5">
                   Cuota {bill.currentInstallment} de {bill.totalInstallments}
