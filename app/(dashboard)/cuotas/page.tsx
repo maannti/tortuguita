@@ -46,6 +46,7 @@ export default async function CuotasPage({ searchParams }: PageProps) {
   }
 
   const [installmentBills, singleCCBills, creditCardTypes] = await Promise.all([
+
     // All installment bills that overlap the selected month
     prisma.bill.findMany({
       where: {
@@ -76,6 +77,7 @@ export default async function CuotasPage({ searchParams }: PageProps) {
     }),
     prisma.billType.findMany({
       where: { organizationId: { in: allOrgIds }, isCreditCard: true },
+      select: { id: true, name: true, color: true, icon: true, currentDueDate: true, nextDueDate: true },
       orderBy: { name: "asc" },
     }),
   ])
@@ -149,6 +151,12 @@ export default async function CuotasPage({ searchParams }: PageProps) {
     cardData.monthTotal += Number(bill.amount)
   }
 
+  // Detect cards whose billing period has expired (currentDueDate < today)
+  // These need the user to update closing/due dates in settings
+  const staleCards = creditCardTypes
+    .filter(ct => ct.currentDueDate && new Date(ct.currentDueDate) < now)
+    .map(ct => ({ id: ct.id, name: ct.name }))
+
   const monthKey = format(monthStart, "yyyy-MM")
   const currentIndex = availableMonths.indexOf(monthKey)
 
@@ -159,6 +167,7 @@ export default async function CuotasPage({ searchParams }: PageProps) {
       monthKey={monthKey}
       prevMonth={currentIndex < availableMonths.length - 1 ? availableMonths[currentIndex + 1] : null}
       nextMonth={currentIndex > 0 ? availableMonths[currentIndex - 1] : null}
+      staleCards={staleCards}
     />
   )
 }

@@ -1,7 +1,7 @@
 "use client"
 import { useState, useTransition, useCallback } from "react"
 import { useRouter } from "next/navigation"
-import { Plus, ChevronLeft, ChevronRight, FileText, ChevronDown, Check } from "lucide-react"
+import { Plus, ChevronLeft, ChevronRight, FileText, ChevronDown, Check, AlertTriangle, X } from "lucide-react"
 import { isNetworkId, CardIcon, BANKS, NetworkId } from "@/components/ui/card-network"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
@@ -31,6 +31,7 @@ interface Props {
   monthKey: string
   prevMonth: string | null
   nextMonth: string | null
+  staleCards?: Array<{ id: string; name: string }>
 }
 
 const arsFormatter = new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", minimumFractionDigits: 0, maximumFractionDigits: 0 })
@@ -158,10 +159,11 @@ function InstallmentGroupCard({ group, cardColor }: { group: InstallmentGroup; c
 }
 
 // ─── Main view ────────────────────────────────────────────────────────────────
-export function CuotasView({ cards, monthLabel, monthKey, prevMonth, nextMonth }: Props) {
+export function CuotasView({ cards, monthLabel, monthKey, prevMonth, nextMonth, staleCards = [] }: Props) {
   const { push } = useRouter()
   const [activeCard, setActiveCard] = useState(0)
   const [showPicker, setShowPicker] = useState(false)
+  const [staleDismissed, setStaleDismissed] = useState(false)
   const current = cards[activeCard]
 
   return (
@@ -206,6 +208,35 @@ export function CuotasView({ cards, monthLabel, monthKey, prevMonth, nextMonth }
           </div>
         </div>
       </div>
+
+      {/* Stale period banner — shown when any card's billing period expired */}
+      {staleCards.length > 0 && !staleDismissed && (
+        <div className="mx-4 mt-3 flex items-start gap-3 rounded-2xl bg-amber-50 border border-amber-200 px-4 py-3">
+          <AlertTriangle className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-amber-800 leading-snug">
+              {staleCards.length === 1
+                ? `El período de ${staleCards[0].name} venció`
+                : `Período vencido: ${staleCards.map(c => c.name).join(", ")}`}
+            </p>
+            <p className="text-xs text-amber-700 mt-0.5">
+              Actualizá las fechas de cierre y vencimiento en{" "}
+              <button
+                className="underline font-semibold"
+                onClick={() => push("/cards")}
+              >
+                Configuración de tarjetas
+              </button>
+            </p>
+          </div>
+          <button
+            onClick={() => setStaleDismissed(true)}
+            className="text-amber-500 hover:text-amber-700 flex-shrink-0 active:scale-90 transition-all"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
 
       {/* Card selector — horizontal scroll chips */}
       {cards.length > 0 && (
