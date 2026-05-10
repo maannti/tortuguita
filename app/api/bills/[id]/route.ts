@@ -189,26 +189,47 @@ export async function PATCH(
       },
       include: {
         billType: true,
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-        assignments: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-              },
-            },
-          },
-        },
+        user: { select: { id: true, name: true, email: true } },
+        assignments: { include: { user: { select: { id: true, name: true, email: true } } } },
       },
     })
+
+    // ── Propagate shared fields to installment siblings ──────────────────────
+    // When editing a cuota, label/amount/amountUSD/categoryId/notes should
+    // apply to ALL bills in the same installmentGroupId (each cuota has the
+    // same amount, description, and category — only paymentDate/budgetDate differ).
+    if (bill.installmentGroupId) {
+      const siblingIds = await prisma.bill.findMany({
+        where: { installmentGroupId: bill.installmentGroupId, id: { not: id } },
+        select: { id: true },
+      })
+      if (siblingIds.length > 0) {
+        // Update shared fields in bulk
+        await prisma.bill.updateMany({
+          where: { installmentGroupId: bill.installmentGroupId, id: { not: id } },
+          data: {
+            label: data.label,
+            amount: data.amount,
+            amountUSD: data.amountUSD ?? null,
+            categoryId: data.categoryId || null,
+            billTypeId: data.billTypeId,
+            organizationId: targetOrgId,
+            notes: data.notes,
+          },
+        })
+        // Propagate assignments: delete + recreate for each sibling
+        if (data.assignments && data.assignments.length > 0) {
+          const ids = siblingIds.map(s => s.id)
+          await prisma.billAssignment.deleteMany({ where: { billId: { in: ids } } })
+          await prisma.billAssignment.createMany({
+            data: ids.flatMap(sibId =>
+              data.assignments!.map(a => ({ billId: sibId, userId: a.userId, percentage: a.percentage }))
+            ),
+          })
+        }
+      }
+    }
+    // ─────────────────────────────────────────────────────────────────────────
 
     return NextResponse.json(updated)
   } catch (error) {
