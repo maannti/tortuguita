@@ -161,6 +161,8 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
   const normalCats = orgCategories.filter(c => !c.isCreditCard)
   // CC cards are user-level, not space-level — show all regardless of selected org
   const ccCards = categories.filter(c => c.isCreditCard)
+  // For CC bills: show ALL expense categories from ALL spaces (org is derived from chosen category)
+  const allNormalCats = categories.filter(c => !c.isCreditCard)
   const orgMembers = members.filter(m => m.organizationId === selectedOrgId)
 
   const billTypeId = isCreditCard ? cardId : categoryId
@@ -229,8 +231,9 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
   // Billing period feedback for credit card + selected card + date
   const selectedCard = isCreditCard && cardId ? ccCards.find(c => c.id === cardId) : null
   type BillingFeedback =
-    | { type: "current"; dueDate: string; closingDate: string }
-    | { type: "next";    dueDate: string; closingDate: string }
+    | { type: "current";        dueDate: string; closingDate: string }
+    | { type: "current-closed"; dueDate: string; closingDate: string }
+    | { type: "next";           dueDate: string; closingDate: string }
     | { type: "no-next" }
     | { type: "no-period" }
     | null
@@ -241,9 +244,18 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
     const due     = selectedCard.currentDueDate     ? new Date(selectedCard.currentDueDate)     : null
     if (!closing || !due) return { type: "no-period" }
     // normalize to midnight for comparison
+    const today = new Date(); today.setHours(0,0,0,0)
     const p = new Date(payment); p.setHours(0,0,0,0)
     const c = new Date(closing); c.setHours(0,0,0,0)
-    if (p <= c) return { type: "current", dueDate: formatShortDate(due), closingDate: formatShortDate(closing) }
+    const d = new Date(due); d.setHours(0,0,0,0)
+    // If the current closing is already in the past and the expense is after it → next period
+    // If the current due date already passed → rotation needed (stale period)
+    if (today > d) return { type: "no-next" }  // period fully expired, needs rotation
+    if (p <= c) {
+      // Expense is before closing. If closing already passed, show as "closed" (amber), not green
+      if (today > c) return { type: "current-closed", dueDate: formatShortDate(due), closingDate: formatShortDate(closing) }
+      return { type: "current", dueDate: formatShortDate(due), closingDate: formatShortDate(closing) }
+    }
     const nextDue     = selectedCard.nextDueDate     ? new Date(selectedCard.nextDueDate)     : null
     const nextClosing = selectedCard.nextClosingDate ? new Date(selectedCard.nextClosingDate) : null
     if (!nextDue) return { type: "no-next" }
@@ -281,8 +293,8 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
             <p className="text-xs text-muted-foreground text-center px-2">{saveHint}</p>
           )}
 
-          {/* Espacio */}
-          {organizations.length > 1 && (
+          {/* Espacio — oculto para CC (el espacio se deriva de la categoría elegida) */}
+          {organizations.length > 1 && !isCreditCard && (
             <div className="space-y-1.5">
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Espacio</p>
               <div className="grid grid-cols-2 gap-2">
@@ -489,6 +501,69 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
             </div>
           )}
 
+          {/* Categoría del gasto — para tarjetas de crédito (elige el espacio implícitamente) */}
+          {isCreditCard && (
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Categoría <span className="normal-case font-normal">(opcional)</span>
+              </label>
+              {allNormalCats.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No hay categorías creadas aún.</p>
+              ) : (
+                <div className="flex gap-2">
+                  <button type="button" onClick={() => setExpandedCats(o => !o)}
+                    className={`flex-1 flex items-center gap-2 rounded-xl border bg-background px-3 py-2.5 text-sm text-left transition-colors ${expandedCats ? "border-primary ring-2 ring-primary/20" : "border-border hover:border-foreground/30"}`}>
+                    {(() => {
+                      const sel = allNormalCats.find(c => c.id === categoryId)
+                      return sel ? (
+                        <>
+                          {sel.icon
+                            ? <span className="text-base leading-none flex-shrink-0">{sel.icon}</span>
+                            : <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: sel.color || "#6b7280" }} />}
+                          <span className="flex-1 font-medium text-foreground">{sel.name}</span>
+                        </>
+                      ) : (
+                        <span className="flex-1 text-muted-foreground">Seleccioná una categoría</span>
+                      )
+                    })()}
+                    <ChevronDown className={`h-4 w-4 text-muted-foreground flex-shrink-0 transition-transform ${expandedCats ? "rotate-180" : ""}`} />
+                  </button>
+                  {categoryId && (
+                    <button type="button" onClick={() => { setCategoryId(""); setExpandedCats(false) }}
+                      className="w-11 rounded-xl border border-border bg-background flex items-center justify-center text-muted-foreground hover:border-foreground/30 transition-colors text-xs font-medium">
+                      ✕
+                    </button>
+                  )}
+                </div>
+              )}
+              {expandedCats && allNormalCats.length > 0 && (
+                <div className="rounded-xl border border-primary/30 bg-background overflow-hidden shadow-sm">
+                  {allNormalCats.map((cat, i) => {
+                    const catOrg = organizations.find(o => o.id === cat.organizationId)
+                    return (
+                      <button key={cat.id} type="button"
+                        onClick={() => {
+                          setCategoryId(cat.id)
+                          setSelectedOrgId(cat.organizationId) // deriva el espacio de la categoría
+                          setExpandedCats(false)
+                        }}
+                        className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-left transition-colors ${i < allNormalCats.length - 1 ? "border-b border-border/50" : ""} ${categoryId === cat.id ? "bg-primary/5 text-foreground font-medium" : "text-muted-foreground hover:bg-muted/50"}`}>
+                        {cat.icon
+                          ? <span className="text-base leading-none flex-shrink-0">{cat.icon}</span>
+                          : <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: cat.color || "#6b7280" }} />}
+                        <span className="flex-1">{cat.name}</span>
+                        {catOrg && organizations.length > 1 && (
+                          <span className="text-[10px] text-muted-foreground/60 flex-shrink-0">{catOrg.name}</span>
+                        )}
+                        {categoryId === cat.id && <Check className="h-3.5 w-3.5 text-primary flex-shrink-0" />}
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Fecha */}
           <div className="space-y-1.5">
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{isCreditCard ? "Fecha de compra" : "Fecha"}</p>
@@ -504,9 +579,9 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
           {/* Billing period feedback */}
           {billingFeedback && (
             <div className={`flex items-start gap-2.5 rounded-xl px-3.5 py-3 text-sm ${
-              billingFeedback.type === "current"   ? "bg-[#D8E2DC]/60 text-[#3a5a45]" :
-              billingFeedback.type === "next"      ? "bg-[#FFE5D9]/70 text-[#7a4520]" :
-              billingFeedback.type === "no-next"   ? "bg-amber-50 text-amber-800 border border-amber-200" :
+              billingFeedback.type === "current"        ? "bg-[#D8E2DC]/60 text-[#3a5a45]" :
+              billingFeedback.type === "current-closed" ? "bg-amber-50 text-amber-800 border border-amber-200" :
+              billingFeedback.type === "next"           ? "bg-[#FFE5D9]/70 text-[#7a4520]" :
               "bg-amber-50 text-amber-800 border border-amber-200"
             }`}>
               <span className="mt-px text-base leading-none flex-shrink-0">
@@ -520,6 +595,12 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
                     <p className="text-xs opacity-75 mt-0.5">Cierre {billingFeedback.closingDate} · vence {billingFeedback.dueDate}</p>
                   </>
                 )}
+                {billingFeedback.type === "current-closed" && (
+                  <>
+                    <p className="font-medium leading-snug">Período ya cerrado — se asigna al vencimiento</p>
+                    <p className="text-xs opacity-75 mt-0.5">Cerró el {billingFeedback.closingDate} · vence {billingFeedback.dueDate}</p>
+                  </>
+                )}
                 {billingFeedback.type === "next" && (
                   <>
                     <p className="font-medium leading-snug">Entra en el próximo período</p>
@@ -528,8 +609,13 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
                 )}
                 {billingFeedback.type === "no-next" && (
                   <>
-                    <p className="font-medium leading-snug">Fecha posterior al cierre actual</p>
-                    <p className="text-xs opacity-75 mt-0.5">Configurá el próximo período de la tarjeta en <span className="underline">Tarjetas</span></p>
+                    <p className="font-medium leading-snug">El período venció — actualizá las fechas</p>
+                    <p className="text-xs opacity-75 mt-0.5">
+                      Configurá el nuevo cierre en{" "}
+                      <button type="button" className="underline font-semibold" onClick={() => router.push("/cards")}>
+                        Tarjetas
+                      </button>
+                    </p>
                   </>
                 )}
                 {billingFeedback.type === "no-period" && (
