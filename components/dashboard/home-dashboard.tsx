@@ -49,7 +49,7 @@ function HeroAmount({ amount, className }: { amount: number; className?: string 
   const intPart = commaIdx >= 0 ? full.slice(0, commaIdx) : full
   const decPart = commaIdx >= 0 ? full.slice(commaIdx + 1) : ""
   return (
-    <span className={className}>
+    <span className={className} style={{ fontFamily: "var(--font-fraunces, serif)" }}>
       {intPart}
       {decPart && decPart !== "00" && (
         <sup className="text-[0.42em] align-super leading-none font-medium">,{decPart}</sup>
@@ -80,7 +80,9 @@ export function HomeDashboard({ month, monthKey, availableMonths, spaces, curren
   const displayAmount = showMyPart ? myAmount : totalAmount
   const recentExpenses = activeSpaces.flatMap(sp => sp.recentExpenses)
   const creditCardGroups = activeSpaces.flatMap(sp => sp.creditCardGroups)
-  const members = activeSpaces.length === 1 ? activeSpaces[0].members : []
+  // Show member split for the first active shared space (even if personal is also active)
+  const sharedSpace = activeSpaces.find(sp => !sp.isPersonal && sp.members.length > 1)
+  const members = sharedSpace ? sharedSpace.members : (activeSpaces.length === 1 ? activeSpaces[0].members : [])
   const recentTotal = recentExpenses.reduce((s, e) => s + e.amount, 0)
 
   return (
