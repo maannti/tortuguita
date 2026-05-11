@@ -47,14 +47,8 @@ interface BillDetailProps {
   }
 }
 
-function formatARS(n: number) {
-  return new Intl.NumberFormat("es-AR", {
-    style: "currency",
-    currency: "ARS",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(n)
-}
+const arsFormatter = new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", minimumFractionDigits: 2, maximumFractionDigits: 2 })
+function formatARS(n: number) { return arsFormatter.format(n) }
 
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
