@@ -1,7 +1,7 @@
 "use client"
-import { useState, useRef } from "react"
-import { useRouter } from "next/navigation"
-import { ChevronLeft, Upload, FileText, Check, X, AlertTriangle, ChevronDown, User, Home, Loader2 } from "lucide-react"
+import { useState, useRef, useEffect } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
+import { ChevronLeft, Upload, FileText, Check, X, AlertTriangle, ChevronDown, User, Home, Loader2, Plus } from "lucide-react"
 import type { ResumenParseResult, ParsedTransaction } from "@/app/api/resumen/parse/route"
 import { CardIcon, isNetworkId, BANKS, NetworkId } from "@/components/ui/card-network"
 
@@ -25,8 +25,11 @@ function formatARS(n: number) { return arsFormatter.format(Math.round(n)) }
 
 type Step = "upload" | "parsing" | "review" | "importing" | "done"
 
+const IMPORT_CACHE_KEY = "tortuguita_import_cache"
+
 export function ResumenImporter({ ccCards, members, organizations, currentUserId, categories }: Props) {
   const { push, back } = useRouter()
+  const searchParams = useSearchParams()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [step, setStep] = useState<Step>("upload")
@@ -60,6 +63,23 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
   // Done step
   const [importResult, setImportResult] = useState<{ imported: number; duplicates?: number; errors?: string[] } | null>(null)
 
+  // Restore cached state when returning from category creation
+  useEffect(() => {
+    if (searchParams.get("restore") !== "1") return
+    try {
+      const raw = sessionStorage.getItem(IMPORT_CACHE_KEY)
+      if (!raw) return
+      const cache = JSON.parse(raw)
+      if (cache.parsed) { setParsed(cache.parsed); setStep("review") }
+      if (cache.titularMap) setTitularMap(cache.titularMap)
+      if (cache.titularCardMap) setTitularCardMap(cache.titularCardMap)
+      if (cache.txOverrides) setTxOverrides(cache.txOverrides)
+      if (cache.usdRate) setUsdRate(cache.usdRate)
+      sessionStorage.removeItem(IMPORT_CACHE_KEY)
+    } catch { /* ignore */ }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   // Show ALL cards the user has access to (not filtered by space).
   const orgCcCards = ccCards
   // Deduplicate members across all spaces — a user may appear once per org they belong to.
@@ -81,6 +101,19 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
 
   function setTxOv(id: string, patch: Partial<typeof txOverrides[string]>) {
     setTxOverrides(prev => ({ ...prev, [id]: { ...prev[id], ...patch } }))
+  }
+
+  // Save current review state to sessionStorage and navigate to category creation
+  function openNewCategory(orgId?: string) {
+    try {
+      sessionStorage.setItem(IMPORT_CACHE_KEY, JSON.stringify({
+        parsed, titularMap, titularCardMap, txOverrides, usdRate,
+      }))
+    } catch { /* ignore quota errors */ }
+    const org = orgId ? organizations.find(o => o.id === orgId) : (organizations.find(o => o.isPersonal) ?? organizations[0])
+    const params = new URLSearchParams({ returnTo: "/resumen?restore=1" })
+    if (org) { params.set("spaceId", org.id); params.set("spaceName", org.name) }
+    push(`/categories/new?${params.toString()}`)
   }
 
   const txList = parsed?.transacciones ?? []
@@ -667,76 +700,94 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
       </div>
 
       {/* ── Category bottom sheet ────────────────────────────────────────── */}
-      {categorySheetFor && (
-        <div className="fixed inset-0 z-50 flex flex-col justify-end">
-          {/* Backdrop */}
-          <div className="absolute inset-0 bg-black/40" onClick={() => setCategorySheetFor(null)} />
-          {/* Sheet */}
-          <div className="relative bg-background rounded-t-3xl max-h-[70vh] flex flex-col">
-            <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-border/50">
-              <p className="text-sm font-semibold">Categoría</p>
-              <button onClick={() => setCategorySheetFor(null)} className="text-muted-foreground active:scale-90 transition-all">
-                <X className="size-5" />
-              </button>
-            </div>
-            <div className="overflow-y-auto flex-1 px-4 py-3 space-y-4">
-              {/* Sin categoría */}
-              {(() => {
-                const sheetCatName = txOverrides[categorySheetFor]?.categoria ?? parsed?.transacciones.find(t => t.id === categorySheetFor)?.categoriaSugerida ?? null
-                const hasCategory = !!categories.find(c => c.name.toLowerCase() === (sheetCatName ?? "").toLowerCase())
-                return (
+      {categorySheetFor && (() => {
+        const sheetCatName = txOverrides[categorySheetFor]?.categoria ?? parsed?.transacciones.find(t => t.id === categorySheetFor)?.categoriaSugerida ?? null
+        const hasCategory = !!categories.find(c => c.name.toLowerCase() === (sheetCatName ?? "").toLowerCase())
+        return (
+          <div className="fixed inset-0 z-50 flex flex-col justify-end">
+            <div className="absolute inset-0 bg-black/40" onClick={() => setCategorySheetFor(null)} />
+            <div className="relative bg-background rounded-t-3xl max-h-[75vh] flex flex-col">
+              {/* Header */}
+              <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-border/50">
+                <p className="text-sm font-semibold">Categoría</p>
+                <div className="flex items-center gap-2">
                   <button
-                    type="button"
-                    onClick={() => { setTxOv(categorySheetFor, { categoria: null }); setCategorySheetFor(null) }}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors ${
-                      !hasCategory ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-muted/60"
-                    }`}
+                    onClick={() => openNewCategory()}
+                    className="flex items-center gap-1 text-xs font-medium text-primary bg-primary/10 hover:bg-primary/15 px-2.5 py-1.5 rounded-full transition-colors active:scale-95"
                   >
-                    Sin categoría
+                    <Plus className="size-3" /> Nueva
                   </button>
-                )
-              })()}
-              {/* Categories grouped by space */}
-              {organizations.map(org => {
-                const orgCats = categories.filter(c => c.organizationId === org.id)
-                if (orgCats.length === 0) return null
-                const sheetCatName = txOverrides[categorySheetFor]?.categoria ?? parsed?.transacciones.find(t => t.id === categorySheetFor)?.categoriaSugerida ?? null
-                const currentCat = sheetCatName
-                return (
-                  <div key={org.id}>
-                    <div className="flex items-center gap-2 mb-2 px-1">
-                      <div className="size-5 rounded-md flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${MAUVE}20` }}>
-                        {org.isPersonal
-                          ? <User className="size-3" style={{ color: MAUVE }} />
-                          : <Home className="size-3" style={{ color: MAUVE }} />}
+                  <button onClick={() => setCategorySheetFor(null)} className="text-muted-foreground active:scale-90 transition-all">
+                    <X className="size-5" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="overflow-y-auto flex-1 px-4 py-3 space-y-4">
+                {/* Sin categoría */}
+                <button
+                  type="button"
+                  onClick={() => { setTxOv(categorySheetFor, { categoria: null }); setCategorySheetFor(null) }}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors ${
+                    !hasCategory ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-muted/60"
+                  }`}
+                >
+                  Sin categoría
+                </button>
+
+                {/* Categories grouped by space */}
+                {organizations.map(org => {
+                  const orgCats = categories.filter(c => c.organizationId === org.id)
+                  if (orgCats.length === 0) return null
+                  return (
+                    <div key={org.id}>
+                      {/* Space header with color + icon + "Nueva" shortcut */}
+                      <div className="flex items-center justify-between mb-1.5 px-1">
+                        <div className="flex items-center gap-2">
+                          <div className="size-5 rounded-md flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${MAUVE}25` }}>
+                            {org.isPersonal
+                              ? <User className="size-3" style={{ color: MAUVE }} />
+                              : <Home className="size-3" style={{ color: MAUVE }} />}
+                          </div>
+                          <p className="text-xs font-bold uppercase tracking-wider" style={{ color: MAUVE }}>{org.name}</p>
+                        </div>
+                        <button
+                          onClick={() => openNewCategory(org.id)}
+                          className="text-xs text-muted-foreground hover:text-primary flex items-center gap-0.5 transition-colors"
+                        >
+                          <Plus className="size-3" /> agregar
+                        </button>
                       </div>
-                      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{org.name}</p>
+
+                      <div className="space-y-0.5">
+                        {orgCats.map(cat => {
+                          const isSelected = sheetCatName?.toLowerCase() === cat.name.toLowerCase()
+                          return (
+                            <button
+                              key={cat.id}
+                              type="button"
+                              onClick={() => { setTxOv(categorySheetFor, { categoria: cat.name }); setCategorySheetFor(null) }}
+                              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition-colors ${
+                                isSelected ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted/60 text-foreground"
+                              }`}
+                            >
+                              <span className="flex items-center gap-2.5">
+                                {cat.icon && <span className="text-base leading-none">{cat.icon}</span>}
+                                {cat.name}
+                              </span>
+                              {isSelected && <Check className="size-4 text-primary flex-shrink-0" />}
+                            </button>
+                          )
+                        })}
+                      </div>
                     </div>
-                    <div className="space-y-0.5">
-                      {orgCats.map(cat => {
-                        const isSelected = currentCat?.toLowerCase() === cat.name.toLowerCase()
-                        return (
-                          <button
-                            key={cat.id}
-                            type="button"
-                            onClick={() => { setTxOv(categorySheetFor, { categoria: cat.name }); setCategorySheetFor(null) }}
-                            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition-colors ${
-                              isSelected ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted/60 text-foreground"
-                            }`}
-                          >
-                            {cat.name}
-                            {isSelected && <Check className="size-4 text-primary" />}
-                          </button>
-                        )
-                      })}
-                    </div>
-                  </div>
-                )
-              })}
+                  )
+                })}
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      })()}
     </div>
   )
 }
