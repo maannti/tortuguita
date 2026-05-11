@@ -49,7 +49,8 @@ const PAYMENT_METHODS: { value: PaymentMethod; label: string; icon: React.ReactN
 
 const INSTALLMENT_OPTIONS = [1, 3, 6, 9, 12]
 
-function formatARS(n: number) { return new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(Math.round(n)) }
+const arsFormatter = new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", minimumFractionDigits: 0, maximumFractionDigits: 0 })
+function formatARS(n: number) { return arsFormatter.format(Math.round(n)) }
 function parseAmount(s: string): number { return parseFloat(s.replace(/\./g, "").replace(",", ".")) || 0 }
 function formatDisplay(n: number): string { if (!n) return ""; const [int, dec] = n.toString().split("."); const f = int.replace(/\B(?=(\d{3})+(?!\d))/g, "."); return dec ? `${f},${dec}` : f }
 function formatDateDisplay(iso: string): string { if (!iso) return ""; const [y, m, d] = iso.split("-"); return `${d}/${m}/${y.slice(2)}` }
@@ -348,7 +349,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
             <div className="space-y-1.5">
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Categoría</p>
               {normalCats.length === 0 ? (
-                <div className="rounded-xl border-2 border-dashed border-border px-4 py-4 flex items-center justify-between gap-3">
+                <div className="rounded-xl border-2 border-dashed border-border p-4 flex items-center justify-between gap-3">
                   <p className="text-sm text-muted-foreground">No hay categorías en este espacio</p>
                   <button
                     type="button"

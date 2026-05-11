@@ -18,7 +18,8 @@ interface Props {
   nextMonth: string | null
 }
 
-function formatARS(n: number) { return new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(Math.round(n)) }
+const arsFormatter = new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", minimumFractionDigits: 0, maximumFractionDigits: 0 })
+function formatARS(n: number) { return arsFormatter.format(Math.round(n)) }
 function capitalize(s: string) { return s.charAt(0).toUpperCase() + s.slice(1) }
 
 export function CuotasView({ cards, monthLabel, monthKey, prevMonth, nextMonth }: Props) {

@@ -20,12 +20,10 @@ interface Props {
   hasAnyUSD: boolean
 }
 
-function formatARS(n: number) {
-  return new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(n)
-}
-function formatUSD(n: number) {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n)
-}
+const arsFormatter = new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", minimumFractionDigits: 0, maximumFractionDigits: 2 })
+const usdFormatter = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 })
+function formatARS(n: number) { return arsFormatter.format(n) }
+function formatUSD(n: number) { return usdFormatter.format(n) }
 function capitalize(s: string) { return s.charAt(0).toUpperCase() + s.slice(1) }
 
 export function BillsView({ month, monthKey, availableMonths, categoryGroups, grandTotal, hasAnyUSD }: Props) {
@@ -143,7 +141,7 @@ export function BillsView({ month, monthKey, availableMonths, categoryGroups, gr
                     >
                       {group.icon
                         ? <span className="text-sm leading-none">{group.icon}</span>
-                        : <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: group.color }} />
+                        : <span className="size-2.5 rounded-full" style={{ backgroundColor: group.color }} />
                       }
                     </div>
                     <h2 className="text-base font-medium text-foreground" style={{ fontFamily: "var(--font-fraunces, serif)" }}>

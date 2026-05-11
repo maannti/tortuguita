@@ -236,7 +236,7 @@ export function SettingsHub({ creditCards, categories }: Props) {
 
           {/* Create / join space form */}
           {showNewSpace && (
-            <div className="glass rounded-2xl px-4 py-4 mb-3 space-y-3">
+            <div className="glass rounded-2xl p-4 mb-3 space-y-3">
               {/* Mode tabs */}
               <div className="flex rounded-xl bg-muted/60 p-1 gap-1">
                 {(["create", "join"] as const).map((m) => (

@@ -474,7 +474,7 @@ export default function AIPage() {
                   </div>
                 </div>
               ) : (
-                <div className="px-4 py-4 space-y-4">
+                <div className="p-4 space-y-4">
                   {messages.map((msg, idx) => <ChatMessage key={idx} message={msg} />)}
                   {isLoading && messages.length > 0 && messages[messages.length - 1]?.role === "user" && (
                     <div className="flex items-center gap-3 text-muted-foreground py-2">
@@ -637,7 +637,7 @@ export default function AIPage() {
                   </div>
                 </div>
               ) : (
-                <div className="px-4 py-4 space-y-4">
+                <div className="p-4 space-y-4">
                   {messages.map((msg, idx) => <ChatMessage key={idx} message={msg} isMobile />)}
                   {isLoading && messages.length > 0 && messages[messages.length - 1]?.role === "user" && (
                     <div className="flex items-center gap-3 text-muted-foreground py-2">
@@ -693,7 +693,7 @@ export default function AIPage() {
               </form>
               {/* File chip */}
               {attachedFile && (
-                <div className="flex items-center gap-2 px-1 py-1">
+                <div className="flex items-center gap-2 p-1">
                   <div className="flex items-center gap-2 rounded-xl bg-primary/10 border border-primary/20 px-3 py-1.5 text-xs text-primary font-medium max-w-full">
                     <PaperclipIcon className="size-3 flex-shrink-0" />
                     <span className="truncate">{attachedFile.name}</span>
