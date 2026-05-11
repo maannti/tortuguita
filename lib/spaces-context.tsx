@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, useState, useEffect, useCallback } from "react"
+import { createContext, use, useState, useEffect, useCallback } from "react"
 
 export interface Space {
   id: string
@@ -84,7 +84,7 @@ export function SpacesProvider({
 }
 
 export function useSpaces() {
-  const ctx = useContext(SpacesContext)
+  const ctx = use(SpacesContext)
   if (!ctx) throw new Error("useSpaces must be used within SpacesProvider")
   return ctx
 }
