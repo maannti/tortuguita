@@ -77,7 +77,7 @@ export default async function CuotasPage({ searchParams }: PageProps) {
     }),
     prisma.billType.findMany({
       where: { organizationId: { in: allOrgIds }, isCreditCard: true },
-      select: { id: true, name: true, color: true, icon: true, currentDueDate: true, nextDueDate: true },
+      select: { id: true, name: true, color: true, icon: true, currentClosingDate: true, currentDueDate: true, nextClosingDate: true, nextDueDate: true },
       orderBy: { name: "asc" },
     }),
   ])
@@ -151,8 +151,35 @@ export default async function CuotasPage({ searchParams }: PageProps) {
     cardData.monthTotal += Number(bill.amount)
   }
 
-  // Detect cards whose billing period has expired (currentDueDate < today)
-  // These need the user to update closing/due dates in settings
+  // Auto-roll: if current period expired AND next period is already configured, promote it silently
+  const toRoll = creditCardTypes.filter(ct =>
+    ct.currentDueDate && new Date(ct.currentDueDate) < now &&
+    ct.nextClosingDate && ct.nextDueDate
+  )
+  if (toRoll.length > 0) {
+    await Promise.all(toRoll.map(ct =>
+      prisma.billType.update({
+        where: { id: ct.id },
+        data: {
+          currentClosingDate: ct.nextClosingDate,
+          currentDueDate: ct.nextDueDate,
+          nextClosingDate: null,
+          nextDueDate: null,
+        },
+      })
+    ))
+    // Update local copies so staleCards computation below is accurate
+    for (const ct of creditCardTypes) {
+      if (toRoll.find(r => r.id === ct.id)) {
+        ct.currentClosingDate = ct.nextClosingDate
+        ct.currentDueDate = ct.nextDueDate
+        ct.nextClosingDate = null
+        ct.nextDueDate = null
+      }
+    }
+  }
+
+  // Stale = current period still expired AND no next period was available to auto-roll
   const staleCards = creditCardTypes
     .filter(ct => ct.currentDueDate && new Date(ct.currentDueDate) < now)
     .map(ct => ({ id: ct.id, name: ct.name }))
