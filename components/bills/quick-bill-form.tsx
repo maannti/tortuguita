@@ -612,7 +612,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
                     <p className="font-medium leading-snug">El período venció — actualizá las fechas</p>
                     <p className="text-xs opacity-75 mt-0.5">
                       Configurá el nuevo cierre en{" "}
-                      <button type="button" className="underline font-semibold" onClick={() => router.push("/cards")}>
+                      <button type="button" className="underline font-semibold" onClick={() => push("/cards")}>
                         Tarjetas
                       </button>
                     </p>
