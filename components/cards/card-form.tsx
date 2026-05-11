@@ -139,7 +139,7 @@ export function CardForm({ mode, initialData }: Props) {
 
           {/* Network */}
           <div className="space-y-2">
-            <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Red</label>
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Red</p>
             <div className="grid grid-cols-4 gap-2">
               {NETWORKS.map((n) => {
                 const selected = network === n.id
@@ -160,7 +160,7 @@ export function CardForm({ mode, initialData }: Props) {
 
           {/* Bank */}
           <div className="space-y-2">
-            <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Banco</label>
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Banco</p>
             <div className="grid grid-cols-4 gap-2">
               {BANKS.map((bank) => {
                 const selected = bankId === bank.id
@@ -198,8 +198,8 @@ export function CardForm({ mode, initialData }: Props) {
 
           {/* Name */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Nombre</label>
-            <input type="text" value={name} onChange={(e) => setName(e.target.value)}
+            <label htmlFor="card-name" className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Nombre</label>
+            <input id="card-name" type="text" value={name} onChange={(e) => setName(e.target.value)}
               placeholder="ej. ICBC Visa"
               className="w-full rounded-xl border bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
           </div>
@@ -207,17 +207,18 @@ export function CardForm({ mode, initialData }: Props) {
           {/* Billing period */}
           <div className="space-y-3">
             <div>
-              <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 Período de facturación actual
-              </label>
+              </p>
               <p className="text-xs text-muted-foreground mt-0.5">
                 Cierre y vencimiento del resumen en curso
               </p>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <label className="text-xs text-muted-foreground">Fecha de cierre</label>
+                <label htmlFor="currentClosingDate" className="text-xs text-muted-foreground">Fecha de cierre</label>
                 <input
+                  id="currentClosingDate"
                   type="date"
                   value={currentClosingDate}
                   onChange={(e) => setCurrentClosingDate(e.target.value)}
@@ -225,8 +226,9 @@ export function CardForm({ mode, initialData }: Props) {
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-xs text-muted-foreground">Fecha de vencimiento</label>
+                <label htmlFor="currentDueDate" className="text-xs text-muted-foreground">Fecha de vencimiento</label>
                 <input
+                  id="currentDueDate"
                   type="date"
                   value={currentDueDate}
                   onChange={(e) => setCurrentDueDate(e.target.value)}
@@ -238,17 +240,18 @@ export function CardForm({ mode, initialData }: Props) {
 
           <div className="space-y-3">
             <div>
-              <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 Próximo período (opcional)
-              </label>
+              </p>
               <p className="text-xs text-muted-foreground mt-0.5">
                 Completá si ya conocés el próximo cierre
               </p>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <label className="text-xs text-muted-foreground">Fecha de cierre</label>
+                <label htmlFor="nextClosingDate" className="text-xs text-muted-foreground">Fecha de cierre</label>
                 <input
+                  id="nextClosingDate"
                   type="date"
                   value={nextClosingDate}
                   onChange={(e) => setNextClosingDate(e.target.value)}
@@ -256,8 +259,9 @@ export function CardForm({ mode, initialData }: Props) {
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-xs text-muted-foreground">Fecha de vencimiento</label>
+                <label htmlFor="nextDueDate" className="text-xs text-muted-foreground">Fecha de vencimiento</label>
                 <input
+                  id="nextDueDate"
                   type="date"
                   value={nextDueDate}
                   onChange={(e) => setNextDueDate(e.target.value)}

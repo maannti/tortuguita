@@ -290,7 +290,7 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
               {/* Espacio */}
               {organizations.length > 1 && (
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Espacio</label>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Espacio</p>
                   <div className="grid grid-cols-2 gap-2">
                     {organizations.map(org => {
                       const isSelected = selectedOrgId === org.id
@@ -315,7 +315,7 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
 
               {/* PDF upload */}
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Archivo PDF</label>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Archivo PDF</p>
                 <div
                   onClick={() => fileInputRef.current?.click()}
                   onDragOver={e => e.preventDefault()}
@@ -423,7 +423,7 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
               {/* Titular mapping */}
               {parsed.titulares.length > 0 && (
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Asignar titulares</label>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Asignar titulares</p>
                   <div className="rounded-2xl border border-border overflow-hidden divide-y divide-border/50">
                     {parsed.titulares.map(titular => (
                       <div key={titular} className="grid grid-cols-3 items-center gap-3 px-4 py-3">

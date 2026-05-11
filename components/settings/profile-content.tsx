@@ -93,8 +93,9 @@ export function ProfileContent({ user }: Props) {
 
         {/* Nombre */}
         <div className="space-y-1.5">
-          <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Nombre</label>
+          <label htmlFor="profile-name" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Nombre</label>
           <input
+            id="profile-name"
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -104,7 +105,7 @@ export function ProfileContent({ user }: Props) {
 
         {/* Email (read-only) */}
         <div className="space-y-1.5">
-          <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Correo</label>
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Correo</p>
           <div className="w-full rounded-xl border bg-muted/50 px-4 py-3 text-sm text-muted-foreground">
             {user.email}
           </div>

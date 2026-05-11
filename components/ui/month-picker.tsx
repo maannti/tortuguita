@@ -19,7 +19,14 @@ export function MonthPicker({ currentMonthKey, onSelect, onClose }: Props) {
   const maxYear = now.getFullYear() + 1
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 flex items-end"
+      role="button"
+      aria-label="Cerrar selector de mes"
+      tabIndex={-1}
+      onClick={onClose}
+      onKeyDown={e => (e.key === "Escape" || e.key === "Enter") && onClose()}
+    >
       {/* Scrim */}
       <div className="absolute inset-0 bg-black/20 backdrop-blur-[2px]" />
 
@@ -33,7 +40,11 @@ export function MonthPicker({ currentMonthKey, onSelect, onClose }: Props) {
           boxShadow: "0 -4px 40px rgba(157,129,137,0.15)",
           border: "1px solid rgba(255,255,255,0.8)",
         }}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Selector de mes"
         onClick={e => e.stopPropagation()}
+        onKeyDown={e => e.stopPropagation()}
       >
         {/* Handle */}
         <div className="flex justify-center pt-3 pb-1">

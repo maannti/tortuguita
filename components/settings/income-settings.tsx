@@ -70,9 +70,9 @@ export function IncomeSettings({ organizationId, members, initialIncomes }: Prop
           return (
             <div key={member.id} className="space-y-1">
               <div className="flex items-center justify-between">
-                <label className="text-sm font-medium">
+                <span className="text-sm font-medium">
                   {member.name || member.email}
-                </label>
+                </span>
                 {totalIncome > 0 && amount > 0 && (
                   <span className="text-xs text-muted-foreground">{pct}%</span>
                 )}
