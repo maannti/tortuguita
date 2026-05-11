@@ -99,22 +99,22 @@ export function BillDetail({ bill }: BillDetailProps) {
           onClick={() => router.push("/bills")}
           className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
-          <ChevronLeft className="h-4 w-4" />
+          <ChevronLeft className="size-4" />
           Gastos
         </button>
         <div className="flex items-center gap-2">
           <Link
             href={`/bills/${bill.id}/edit`}
-            className="w-9 h-9 flex items-center justify-center rounded-2xl bg-muted/80 text-muted-foreground hover:text-foreground active:scale-95 transition-all"
+            className="size-9 flex items-center justify-center rounded-2xl bg-muted/80 text-muted-foreground hover:text-foreground active:scale-95 transition-all"
           >
-            <Pencil className="h-4 w-4" />
+            <Pencil className="size-4" />
           </Link>
           <button
             type="button"
             onClick={() => setDeleteOpen(true)}
-            className="w-9 h-9 flex items-center justify-center rounded-2xl bg-muted/80 text-muted-foreground hover:text-destructive active:scale-95 transition-all"
+            className="size-9 flex items-center justify-center rounded-2xl bg-muted/80 text-muted-foreground hover:text-destructive active:scale-95 transition-all"
           >
-            <Trash2 className="h-4 w-4" />
+            <Trash2 className="size-4" />
           </button>
         </div>
       </div>
@@ -128,7 +128,7 @@ export function BillDetail({ bill }: BillDetailProps) {
             style={{ background: `linear-gradient(135deg, ${accentColor}18 0%, ${accentColor}30 100%)` }}
           >
             {/* Orbs decorativos */}
-            <div className="absolute -top-8 -right-8 w-36 h-36 rounded-full blur-2xl pointer-events-none" style={{ backgroundColor: `${accentColor}22` }} />
+            <div className="absolute -top-8 -right-8 size-36 rounded-full blur-2xl pointer-events-none" style={{ backgroundColor: `${accentColor}22` }} />
             <div className="absolute bottom-0 left-0 w-28 h-20 rounded-full blur-xl pointer-events-none"  style={{ backgroundColor: `${accentColor}18` }} />
             <div className="relative space-y-2">
               <p className="text-sm text-muted-foreground font-medium truncate px-4">{bill.label}</p>
@@ -239,8 +239,8 @@ export function BillDetail({ bill }: BillDetailProps) {
       <Dialog open={deleteOpen} onOpenChange={(open) => { if (!open) { setDeleteOpen(false); setDeleteError(null) } }}>
         <DialogContent className="rounded-3xl border-border/40 bg-card w-[calc(100%-2rem)] max-w-sm p-6 [&>.absolute]:hidden">
           <DialogHeader className="items-center text-center gap-4 pb-1">
-            <div className="w-14 h-14 rounded-full bg-destructive/10 flex items-center justify-center">
-              <Trash2 className="h-6 w-6 text-destructive" />
+            <div className="size-14 rounded-full bg-destructive/10 flex items-center justify-center">
+              <Trash2 className="size-6 text-destructive" />
             </div>
             <div className="space-y-1.5">
               <DialogTitle

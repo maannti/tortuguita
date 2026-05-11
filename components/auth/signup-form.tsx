@@ -219,7 +219,7 @@ export function SignupForm() {
                       onClick={() => setShowPassword(!showPassword)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                     >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                     </button>
                   </div>
                 </FormControl>
@@ -249,11 +249,11 @@ export function SignupForm() {
                   >
                     <div
                       className={cn(
-                        "flex h-8 w-8 shrink-0 items-center justify-center rounded-full",
+                        "flex size-8 shrink-0 items-center justify-center rounded-full",
                         isSelected ? "bg-primary text-primary-foreground" : "bg-muted"
                       )}
                     >
-                      <Icon className="h-4 w-4" />
+                      <Icon className="size-4" />
                     </div>
                     <div className="flex-1 space-y-0.5">
                       <p className="text-sm font-medium">{option.title}</p>
@@ -261,7 +261,7 @@ export function SignupForm() {
                     </div>
                     {isSelected && (
                       <div className="absolute top-2 right-2">
-                        <Check className="h-4 w-4 text-primary" />
+                        <Check className="size-4 text-primary" />
                       </div>
                     )}
                   </button>

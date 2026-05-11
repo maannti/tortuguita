@@ -64,8 +64,8 @@ export function DeleteCategoryButton({ id, name }: DeleteCategoryButtonProps) {
   return (
     <Dialog open={isOpen} onOpenChange={handleOpen}>
       <DialogTrigger asChild>
-        <Button variant="destructive" size="icon" className="h-10 w-10">
-          <Trash2 className="h-4 w-4" />
+        <Button variant="destructive" size="icon" className="size-10">
+          <Trash2 className="size-4" />
         </Button>
       </DialogTrigger>
 
@@ -80,7 +80,7 @@ export function DeleteCategoryButton({ id, name }: DeleteCategoryButtonProps) {
             </p>
             {error && (
               <div className="flex items-start gap-2 rounded-xl bg-destructive/10 text-destructive text-sm px-4 py-3">
-                <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                <AlertTriangle className="size-4 flex-shrink-0 mt-0.5" />
                 {error}
               </div>
             )}
@@ -97,7 +97,7 @@ export function DeleteCategoryButton({ id, name }: DeleteCategoryButtonProps) {
           <>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-destructive">
-                <AlertTriangle className="h-5 w-5 flex-shrink-0" />
+                <AlertTriangle className="size-5 flex-shrink-0" />
                 Esta categoría tiene gastos
               </DialogTitle>
             </DialogHeader>
@@ -115,7 +115,7 @@ export function DeleteCategoryButton({ id, name }: DeleteCategoryButtonProps) {
             </div>
             {error && (
               <div className="flex items-start gap-2 rounded-xl bg-destructive/10 text-destructive text-sm px-4 py-3">
-                <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                <AlertTriangle className="size-4 flex-shrink-0 mt-0.5" />
                 {error}
               </div>
             )}

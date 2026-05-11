@@ -35,14 +35,14 @@ export function CuotasView({ cards, monthLabel, monthKey, prevMonth, nextMonth }
           className="relative rounded-3xl overflow-hidden px-5 py-4"
           style={{ background: "linear-gradient(135deg, #D8E2DC 0%, #FFE5D9 55%, #FFCAD4 100%)" }}
         >
-          <div className="absolute -top-6 -right-6 w-32 h-32 rounded-full bg-white/20 blur-2xl pointer-events-none" />
+          <div className="absolute -top-6 -right-6 size-32 rounded-full bg-white/20 blur-2xl pointer-events-none" />
           <div className="flex items-center justify-between">
             <button
               onClick={() => prevMonth && router.push(`/cuotas?month=${prevMonth}`)}
               disabled={!prevMonth}
-              className="w-8 h-8 flex items-center justify-center rounded-full bg-white/40 backdrop-blur-sm disabled:opacity-30 active:scale-95 transition-all"
+              className="size-8 flex items-center justify-center rounded-full bg-white/40 backdrop-blur-sm disabled:opacity-30 active:scale-95 transition-all"
             >
-              <ChevronLeft className="h-4 w-4 text-[#6B5159]" />
+              <ChevronLeft className="size-4 text-[#6B5159]" />
             </button>
             <div className="text-center">
               <p className="text-[11px] font-medium text-[#9D8189] uppercase tracking-wide mb-0.5">Cuotas activas</p>
@@ -65,9 +65,9 @@ export function CuotasView({ cards, monthLabel, monthKey, prevMonth, nextMonth }
             <button
               onClick={() => nextMonth && router.push(`/cuotas?month=${nextMonth}`)}
               disabled={!nextMonth}
-              className="w-8 h-8 flex items-center justify-center rounded-full bg-white/40 backdrop-blur-sm disabled:opacity-30 active:scale-95 transition-all"
+              className="size-8 flex items-center justify-center rounded-full bg-white/40 backdrop-blur-sm disabled:opacity-30 active:scale-95 transition-all"
             >
-              <ChevronRight className="h-4 w-4 text-[#6B5159]" />
+              <ChevronRight className="size-4 text-[#6B5159]" />
             </button>
           </div>
         </div>
@@ -195,13 +195,13 @@ export function CuotasView({ cards, monthLabel, monthKey, prevMonth, nextMonth }
       {/* Importar resumen */}
       <Link href="/resumen"
         className="fixed bottom-24 right-20 z-30 flex items-center gap-1.5 px-4 h-11 rounded-full bg-background border border-border text-muted-foreground text-sm font-medium shadow-sm active:scale-95 transition-transform">
-        <FileText className="h-4 w-4" />
+        <FileText className="size-4" />
         Importar
       </Link>
 
       <Link href="/cuotas/new"
-        className="fixed bottom-24 right-4 z-30 flex items-center justify-center w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 active:scale-95 transition-transform">
-        <Plus className="h-6 w-6" />
+        className="fixed bottom-24 right-4 z-30 flex items-center justify-center size-14 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 active:scale-95 transition-transform">
+        <Plus className="size-6" />
       </Link>
 
       {showPicker && (

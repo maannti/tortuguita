@@ -90,7 +90,7 @@ export function MonthFilter({ availableMonths }: MonthFilterProps) {
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button variant="outline" size="sm" className="gap-2">
-          <Calendar className="h-4 w-4" />
+          <Calendar className="size-4" />
           <span>{formatSelectedLabel()}</span>
         </Button>
       </PopoverTrigger>
@@ -102,20 +102,20 @@ export function MonthFilter({ availableMonths }: MonthFilterProps) {
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8"
+              className="size-8"
               onClick={() => setViewYear(y => Math.min(y + 1, maxYear))}
               disabled={viewYear >= maxYear}
             >
-              <ChevronUp className="h-4 w-4" />
+              <ChevronUp className="size-4" />
             </Button>
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8"
+              className="size-8"
               onClick={() => setViewYear(y => Math.max(y - 1, minYear))}
               disabled={viewYear <= minYear}
             >
-              <ChevronDown className="h-4 w-4" />
+              <ChevronDown className="size-4" />
             </Button>
           </div>
         </div>

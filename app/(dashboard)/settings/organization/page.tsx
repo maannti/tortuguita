@@ -59,7 +59,7 @@ export default async function OrganizationSettingsPage({ searchParams }: PagePro
             href={sharedOrgs.length > 1 ? "/settings/organization" : "/settings"}
             className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
-            <ChevronLeft className="h-4 w-4" />Volver
+            <ChevronLeft className="size-4" />Volver
           </Link>
           <h1 className="text-base font-semibold" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
             {org.name}
@@ -140,7 +140,7 @@ export default async function OrganizationSettingsPage({ searchParams }: PagePro
     <div className="pb-28">
       <div className="flex items-center justify-between px-4 py-3 border-b sticky top-0 bg-background/95 backdrop-blur-sm z-10">
         <Link href="/settings" className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
-          <ChevronLeft className="h-4 w-4" />Volver
+          <ChevronLeft className="size-4" />Volver
         </Link>
         <h1 className="text-base font-semibold" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
           Ingresos del mes
@@ -155,14 +155,14 @@ export default async function OrganizationSettingsPage({ searchParams }: PagePro
               href={`/settings/organization?spaceId=${org.id}`}
               className="flex items-center gap-3 px-4 py-4 active:bg-muted/50 transition-colors"
             >
-              <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center flex-shrink-0">
-                <Home className="h-4 w-4 text-muted-foreground" />
+              <div className="size-9 rounded-xl bg-muted flex items-center justify-center flex-shrink-0">
+                <Home className="size-4 text-muted-foreground" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium">{org.name}</p>
                 <p className="text-xs text-muted-foreground">Configurar ingresos del mes</p>
               </div>
-              <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+              <ChevronRight className="size-4 text-muted-foreground flex-shrink-0" />
             </Link>
           ))}
         </div>

@@ -46,9 +46,9 @@ export function MonthPicker({ currentMonthKey, onSelect, onClose }: Props) {
             <button
               onClick={() => setViewYear(y => Math.max(minYear, y - 1))}
               disabled={viewYear <= minYear}
-              className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-black/5 disabled:opacity-30 transition-colors"
+              className="size-9 flex items-center justify-center rounded-xl hover:bg-black/5 disabled:opacity-30 transition-colors"
             >
-              <ChevronLeft className="h-5 w-5" />
+              <ChevronLeft className="size-5" />
             </button>
             <span
               className="text-xl font-medium"
@@ -59,9 +59,9 @@ export function MonthPicker({ currentMonthKey, onSelect, onClose }: Props) {
             <button
               onClick={() => setViewYear(y => Math.min(maxYear, y + 1))}
               disabled={viewYear >= maxYear}
-              className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-black/5 disabled:opacity-30 transition-colors"
+              className="size-9 flex items-center justify-center rounded-xl hover:bg-black/5 disabled:opacity-30 transition-colors"
             >
-              <ChevronRight className="h-5 w-5" />
+              <ChevronRight className="size-5" />
             </button>
           </div>
 

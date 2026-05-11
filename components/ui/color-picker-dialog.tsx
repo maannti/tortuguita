@@ -24,7 +24,7 @@ export function ColorInputWithPicker({ value, onChange, disabled = false }: Colo
       >
         {/* Swatch */}
         <span
-          className="w-8 h-8 rounded-xl flex-shrink-0 shadow-sm"
+          className="size-8 rounded-xl flex-shrink-0 shadow-sm"
           style={{ backgroundColor: color }}
         />
         {/* Hex value */}
@@ -33,7 +33,7 @@ export function ColorInputWithPicker({ value, onChange, disabled = false }: Colo
         </span>
         {/* Color wheel icon */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/icons/color-wheel.png" alt="" className="w-6 h-6 opacity-70" />
+        <img src="/icons/color-wheel.png" alt="" className="size-6 opacity-70" />
       </button>
 
       {/* Inline expanded picker */}

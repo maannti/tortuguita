@@ -133,7 +133,7 @@ export function ConversationSidebar({
   return (
     <Card className="w-64 p-4 flex flex-col gap-4 h-full">
       <Button onClick={onNewConversation} className="w-full">
-        <PlusIcon className="h-4 w-4 mr-2" />
+        <PlusIcon className="size-4 mr-2" />
         New Chat
       </Button>
 
@@ -149,7 +149,7 @@ export function ConversationSidebar({
                   onClick={(e) => handleDelete(conv.id, e)}
                   className="w-full h-full flex items-center justify-center"
                 >
-                  <TrashIcon className="h-5 w-5 text-destructive-foreground" />
+                  <TrashIcon className="size-5 text-destructive-foreground" />
                 </button>
               </div>
 
@@ -170,7 +170,7 @@ export function ConversationSidebar({
                 )}
               >
                 <div className="flex items-center gap-2">
-                  <MessageSquareIcon className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
+                  <MessageSquareIcon className="size-4 flex-shrink-0 text-muted-foreground" />
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium truncate">{conv.title || "New conversation"}</div>
                     <div className="text-xs text-muted-foreground">
@@ -182,7 +182,7 @@ export function ConversationSidebar({
                     onClick={(e) => handleDelete(conv.id, e)}
                     className="hidden md:block opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
                   >
-                    <TrashIcon className="h-4 w-4 text-destructive hover:text-destructive/80" />
+                    <TrashIcon className="size-4 text-destructive hover:text-destructive/80" />
                   </button>
                 </div>
               </div>

@@ -41,10 +41,10 @@ interface Props {
 type PaymentMethod = "debit" | "credit" | "cash" | "other"
 
 const PAYMENT_METHODS: { value: PaymentMethod; label: string; icon: React.ReactNode }[] = [
-  { value: "debit",  label: "Débito",   icon: <Wallet     className="h-4 w-4" /> },
-  { value: "credit", label: "Crédito",  icon: <CreditCard className="h-4 w-4" /> },
-  { value: "cash",   label: "Efectivo", icon: <Banknote   className="h-4 w-4" /> },
-  { value: "other",  label: "Otro",     icon: <Ellipsis   className="h-4 w-4" /> },
+  { value: "debit",  label: "Débito",   icon: <Wallet     className="size-4" /> },
+  { value: "credit", label: "Crédito",  icon: <CreditCard className="size-4" /> },
+  { value: "cash",   label: "Efectivo", icon: <Banknote   className="size-4" /> },
+  { value: "other",  label: "Otro",     icon: <Ellipsis   className="size-4" /> },
 ]
 
 const INSTALLMENT_OPTIONS = [1, 3, 6, 9, 12]
@@ -261,7 +261,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b sticky top-0 z-10 bg-background/95 backdrop-blur-sm">
         <button type="button" onClick={() => backHref ? router.push(backHref) : router.back()} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
-          <ChevronLeft className="h-4 w-4" />Volver
+          <ChevronLeft className="size-4" />Volver
         </button>
         <h1 className="text-base font-semibold">{isEdit ? "Editar gasto" : "Nuevo gasto"}</h1>
         <button type="submit" disabled={isLoading || !canSave} className="px-4 py-1.5 rounded-full bg-primary text-primary-foreground text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 transition-all">
@@ -295,15 +295,15 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
                       }`}
                     >
                       <div
-                        className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 transition-all"
+                        className="size-8 rounded-xl flex items-center justify-center flex-shrink-0 transition-all"
                         style={{ backgroundColor: isSelected ? "#9D8189" : "#9D818920" }}
                       >
                         {org.isPersonal
-                          ? <User className="h-4 w-4" style={{ color: isSelected ? "#fff" : "#9D8189" }} />
-                          : <Home className="h-4 w-4" style={{ color: isSelected ? "#fff" : "#9D8189" }} />}
+                          ? <User className="size-4" style={{ color: isSelected ? "#fff" : "#9D8189" }} />
+                          : <Home className="size-4" style={{ color: isSelected ? "#fff" : "#9D8189" }} />}
                       </div>
                       <span className="flex-1 text-left leading-tight">{org.name}</span>
-                      {isSelected && <Check className="h-4 w-4 text-primary flex-shrink-0" />}
+                      {isSelected && <Check className="size-4 text-primary flex-shrink-0" />}
                     </button>
                   )
                 })}
@@ -358,7 +358,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
                     }}
                     className="flex items-center gap-1.5 text-sm font-semibold text-primary whitespace-nowrap flex-shrink-0"
                   >
-                    <Plus className="h-4 w-4" />Crear una
+                    <Plus className="size-4" />Crear una
                   </button>
                 </div>
               ) : (
@@ -371,14 +371,14 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
                         <>
                           {sel.icon
                             ? <span className="text-base leading-none flex-shrink-0">{sel.icon}</span>
-                            : <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: sel.color || "#6b7280" }} />}
+                            : <span className="size-2 rounded-full flex-shrink-0" style={{ backgroundColor: sel.color || "#6b7280" }} />}
                           <span className="flex-1 font-medium text-foreground">{sel.name}</span>
                         </>
                       ) : (
                         <span className="flex-1 text-muted-foreground">Seleccioná una categoría</span>
                       )
                     })()}
-                    <ChevronDown className={`h-4 w-4 text-muted-foreground flex-shrink-0 transition-transform ${expandedCats ? "rotate-180" : ""}`} />
+                    <ChevronDown className={`size-4 text-muted-foreground flex-shrink-0 transition-transform ${expandedCats ? "rotate-180" : ""}`} />
                   </button>
                   <button
                     type="button"
@@ -389,7 +389,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
                     title="Nueva categoría"
                     className="w-11 rounded-xl border border-border bg-background flex items-center justify-center hover:border-foreground/30 transition-colors"
                   >
-                    <Plus className="h-4 w-4 text-muted-foreground" />
+                    <Plus className="size-4 text-muted-foreground" />
                   </button>
                 </div>
               )}
@@ -401,7 +401,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
                       className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-left transition-colors ${i < normalCats.length - 1 ? "border-b border-border/50" : ""} ${categoryId === cat.id ? "bg-primary/5 text-foreground font-medium" : "text-muted-foreground hover:bg-muted/50"}`}>
                       {cat.icon
                         ? <span className="text-base leading-none flex-shrink-0">{cat.icon}</span>
-                        : <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: cat.color || "#6b7280" }} />}
+                        : <span className="size-2 rounded-full flex-shrink-0" style={{ backgroundColor: cat.color || "#6b7280" }} />}
                       <span className="flex-1">{cat.name}</span>
                       {categoryId === cat.id && <Check className="h-3.5 w-3.5 text-primary flex-shrink-0" />}
                     </button>
@@ -564,7 +564,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
                   <button key={opt.value} type="button" onClick={() => setSplitMode(opt.value)}
                     className={`w-full flex items-center justify-between rounded-xl border px-4 py-3 text-left transition-colors ${splitMode === opt.value ? "border-primary bg-primary/5" : "border-border bg-background hover:border-foreground/30"}`}>
                     <div><p className="text-sm font-medium">{opt.label}</p><p className="text-xs text-muted-foreground">{opt.desc}</p></div>
-                    {splitMode === opt.value && <Check className="h-4 w-4 text-primary flex-shrink-0" />}
+                    {splitMode === opt.value && <Check className="size-4 text-primary flex-shrink-0" />}
                   </button>
                 ))}
               </div>

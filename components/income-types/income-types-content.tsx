@@ -52,13 +52,13 @@ export function IncomeTypesContent({ incomeTypes }: IncomeTypesContentProps) {
                 <div className="flex items-center gap-3 min-w-0">
                   {incomeType.icon && <span className="text-2xl flex-shrink-0">{incomeType.icon}</span>}
                   {!incomeType.icon && incomeType.color && (
-                    <div className="h-8 w-8 rounded-full flex-shrink-0" style={{ backgroundColor: incomeType.color }} />
+                    <div className="size-8 rounded-full flex-shrink-0" style={{ backgroundColor: incomeType.color }} />
                   )}
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
                       <p className="font-semibold text-lg truncate">{incomeType.name}</p>
                       {incomeType.isRecurring && (
-                        <RefreshCw className="h-4 w-4 text-muted-foreground" />
+                        <RefreshCw className="size-4 text-muted-foreground" />
                       )}
                     </div>
                     {incomeType.description && (
@@ -67,9 +67,9 @@ export function IncomeTypesContent({ incomeTypes }: IncomeTypesContentProps) {
                   </div>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0 ml-4">
-                  <Button variant="outline" size="icon" className="h-10 w-10" asChild>
+                  <Button variant="outline" size="icon" className="size-10" asChild>
                     <Link href={`/income-types/${incomeType.id}/edit`}>
-                      <Pencil className="h-4 w-4" />
+                      <Pencil className="size-4" />
                     </Link>
                   </Button>
                   <DeleteIncomeTypeButton id={incomeType.id} name={incomeType.name} />

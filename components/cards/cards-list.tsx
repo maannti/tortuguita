@@ -21,14 +21,14 @@ export function CardsList({ cards }: CardsListProps) {
       <div className="flex items-center justify-between px-4 py-3 border-b sticky top-0 bg-background/95 backdrop-blur-sm z-10">
         <button onClick={() => router.push("/settings")}
           className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
-          <ChevronLeft className="h-4 w-4" />Volver
+          <ChevronLeft className="size-4" />Volver
         </button>
         <h1 className="text-base font-semibold" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
           Mis tarjetas
         </h1>
         <button onClick={() => router.push(newHref)}
           className="flex items-center gap-1 text-sm font-semibold text-primary">
-          <Plus className="h-4 w-4" />Nueva
+          <Plus className="size-4" />Nueva
         </button>
       </div>
 
@@ -62,7 +62,7 @@ export function CardsList({ cards }: CardsListProps) {
                   <div className="flex items-center gap-1 flex-shrink-0">
                     <button onClick={() => router.push(`/cards/${card.id}/edit`)}
                       className="p-2 rounded-lg hover:bg-black/5 text-muted-foreground hover:text-foreground transition-colors">
-                      <Pencil className="h-4 w-4" />
+                      <Pencil className="size-4" />
                     </button>
                     <DeleteCategoryButton id={card.id} name={card.name} />
                   </div>
@@ -79,7 +79,7 @@ export function CardsList({ cards }: CardsListProps) {
             <p className="text-sm text-muted-foreground mb-6">Agregá tu primera tarjeta de crédito</p>
             <button onClick={() => router.push(newHref)}
               className="inline-flex items-center gap-2 bg-primary text-primary-foreground rounded-full px-6 py-3 text-sm font-medium shadow-md active:scale-95 transition-transform">
-              <Plus className="h-4 w-4" />Agregar
+              <Plus className="size-4" />Agregar
             </button>
           </div>
         )}
@@ -87,8 +87,8 @@ export function CardsList({ cards }: CardsListProps) {
 
       {cards.length > 0 && (
         <button onClick={() => router.push(newHref)}
-          className="fixed bottom-24 right-4 z-30 flex items-center justify-center w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 active:scale-95 transition-transform">
-          <Plus className="h-6 w-6" />
+          className="fixed bottom-24 right-4 z-30 flex items-center justify-center size-14 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 active:scale-95 transition-transform">
+          <Plus className="size-6" />
         </button>
       )}
     </div>

@@ -431,8 +431,8 @@ export default function AIPage() {
                   <div className="space-y-8">
                     {/* Turtle icon */}
                     <div className="flex justify-center">
-                      <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
-                        <TurtleIcon className="h-12 w-12 text-primary" />
+                      <div className="size-20 rounded-full bg-primary/10 flex items-center justify-center">
+                        <TurtleIcon className="size-12 text-primary" />
                       </div>
                     </div>
 
@@ -478,8 +478,8 @@ export default function AIPage() {
                   {messages.map((msg, idx) => <ChatMessage key={idx} message={msg} />)}
                   {isLoading && messages.length > 0 && messages[messages.length - 1]?.role === "user" && (
                     <div className="flex items-center gap-3 text-muted-foreground py-2">
-                      <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary flex items-center justify-center">
-                        <TurtleIcon className="h-6 w-6" isThinking />
+                      <div className="flex-shrink-0 size-10 rounded-full bg-primary flex items-center justify-center">
+                        <TurtleIcon className="size-6" isThinking />
                       </div>
                       <span className="text-sm">{t.ai.thinking}</span>
                     </div>
@@ -511,26 +511,26 @@ export default function AIPage() {
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="flex-shrink-0 w-9 h-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all grid place-items-center self-end"
+                    className="flex-shrink-0 size-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all grid place-items-center self-end"
                   >
-                    <PaperclipIcon className="h-4 w-4" />
+                    <PaperclipIcon className="size-4" />
                   </button>
                   <button
                     type="submit"
                     disabled={isLoading || (!input.trim() && !attachedFile)}
-                    className="flex-shrink-0 w-9 h-9 rounded-full bg-primary text-primary-foreground disabled:opacity-40 transition-opacity grid place-items-center self-end"
+                    className="flex-shrink-0 size-9 rounded-full bg-primary text-primary-foreground disabled:opacity-40 transition-opacity grid place-items-center self-end"
                   >
-                    <SendIcon className="h-4 w-4" />
+                    <SendIcon className="size-4" />
                   </button>
                 </div>
               </form>
               {attachedFile && (
                 <div className="flex items-center gap-2 px-1 pb-2">
                   <div className="flex items-center gap-2 rounded-xl bg-primary/10 border border-primary/20 px-3 py-1.5 text-xs text-primary font-medium">
-                    <PaperclipIcon className="h-3 w-3 flex-shrink-0" />
+                    <PaperclipIcon className="size-3 flex-shrink-0" />
                     <span className="truncate max-w-[200px]">{attachedFile.name}</span>
                     <button type="button" onClick={() => setAttachedFile(null)} className="ml-1 opacity-60 hover:opacity-100">
-                      <XIcon className="h-3 w-3" />
+                      <XIcon className="size-3" />
                     </button>
                   </div>
                 </div>
@@ -564,7 +564,7 @@ export default function AIPage() {
                 onClick={() => setIsMobileSidebarOpen(false)}
                 className="p-2 -mr-2 rounded-full hover:bg-muted"
               >
-                <XIcon className="h-5 w-5" />
+                <XIcon className="size-5" />
               </button>
             </div>
             <div className="p-3 h-[calc(100%-57px)] overflow-hidden">
@@ -594,8 +594,8 @@ export default function AIPage() {
                   <div className="space-y-8">
                     {/* Turtle icon */}
                     <div className="flex justify-center">
-                      <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-                        <TurtleIcon className="h-10 w-10 text-primary" />
+                      <div className="size-16 rounded-full bg-primary/10 flex items-center justify-center">
+                        <TurtleIcon className="size-10 text-primary" />
                       </div>
                     </div>
 
@@ -641,8 +641,8 @@ export default function AIPage() {
                   {messages.map((msg, idx) => <ChatMessage key={idx} message={msg} isMobile />)}
                   {isLoading && messages.length > 0 && messages[messages.length - 1]?.role === "user" && (
                     <div className="flex items-center gap-3 text-muted-foreground py-2">
-                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-                        <TurtleIcon className="h-5 w-5" isThinking />
+                      <div className="flex-shrink-0 size-8 rounded-full bg-primary flex items-center justify-center">
+                        <TurtleIcon className="size-5" isThinking />
                       </div>
                       <span className="text-sm">{t.ai.thinking}</span>
                     </div>
@@ -678,16 +678,16 @@ export default function AIPage() {
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="flex-shrink-0 w-9 h-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all grid place-items-center"
+                    className="flex-shrink-0 size-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all grid place-items-center"
                   >
-                    <PaperclipIcon className="h-4 w-4" />
+                    <PaperclipIcon className="size-4" />
                   </button>
                   <button
                     type="submit"
                     disabled={isLoading || (!input.trim() && !attachedFile)}
-                    className="flex-shrink-0 w-9 h-9 rounded-full bg-primary text-primary-foreground disabled:opacity-40 transition-opacity grid place-items-center"
+                    className="flex-shrink-0 size-9 rounded-full bg-primary text-primary-foreground disabled:opacity-40 transition-opacity grid place-items-center"
                   >
-                    <SendIcon className="h-4 w-4" />
+                    <SendIcon className="size-4" />
                   </button>
                 </div>
               </form>
@@ -695,10 +695,10 @@ export default function AIPage() {
               {attachedFile && (
                 <div className="flex items-center gap-2 px-1 py-1">
                   <div className="flex items-center gap-2 rounded-xl bg-primary/10 border border-primary/20 px-3 py-1.5 text-xs text-primary font-medium max-w-full">
-                    <PaperclipIcon className="h-3 w-3 flex-shrink-0" />
+                    <PaperclipIcon className="size-3 flex-shrink-0" />
                     <span className="truncate">{attachedFile.name}</span>
                     <button type="button" onClick={() => setAttachedFile(null)} className="ml-1 opacity-60 hover:opacity-100">
-                      <XIcon className="h-3 w-3" />
+                      <XIcon className="size-3" />
                     </button>
                   </div>
                 </div>

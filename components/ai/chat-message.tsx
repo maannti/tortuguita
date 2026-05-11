@@ -25,8 +25,8 @@ export function ChatMessage({ message, isMobile = false }: ChatMessageProps) {
       <div className={cn("flex gap-3", isUser ? "justify-end" : "justify-start")}>
         {/* Assistant avatar */}
         {!isUser && (
-          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-            <TurtleIcon className="h-5 w-5" />
+          <div className="flex-shrink-0 size-8 rounded-full bg-primary flex items-center justify-center">
+            <TurtleIcon className="size-5" />
           </div>
         )}
 
@@ -79,8 +79,8 @@ export function ChatMessage({ message, isMobile = false }: ChatMessageProps) {
     <div className={cn("flex gap-3", isUser ? "justify-end" : "justify-start")}>
       {/* Avatar */}
       {!isUser && (
-        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary flex items-center justify-center">
-          <TurtleIcon className="h-6 w-6" />
+        <div className="flex-shrink-0 size-10 rounded-full bg-primary flex items-center justify-center">
+          <TurtleIcon className="size-6" />
         </div>
       )}
 
@@ -95,9 +95,9 @@ export function ChatMessage({ message, isMobile = false }: ChatMessageProps) {
             {message.toolCalls.calls.map((call: any, idx: number) => (
               <div key={idx} className="flex items-start gap-2 text-sm">
                 {call.result.success ? (
-                  <CheckCircleIcon className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                  <CheckCircleIcon className="size-4 text-green-500 mt-0.5 flex-shrink-0" />
                 ) : (
-                  <XCircleIcon className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
+                  <XCircleIcon className="size-4 text-red-500 mt-0.5 flex-shrink-0" />
                 )}
                 <div className="flex-1">
                   <div className="font-medium">
@@ -128,8 +128,8 @@ export function ChatMessage({ message, isMobile = false }: ChatMessageProps) {
 
       {/* User avatar - only on desktop */}
       {isUser && (
-        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-muted flex items-center justify-center">
-          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="flex-shrink-0 size-8 rounded-full bg-muted flex items-center justify-center">
+          <svg className="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
           </svg>
         </div>

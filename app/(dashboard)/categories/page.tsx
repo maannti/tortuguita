@@ -51,7 +51,7 @@ export default async function CategoriesPage({ searchParams }: PageProps) {
     <div className="pb-28">
       <div className="flex items-center justify-between px-4 py-3 border-b sticky top-0 bg-background/95 backdrop-blur-sm z-10">
         <Link href="/settings" className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
-          <ChevronLeft className="h-4 w-4" />Volver
+          <ChevronLeft className="size-4" />Volver
         </Link>
         <h1 className="text-base font-semibold" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
           Categorías de gastos
@@ -62,14 +62,14 @@ export default async function CategoriesPage({ searchParams }: PageProps) {
         <div className="glass rounded-2xl divide-y divide-white/60 overflow-hidden">
           {categoryCounts.map((org) => (
             <Link key={org.id} href={`/categories?spaceId=${org.id}`} className="flex items-center gap-3 px-4 py-4 active:bg-muted/50 transition-colors">
-              <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center flex-shrink-0">
-                {org.isPersonal ? <User className="h-4 w-4 text-muted-foreground" /> : <Home className="h-4 w-4 text-muted-foreground" />}
+              <div className="size-9 rounded-xl bg-muted flex items-center justify-center flex-shrink-0">
+                {org.isPersonal ? <User className="size-4 text-muted-foreground" /> : <Home className="size-4 text-muted-foreground" />}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium">{org.name}</p>
                 <p className="text-xs text-muted-foreground">{org.count === 0 ? "Sin categorías" : `${org.count} categoría${org.count !== 1 ? "s" : ""}`}</p>
               </div>
-              <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+              <ChevronRight className="size-4 text-muted-foreground flex-shrink-0" />
             </Link>
           ))}
         </div>
