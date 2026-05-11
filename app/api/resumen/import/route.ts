@@ -114,11 +114,19 @@ export async function POST(request: NextRequest) {
           // "El monto es el de UNA cuota (no el total)"), so we use finalAmount directly.
           const amountPerCuota = finalAmount
 
+          // Calculate budgetDate for the FIRST cuota in this import (cuotaActual).
+          // Each subsequent cuota gets that same base date + N months, so they
+          // land in consecutive billing cycles instead of all piling into the same month.
+          const { budgetDate: baseBudgetDate } = calculateBudgetDate(paymentDate, true, billingPeriod)
+
           const promises = []
           for (let i = cuotaActual; i <= totalInstallments; i++) {
             const cuotaPaymentDate = new Date(paymentDate)
             cuotaPaymentDate.setMonth(cuotaPaymentDate.getMonth() + (i - cuotaActual))
-            const { budgetDate: cuotaBudgetDate } = calculateBudgetDate(cuotaPaymentDate, true, billingPeriod)
+
+            // Offset budgetDate by the same number of months as paymentDate
+            const cuotaBudgetDate = new Date(baseBudgetDate)
+            cuotaBudgetDate.setMonth(cuotaBudgetDate.getMonth() + (i - cuotaActual))
 
             const usdPerCuota = tx.montoUSD ?? null
             promises.push(prisma.bill.create({
