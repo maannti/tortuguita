@@ -279,7 +279,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
           {/* Espacio */}
           {organizations.length > 1 && (
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Espacio</label>
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Espacio</p>
               <div className="grid grid-cols-2 gap-2">
                 {organizations.map((org) => {
                   const isSelected = selectedOrgId === org.id
@@ -313,13 +313,13 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
 
           {/* Título del gasto */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Título del gasto</label>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Título del gasto</p>
             <input type="text" value={label} onChange={(e) => setLabel(e.target.value)} placeholder="ej. Tele UWU, vinilos, alquiler..." className="w-full rounded-xl border bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" autoFocus={!isEdit} />
           </div>
 
           {/* Monto */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Monto total</label>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Monto total</p>
             <div className="flex items-center gap-2 rounded-xl border bg-background px-4 py-3 focus-within:ring-2 focus-within:ring-primary/30">
               <span className="text-muted-foreground font-medium">$</span>
               <input
@@ -346,7 +346,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
           {/* Categoría — siempre visible cuando no es crédito */}
           {!isCreditCard && (
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Categoría</label>
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Categoría</p>
               {normalCats.length === 0 ? (
                 <div className="rounded-xl border-2 border-dashed border-border px-4 py-4 flex items-center justify-between gap-3">
                   <p className="text-sm text-muted-foreground">No hay categorías en este espacio</p>
@@ -413,7 +413,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
 
           {/* Medio de pago */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Medio de pago</label>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Medio de pago</p>
             <div className="grid grid-cols-2 gap-2">
               {PAYMENT_METHODS.map((pm) => (
                 <button key={pm.value} type="button"
@@ -449,7 +449,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
           {/* Tarjetas de crédito */}
           {isCreditCard && ccCards.length > 0 && (
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">¿Con qué tarjeta?</label>
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">¿Con qué tarjeta?</p>
               <div className="grid grid-cols-2 gap-2">
                 {ccCards.map((cat) => (
                   <button key={cat.id} type="button" onClick={() => setCardId(cat.id)}
@@ -465,7 +465,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
 
           {/* Fecha */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{isCreditCard ? "Fecha de compra" : "Fecha"}</label>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{isCreditCard ? "Fecha de compra" : "Fecha"}</p>
             <div className="relative w-full rounded-xl border bg-background px-4 py-3 text-sm cursor-pointer">
               <span className={paymentDate ? "text-foreground" : "text-muted-foreground"}>
                 {paymentDate ? formatDateDisplay(paymentDate) : "DD/MM/AA"}
@@ -519,7 +519,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
           {/* Cuotas */}
           {isCreditCard && (
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Cuotas</label>
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Cuotas</p>
               <div className="flex flex-wrap gap-2">
                 {INSTALLMENT_OPTIONS.map((n) => (
                   <button key={n} type="button" onClick={() => { setInstallments(n); setCustomInstallments("") }}
@@ -540,7 +540,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
 
           {/* Detalle (notas opcionales) */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Detalle <span className="normal-case font-normal">(opcional)</span></label>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Detalle <span className="normal-case font-normal">(opcional)</span></p>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
@@ -553,7 +553,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
           {/* División */}
           {orgMembers.length > 1 && (
             <div className="space-y-2">
-              <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">División</label>
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">División</p>
               <div className="space-y-2">
                 {[
                   { value: "income", label: "Gasto común", desc: hasIncomes ? orgMembers.map(m => { const inc = memberIncomes[m.id] || 0; return `${m.name?.split(" ")[0]} ${Math.round((inc / totalIncome) * 100)}%` }).join(" · ") : "Configurar ingresos en Config →" },
