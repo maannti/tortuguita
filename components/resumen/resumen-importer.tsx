@@ -120,13 +120,13 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
       const res = await fetch("/api/resumen/parse", { method: "POST", body: formData })
       if (!res.ok) {
         if (res.status === 504 || res.status === 524) {
-          throw new Error("El análisis tardó demasiado. Intentá de nuevo — los PDFs grandes a veces necesitan más tiempo.")
+          throw new Error("El análisis tardó demasiado. Intentá de nuevo — los archivos grandes a veces necesitan más tiempo.")
         }
         try {
           const d = await res.json()
           throw new Error(d.error || "Error al procesar el resumen")
         } catch {
-          throw new Error("Error al procesar el resumen. Verificá que el PDF sea un resumen de tarjeta válido.")
+          throw new Error("Error al procesar el archivo. Verificá que sea un resumen o listado de movimientos de tarjeta válido.")
         }
       }
       const data: ResumenParseResult = await res.json()
@@ -261,7 +261,7 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
           <ChevronLeft className="size-4" />
           {step === "review" ? "Volver" : "Atrás"}
         </button>
-        <h1 className="text-base font-semibold">Importar resumen</h1>
+        <h1 className="text-base font-semibold">Importar movimientos</h1>
         {step === "review" ? (
           <button
             type="button"
@@ -316,7 +316,7 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
 
               {/* PDF upload */}
               <div className="space-y-1.5">
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Archivo PDF o CSV</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Archivo</p>
                 <div
                   onClick={() => fileInputRef.current?.click()}
                   onDragOver={e => e.preventDefault()}
@@ -335,8 +335,8 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
                     <>
                       <Upload className="size-8 text-muted-foreground" />
                       <div className="text-center">
-                        <p className="text-sm font-medium">Subir PDF o CSV de movimientos</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">Arrastrá o tocá para elegir</p>
+                        <p className="text-sm font-medium">Subir resumen o movimientos</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">PDF o CSV · Arrastrá o tocá para elegir</p>
                       </div>
                     </>
                   )}
@@ -347,7 +347,7 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
 
               {/* Privacy notice */}
               <p className="text-[11px] text-muted-foreground/70 text-center leading-relaxed px-2">
-                El PDF es procesado por IA (Anthropic) y no se almacena en la app.
+                El archivo es procesado por IA (Anthropic) y no se almacena en la app.
                 Anthropic puede retenerlo hasta 30 días por razones de seguridad.{" "}
                 <a href="https://www.anthropic.com/privacy" target="_blank" rel="noopener" className="underline underline-offset-2">
                   Política de privacidad
@@ -364,18 +364,18 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
                 {step === "parsing" ? (
                   <><Loader2 className="size-4 animate-spin" /> Analizando con IA...</>
                 ) : (
-                  "Analizar resumen"
+                  "Analizar movimientos"
                 )}
               </button>
               {!selectedFile && step !== "parsing" && (
                 <p className="text-xs text-muted-foreground text-center">
-                  Subí el PDF del resumen para continuar
+                  Subí el archivo para continuar
                 </p>
               )}
 
               {step === "parsing" && (
                 <p className="text-xs text-center text-muted-foreground animate-pulse">
-                  Claude está leyendo el PDF y extrayendo las transacciones...
+                  Claude está leyendo el archivo y extrayendo las transacciones...
                 </p>
               )}
             </>
