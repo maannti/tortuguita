@@ -8,12 +8,6 @@ export const translations: Record<Language, Translations> = {
   es,
 };
 
-export const languageNames: Record<Language, string> = {
-  en: "English",
-  es: "Español",
-};
-
 export const defaultLanguage: Language = "es";
 
 export type { Translations };
-export { en, es };

@@ -148,24 +148,6 @@ export function validateUserMessage(message: string): ValidationResult {
 }
 
 /**
- * Checks if a message is likely on-topic
- * Returns true if it contains expense-related keywords or is a greeting
- */
-export function isLikelyOnTopic(message: string): boolean {
-  const lowerMessage = message.toLowerCase();
-
-  // Short messages (greetings, confirmations) are usually fine
-  if (message.length < 20) {
-    return true;
-  }
-
-  // Check for on-topic keywords
-  return ON_TOPIC_KEYWORDS.some(keyword =>
-    lowerMessage.includes(keyword.toLowerCase())
-  );
-}
-
-/**
  * Builds the hardened system prompt with safety instructions
  */
 export function buildSafeSystemPrompt(context: {
