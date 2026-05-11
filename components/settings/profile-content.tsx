@@ -13,7 +13,7 @@ function getInitials(name?: string | null) {
 }
 
 export function ProfileContent({ user }: Props) {
-  const router = useRouter()
+  const { push } = useRouter()
   const [name, setName] = useState(user.name || "")
   const [currentPassword, setCurrentPassword] = useState("")
   const [newPassword, setNewPassword] = useState("")
@@ -69,7 +69,7 @@ export function ProfileContent({ user }: Props) {
     <div className="pb-24">
       <div className="flex items-center justify-between px-4 py-3 border-b sticky top-0 bg-background/95 backdrop-blur-sm z-10">
         <button
-          onClick={() => router.push("/settings")}
+          onClick={() => push("/settings")}
           className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           <ChevronLeft className="size-4" />Volver

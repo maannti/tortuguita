@@ -25,7 +25,7 @@ interface DeleteIncomeButtonProps {
 
 export function DeleteIncomeButton({ id, label, iconOnly, asMenuItem }: DeleteIncomeButtonProps) {
   const t = useTranslations()
-  const router = useRouter()
+  const { refresh } = useRouter()
   const [isOpen, setIsOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -46,7 +46,7 @@ export function DeleteIncomeButton({ id, label, iconOnly, asMenuItem }: DeleteIn
       }
 
       setIsOpen(false)
-      router.refresh()
+      refresh()
     } catch (error) {
       setError("Failed to delete income")
     } finally {

@@ -22,7 +22,7 @@ interface CategoryFilterProps {
 }
 
 export function CategoryFilter({ categories }: CategoryFilterProps) {
-  const router = useRouter()
+  const { push } = useRouter()
   const searchParams = useSearchParams()
   const selectedCategory = searchParams.get("category")
 
@@ -33,7 +33,7 @@ export function CategoryFilter({ categories }: CategoryFilterProps) {
     } else {
       params.delete("category")
     }
-    router.push(`?${params.toString()}`)
+    push(`?${params.toString()}`)
   }
 
   const selectedCategoryData = categories.find(c => c.id === selectedCategory)

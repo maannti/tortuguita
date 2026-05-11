@@ -29,7 +29,7 @@ function formatUSD(n: number) {
 function capitalize(s: string) { return s.charAt(0).toUpperCase() + s.slice(1) }
 
 export function BillsView({ month, monthKey, availableMonths, categoryGroups, grandTotal, hasAnyUSD }: Props) {
-  const router = useRouter()
+  const { push } = useRouter()
   const [showPicker, setShowPicker] = useState(false)
   const [showUSD, setShowUSD] = useState(false)
   const [usdRate, setUsdRate] = useState<number | null>(null)
@@ -80,7 +80,7 @@ export function BillsView({ month, monthKey, availableMonths, categoryGroups, gr
         >
           <div className="absolute -top-6 -right-6 size-32 rounded-full bg-white/20 blur-2xl pointer-events-none" />
           <div className="flex items-center justify-between">
-            <button onClick={() => prevMonth && router.push(`/bills?month=${prevMonth}`)} disabled={!prevMonth}
+            <button onClick={() => prevMonth && push(`/bills?month=${prevMonth}`)} disabled={!prevMonth}
               className="size-8 flex items-center justify-center rounded-full bg-white/40 backdrop-blur-sm disabled:opacity-30 active:scale-95 transition-all">
               <ChevronLeft className="size-4 text-[#6B5159]" />
             </button>
@@ -120,7 +120,7 @@ export function BillsView({ month, monthKey, availableMonths, categoryGroups, gr
                 </div>
               )}
             </div>
-            <button onClick={() => nextMonth && router.push(`/bills?month=${nextMonth}`)} disabled={!nextMonth}
+            <button onClick={() => nextMonth && push(`/bills?month=${nextMonth}`)} disabled={!nextMonth}
               className="size-8 flex items-center justify-center rounded-full bg-white/40 backdrop-blur-sm disabled:opacity-30 active:scale-95 transition-all">
               <ChevronRight className="size-4 text-[#6B5159]" />
             </button>
@@ -225,7 +225,7 @@ export function BillsView({ month, monthKey, availableMonths, categoryGroups, gr
       {showPicker && (
         <MonthPicker
           currentMonthKey={monthKey}
-          onSelect={(key) => router.push(`/bills?month=${key}`)}
+          onSelect={(key) => push(`/bills?month=${key}`)}
           onClose={() => setShowPicker(false)}
         />
       )}

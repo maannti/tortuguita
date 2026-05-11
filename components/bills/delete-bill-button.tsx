@@ -27,7 +27,7 @@ interface DeleteBillButtonProps {
 
 export function DeleteBillButton({ id, label, iconOnly, asMenuItem, fullWidth, redirectTo }: DeleteBillButtonProps) {
   const t = useTranslations()
-  const router = useRouter()
+  const { push, refresh } = useRouter()
   const [isOpen, setIsOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -49,9 +49,9 @@ export function DeleteBillButton({ id, label, iconOnly, asMenuItem, fullWidth, r
 
       setIsOpen(false)
       if (redirectTo) {
-        router.push(redirectTo)
+        push(redirectTo)
       } else {
-        router.refresh()
+        refresh()
       }
     } catch {
       setError("Error de conexión. Revisá tu conexión e intentá de nuevo.")

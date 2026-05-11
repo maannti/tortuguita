@@ -13,7 +13,7 @@ interface JoinCodeCardProps {
 }
 
 export function JoinCodeCard({ organizationId, initialJoinCode }: JoinCodeCardProps) {
-  const router = useRouter();
+  const { refresh } = useRouter();
   const [joinCode, setJoinCode] = useState(initialJoinCode);
   const [isLoading, setIsLoading] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -35,7 +35,7 @@ export function JoinCodeCard({ organizationId, initialJoinCode }: JoinCodeCardPr
       }
 
       setJoinCode(data.joinCode);
-      router.refresh();
+      refresh();
     } catch (error) {
       alert("Failed to generate join code");
     } finally {

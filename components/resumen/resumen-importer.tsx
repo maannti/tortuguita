@@ -27,7 +27,7 @@ function formatARS(n: number) {
 type Step = "upload" | "parsing" | "review" | "importing" | "done"
 
 export function ResumenImporter({ ccCards, members, organizations, currentUserId, categories }: Props) {
-  const router = useRouter()
+  const { push, back } = useRouter()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [step, setStep] = useState<Step>("upload")
@@ -254,7 +254,7 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
       <div className="flex items-center justify-between px-4 py-3 border-b sticky top-0 z-10 bg-background/95 backdrop-blur-sm">
         <button
           type="button"
-          onClick={() => step === "review" ? setStep("upload") : router.back()}
+          onClick={() => step === "review" ? setStep("upload") : back()}
           className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           <ChevronLeft className="size-4" />
@@ -669,7 +669,7 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
                   className="flex-1 rounded-full bg-muted text-muted-foreground py-3 text-sm font-medium active:scale-[0.97] transition-all">
                   Importar otro
                 </button>
-                <button type="button" onClick={() => router.push("/bills")}
+                <button type="button" onClick={() => push("/bills")}
                   className="flex-1 rounded-full bg-primary text-primary-foreground py-3 text-sm font-semibold active:scale-[0.97] transition-all">
                   Ver gastos
                 </button>

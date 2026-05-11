@@ -23,7 +23,7 @@ interface MonthFilterProps {
 }
 
 export function MonthFilter({ availableMonths }: MonthFilterProps) {
-  const router = useRouter()
+  const { push, replace } = useRouter()
   const searchParams = useSearchParams()
   const selectedMonth = searchParams.get("month")
   const [open, setOpen] = useState(false)
@@ -47,7 +47,7 @@ export function MonthFilter({ availableMonths }: MonthFilterProps) {
       const currentMonth = format(new Date(), "yyyy-MM")
       const params = new URLSearchParams(searchParams.toString())
       params.set("month", currentMonth)
-      router.replace(`?${params.toString()}`)
+      replace(`?${params.toString()}`)
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -62,7 +62,7 @@ export function MonthFilter({ availableMonths }: MonthFilterProps) {
     const month = `${year}-${String(monthIndex + 1).padStart(2, "0")}`
     const params = new URLSearchParams(searchParams.toString())
     params.set("month", month)
-    router.push(`?${params.toString()}`)
+    push(`?${params.toString()}`)
     setOpen(false)
   }
 

@@ -21,7 +21,7 @@ interface DeleteCategoryButtonProps {
 type Step = "confirm" | "confirm-force"
 
 export function DeleteCategoryButton({ id, name }: DeleteCategoryButtonProps) {
-  const router = useRouter()
+  const { refresh } = useRouter()
   const [isOpen, setIsOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [step, setStep] = useState<Step>("confirm")
@@ -53,7 +53,7 @@ export function DeleteCategoryButton({ id, name }: DeleteCategoryButtonProps) {
       }
 
       setIsOpen(false)
-      router.refresh()
+      refresh()
     } catch {
       setError("Error de conexión. Intentá de nuevo.")
     } finally {

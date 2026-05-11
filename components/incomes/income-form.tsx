@@ -59,7 +59,7 @@ interface IncomeFormProps {
 }
 
 export function IncomeForm({ initialData, categories, members, memberIncomes = {}, currentUserId, mode, isPersonalOrg, userOrganizations, currentOrganizationId }: IncomeFormProps) {
-  const router = useRouter();
+  const { push, refresh } = useRouter();
   const t = useTranslations();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -312,8 +312,8 @@ export function IncomeForm({ initialData, categories, members, memberIncomes = {
         return;
       }
 
-      router.push("/incomes");
-      router.refresh();
+      push("/incomes");
+      refresh();
     } catch (error) {
       setError("Failed to save income");
     } finally {
@@ -829,7 +829,7 @@ export function IncomeForm({ initialData, categories, members, memberIncomes = {
           <Button
             type="button"
             variant="outline"
-            onClick={() => router.push("/incomes")}
+            onClick={() => push("/incomes")}
             disabled={isLoading}
             size="lg"
             className="w-full md:w-auto"

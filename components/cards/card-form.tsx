@@ -21,7 +21,7 @@ interface Props {
 }
 
 export function CardForm({ mode, initialData }: Props) {
-  const router = useRouter()
+  const { push, refresh } = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -110,7 +110,7 @@ export function CardForm({ mode, initialData }: Props) {
         }
       }
 
-      router.push("/cards"); router.refresh()
+      push("/cards"); refresh()
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error inesperado")
     } finally { setIsLoading(false) }
@@ -120,7 +120,7 @@ export function CardForm({ mode, initialData }: Props) {
     <form onSubmit={handleSubmit} className="flex flex-col min-h-[calc(100dvh-3.5rem)]">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b sticky top-0 bg-background/95 backdrop-blur-sm z-10">
-        <button type="button" onClick={() => router.push("/cards")}
+        <button type="button" onClick={() => push("/cards")}
           className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
           <ChevronLeft className="size-4" />Volver
         </button>

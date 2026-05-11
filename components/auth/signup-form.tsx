@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
 type OrgChoice = "personal" | "create" | "join";
 
 export function SignupForm() {
-  const router = useRouter();
+  const { push, refresh } = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedChoices, setSelectedChoices] = useState<Set<OrgChoice>>(new Set(["personal"]));
@@ -129,8 +129,8 @@ export function SignupForm() {
       if (result?.error) {
         setError(t.errors.accountCreatedButSignInFailed);
       } else {
-        router.push("/dashboard");
-        router.refresh();
+        push("/dashboard");
+        refresh();
       }
     } catch (error) {
       setError(t.errors.somethingWentWrong);

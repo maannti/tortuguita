@@ -21,7 +21,7 @@ interface DeleteIncomeTypeButtonProps {
 }
 
 export function DeleteIncomeTypeButton({ id, name }: DeleteIncomeTypeButtonProps) {
-  const router = useRouter()
+  const { refresh } = useRouter()
   const t = useTranslations()
   const [isOpen, setIsOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -43,7 +43,7 @@ export function DeleteIncomeTypeButton({ id, name }: DeleteIncomeTypeButtonProps
       }
 
       setIsOpen(false)
-      router.refresh()
+      refresh()
     } catch (error) {
       setError(t.errors.somethingWentWrong)
     } finally {
