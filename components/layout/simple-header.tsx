@@ -19,7 +19,7 @@ const MAUVE = "#9D8189"
 const MAUVE_DARK = "#4A3540"
 
 export function SimpleHeader() {
-  const router = useRouter()
+  const { refresh } = useRouter()
   const pathname = usePathname()
   const { spaces, activeSpaceIds, toggleSpace, isHydrated } = useSpaces()
   const [open, setOpen] = useState(false)
@@ -38,7 +38,7 @@ export function SimpleHeader() {
 
   const handleToggle = (id: string) => {
     toggleSpace(id)
-    router.refresh()
+    refresh()
   }
 
   const showSpaces = spaces.length > 1 && isHydrated && !hideSelector(pathname)

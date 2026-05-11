@@ -73,7 +73,7 @@ function inferSplitMode(assignments: Array<{ userId: string; percentage: number 
 }
 
 export function QuickBillForm({ categories, members, memberIncomes, currentUserId, organizations, backHref, defaultInstallments, mode = "create", initialData }: Props) {
-  const router = useRouter()
+  const { push, refresh, back } = useRouter()
   const isEdit = mode === "edit"
 
   // Space selection (only in create mode; edit uses the bill's existing org)
@@ -209,7 +209,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
       if (!res.ok) { const err = await res.json(); throw new Error(err.error || "Error al guardar") }
       try { sessionStorage.removeItem(DRAFT_KEY) } catch {}
       const dest = isEdit ? `/bills/${initialData!.id}` : "/bills"
-      router.push(dest); router.refresh()
+      push(dest); refresh()
     } catch (err) {
       if (err instanceof TypeError && err.message.includes("fetch")) {
         setError("Error de conexión. Revisá tu conexión e intentá de nuevo.")
@@ -260,7 +260,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
     <form onSubmit={handleSubmit} className="flex flex-col min-h-[calc(100dvh-7rem)]">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b sticky top-0 z-10 bg-background/95 backdrop-blur-sm">
-        <button type="button" onClick={() => backHref ? router.push(backHref) : router.back()} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
+        <button type="button" onClick={() => backHref ? push(backHref) : back()} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
           <ChevronLeft className="size-4" />Volver
         </button>
         <h1 className="text-base font-semibold">{isEdit ? "Editar gasto" : "Nuevo gasto"}</h1>
@@ -354,7 +354,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
                     type="button"
                     onClick={() => {
                       const selectedOrg = organizations.find(o => o.id === selectedOrgId)
-                      router.push(`/categories/new?spaceId=${selectedOrgId}&spaceName=${encodeURIComponent(selectedOrg?.name ?? "")}&returnTo=${encodeURIComponent("/bills/new")}`)
+                      push(`/categories/new?spaceId=${selectedOrgId}&spaceName=${encodeURIComponent(selectedOrg?.name ?? "")}&returnTo=${encodeURIComponent("/bills/new")}`)
                     }}
                     className="flex items-center gap-1.5 text-sm font-semibold text-primary whitespace-nowrap flex-shrink-0"
                   >
@@ -384,7 +384,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
                     type="button"
                     onClick={() => {
                       const selectedOrg = organizations.find(o => o.id === selectedOrgId)
-                      router.push(`/categories/new?spaceId=${selectedOrgId}&spaceName=${encodeURIComponent(selectedOrg?.name ?? "")}&returnTo=${encodeURIComponent("/bills/new")}`)
+                      push(`/categories/new?spaceId=${selectedOrgId}&spaceName=${encodeURIComponent(selectedOrg?.name ?? "")}&returnTo=${encodeURIComponent("/bills/new")}`)
                     }}
                     title="Nueva categoría"
                     className="w-11 rounded-xl border border-border bg-background flex items-center justify-center hover:border-foreground/30 transition-colors"
@@ -438,7 +438,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
               <button
                 type="button"
                 className="font-semibold underline underline-offset-2"
-                onClick={() => router.push(`/cards?spaceId=${selectedOrgId}`)}
+                onClick={() => push(`/cards?spaceId=${selectedOrgId}`)}
               >
                 Agregá una tarjeta
               </button>{" "}
@@ -509,7 +509,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
                 {billingFeedback.type === "no-period" && (
                   <>
                     <p className="font-medium leading-snug">Esta tarjeta no tiene período configurado</p>
-                    <p className="text-xs opacity-75 mt-0.5">Configuralo en <button type="button" className="underline font-semibold" onClick={() => router.push("/cards")}>Tarjetas</button> para ver el impacto correcto</p>
+                    <p className="text-xs opacity-75 mt-0.5">Configuralo en <button type="button" className="underline font-semibold" onClick={() => push("/cards")}>Tarjetas</button> para ver el impacto correcto</p>
                   </>
                 )}
               </div>

@@ -22,7 +22,7 @@ function formatARS(n: number) { return new Intl.NumberFormat("es-AR", { style: "
 function capitalize(s: string) { return s.charAt(0).toUpperCase() + s.slice(1) }
 
 export function CuotasView({ cards, monthLabel, monthKey, prevMonth, nextMonth }: Props) {
-  const router = useRouter()
+  const { push } = useRouter()
   const [activeCard, setActiveCard] = useState(0)
   const [showPicker, setShowPicker] = useState(false)
   const current = cards[activeCard]
@@ -38,7 +38,7 @@ export function CuotasView({ cards, monthLabel, monthKey, prevMonth, nextMonth }
           <div className="absolute -top-6 -right-6 size-32 rounded-full bg-white/20 blur-2xl pointer-events-none" />
           <div className="flex items-center justify-between">
             <button
-              onClick={() => prevMonth && router.push(`/cuotas?month=${prevMonth}`)}
+              onClick={() => prevMonth && push(`/cuotas?month=${prevMonth}`)}
               disabled={!prevMonth}
               className="size-8 flex items-center justify-center rounded-full bg-white/40 backdrop-blur-sm disabled:opacity-30 active:scale-95 transition-all"
             >
@@ -63,7 +63,7 @@ export function CuotasView({ cards, monthLabel, monthKey, prevMonth, nextMonth }
               )}
             </div>
             <button
-              onClick={() => nextMonth && router.push(`/cuotas?month=${nextMonth}`)}
+              onClick={() => nextMonth && push(`/cuotas?month=${nextMonth}`)}
               disabled={!nextMonth}
               className="size-8 flex items-center justify-center rounded-full bg-white/40 backdrop-blur-sm disabled:opacity-30 active:scale-95 transition-all"
             >
@@ -207,7 +207,7 @@ export function CuotasView({ cards, monthLabel, monthKey, prevMonth, nextMonth }
       {showPicker && (
         <MonthPicker
           currentMonthKey={monthKey}
-          onSelect={(key) => router.push(`/cuotas?month=${key}`)}
+          onSelect={(key) => push(`/cuotas?month=${key}`)}
           onClose={() => setShowPicker(false)}
         />
       )}

@@ -23,7 +23,7 @@ function getInitials(name?: string | null) {
 
 export function SettingsHub({ creditCards, categories }: Props) {
   const { data: session } = useSession()
-  const router = useRouter()
+  const { push, refresh } = useRouter()
   const { theme, setTheme } = useTheme()
   const { activeSpaceIds, toggleSpace } = useSpaces()
   const [mounted, setMounted] = useState(false)
@@ -63,7 +63,7 @@ export function SettingsHub({ creditCards, categories }: Props) {
 
   const handleToggleSpace = (orgId: string) => {
     toggleSpace(orgId)
-    router.refresh()
+    refresh()
   }
 
   const createSpace = async () => {
@@ -82,7 +82,7 @@ export function SettingsHub({ creditCards, categories }: Props) {
       setNewSpaceName(""); setNewSpacePersonal(false); setShowNewSpace(false)
       // Auto-activate the new space
       if (!activeSpaceIds.has(org.id)) toggleSpace(org.id)
-      router.refresh()
+      refresh()
     } catch (err) {
       setCreateError(err instanceof TypeError && (err as TypeError).message.includes("fetch")
         ? "Error de conexión. Revisá tu conexión e intentá de nuevo."
@@ -106,7 +106,7 @@ export function SettingsHub({ creditCards, categories }: Props) {
       setOrganizations(prev => [...prev, { ...org, memberCount: org.memberCount ?? 1 }])
       setJoinCode(""); setShowNewSpace(false); setSpaceMode("create")
       if (!activeSpaceIds.has(org.id)) toggleSpace(org.id)
-      router.refresh()
+      refresh()
     } catch (err) {
       setCreateError(err instanceof TypeError && (err as TypeError).message.includes("fetch")
         ? "Error de conexión. Revisá tu conexión e intentá de nuevo."
@@ -161,7 +161,7 @@ export function SettingsHub({ creditCards, categories }: Props) {
       if (!res.ok) { const d = await res.json(); setManageError(d.error || "Error al guardar"); return }
       setOrganizations(prev => prev.map(o => o.id === managingOrg.id ? { ...o, name: editName.trim() } : o))
       setManagingOrg(prev => prev ? { ...prev, name: editName.trim() } : null)
-      router.refresh()
+      refresh()
     } catch { setManageError("Error de conexión. Revisá tu conexión e intentá de nuevo.") }
     finally { setIsSaving(false) }
   }
@@ -175,7 +175,7 @@ export function SettingsHub({ creditCards, categories }: Props) {
       if (!res.ok) { const d = await res.json(); setManageError(d.error || "Error al eliminar"); return }
       setOrganizations(prev => prev.filter(o => o.id !== managingOrg.id))
       setManagingOrg(null)
-      router.refresh()
+      refresh()
     } catch { setManageError("Error de conexión. Revisá tu conexión e intentá de nuevo.") }
     finally { setIsDeleting(false) }
   }
@@ -189,7 +189,7 @@ export function SettingsHub({ creditCards, categories }: Props) {
       if (!res.ok) { const d = await res.json(); setManageError(d.error || "Error al salir"); return }
       setOrganizations(prev => prev.filter(o => o.id !== managingOrg.id))
       setManagingOrg(null)
-      router.refresh()
+      refresh()
     } catch { setManageError("Error de conexión. Revisá tu conexión e intentá de nuevo.") }
     finally { setIsLeaving(false) }
   }
@@ -344,7 +344,7 @@ export function SettingsHub({ creditCards, categories }: Props) {
               { label: "Mis tarjetas", href: "/cards", icon: <CreditCard className="size-4 text-white" />, bg: "#7B9E87" },
               { label: "Categorías de gastos", href: "/categories", icon: <Tag className="size-4 text-white" />, bg: "#9D8189" },
             ].map((item) => (
-              <button key={item.label} onClick={() => router.push(item.href)}
+              <button key={item.label} onClick={() => push(item.href)}
                 className="w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-white/30 transition-colors">
                 <div className="size-8 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: item.bg }}>
                   {item.icon}
@@ -372,7 +372,7 @@ export function SettingsHub({ creditCards, categories }: Props) {
                 { label: "Perfil", desc: "Nombre, contraseña", href: "/settings/profile" },
               ]
               return items.map((item) => (
-                <button key={item.label} onClick={() => router.push(item.href)}
+                <button key={item.label} onClick={() => push(item.href)}
                   className="w-full flex items-center justify-between px-4 py-3.5 text-left hover:bg-white/30 transition-colors">
                   <div>
                     <p className="text-sm font-medium">{item.label}</p>

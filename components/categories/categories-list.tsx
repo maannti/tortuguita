@@ -14,20 +14,20 @@ interface CategoriesListProps {
 }
 
 export function CategoriesList({ categories, spaceId, spaceName }: CategoriesListProps) {
-  const router = useRouter()
+  const { push } = useRouter()
   const newHref = `/categories/new?spaceId=${spaceId}`
 
   return (
     <div className="pb-28">
       <div className="flex items-center justify-between px-4 py-3 border-b sticky top-0 bg-background/95 backdrop-blur-sm z-10">
-        <button onClick={() => router.push("/categories")}
+        <button onClick={() => push("/categories")}
           className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
           <ChevronLeft className="size-4" />Volver
         </button>
         <h1 className="text-base font-semibold" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
           Categorías de gastos
         </h1>
-        <button onClick={() => router.push(newHref)}
+        <button onClick={() => push(newHref)}
           className="flex items-center gap-1 text-sm font-semibold text-primary">
           <Plus className="size-4" />Nueva
         </button>
@@ -50,7 +50,7 @@ export function CategoriesList({ categories, spaceId, spaceName }: CategoriesLis
                   <p className="text-xs text-muted-foreground mt-0.5">Gasto fijo</p>
                 </div>
                 <div className="flex items-center gap-1 flex-shrink-0">
-                  <button onClick={() => router.push(`/categories/${cat.id}/edit`)}
+                  <button onClick={() => push(`/categories/${cat.id}/edit`)}
                     className="p-2 rounded-lg hover:bg-black/5 text-muted-foreground hover:text-foreground transition-colors">
                     <Pencil className="size-4" />
                   </button>
@@ -66,7 +66,7 @@ export function CategoriesList({ categories, spaceId, spaceName }: CategoriesLis
               Sin categorías todavía
             </p>
             <p className="text-sm text-muted-foreground mb-6">Agregá tu primer gasto fijo o recurrente</p>
-            <button onClick={() => router.push(newHref)}
+            <button onClick={() => push(newHref)}
               className="inline-flex items-center gap-2 bg-primary text-primary-foreground rounded-full px-6 py-3 text-sm font-medium shadow-md active:scale-95 transition-transform">
               <Plus className="size-4" />Agregar
             </button>
@@ -75,7 +75,7 @@ export function CategoriesList({ categories, spaceId, spaceName }: CategoriesLis
       </div>
 
       {categories.length > 0 && (
-        <button onClick={() => router.push(newHref)}
+        <button onClick={() => push(newHref)}
           className="fixed bottom-24 right-4 z-30 flex items-center justify-center size-14 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 active:scale-95 transition-transform">
           <Plus className="size-6" />
         </button>

@@ -66,7 +66,7 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
 }
 
 export function BillDetail({ bill }: BillDetailProps) {
-  const router = useRouter()
+  const { push } = useRouter()
   const accentColor = (bill.category?.color || bill.billType.color) ?? "#9D8189"
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -82,7 +82,7 @@ export function BillDetail({ bill }: BillDetailProps) {
         setDeleteError(data.error || "Error al eliminar")
         return
       }
-      router.push("/bills")
+      push("/bills")
     } catch {
       setDeleteError("Error al eliminar")
     } finally {
@@ -96,7 +96,7 @@ export function BillDetail({ bill }: BillDetailProps) {
       <div className="flex items-center justify-between px-4 py-3 border-b sticky top-0 bg-background/95 backdrop-blur-sm z-10">
         <button
           type="button"
-          onClick={() => router.push("/bills")}
+          onClick={() => push("/bills")}
           className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           <ChevronLeft className="size-4" />

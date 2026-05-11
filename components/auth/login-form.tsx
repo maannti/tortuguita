@@ -13,7 +13,7 @@ import { useTranslations } from "@/components/providers/language-provider";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 
 export function LoginForm() {
-  const router = useRouter();
+  const { push, refresh } = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
@@ -46,8 +46,8 @@ export function LoginForm() {
       if (result?.error) {
         setError(t.auth.invalidCredentials);
       } else {
-        router.push("/dashboard");
-        router.refresh();
+        push("/dashboard");
+        refresh();
       }
     } catch (error) {
       setError(t.auth.invalidCredentials);
