@@ -13,8 +13,8 @@ import { useTranslations } from "@/components/providers/language-provider";
 import { Lock, ArrowLeft, CheckCircle, AlertCircle } from "lucide-react";
 
 function ResetPasswordContent() {
-  const searchParams = useSearchParams();
-  const token = searchParams.get("token");
+  const { get } = useSearchParams();
+  const token = get("token");
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
