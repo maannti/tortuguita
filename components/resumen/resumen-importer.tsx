@@ -101,7 +101,9 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
   // ── Handlers ─────────────────────────────────────────────────────────────
 
   const handleFileSelect = (file: File) => {
-    if (file.type !== "application/pdf") { setError("El archivo debe ser un PDF"); return }
+    const isCsv = file.name.endsWith(".csv") || file.type === "text/csv"
+    const isPdf = file.type === "application/pdf"
+    if (!isPdf && !isCsv) { setError("El archivo debe ser un PDF o CSV"); return }
     setSelectedFile(file)
     setError(null)
   }
@@ -314,7 +316,7 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
 
               {/* PDF upload */}
               <div className="space-y-1.5">
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Archivo PDF</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Archivo PDF o CSV</p>
                 <div
                   onClick={() => fileInputRef.current?.click()}
                   onDragOver={e => e.preventDefault()}
@@ -333,12 +335,12 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
                     <>
                       <Upload className="size-8 text-muted-foreground" />
                       <div className="text-center">
-                        <p className="text-sm font-medium">Subir PDF del resumen</p>
+                        <p className="text-sm font-medium">Subir PDF o CSV de movimientos</p>
                         <p className="text-xs text-muted-foreground mt-0.5">Arrastrá o tocá para elegir</p>
                       </div>
                     </>
                   )}
-                  <input ref={fileInputRef} type="file" accept="application/pdf" className="hidden"
+                  <input ref={fileInputRef} type="file" accept="application/pdf,.csv" className="hidden"
                     onChange={e => { const f = e.target.files?.[0]; if (f) handleFileSelect(f) }} />
                 </div>
               </div>

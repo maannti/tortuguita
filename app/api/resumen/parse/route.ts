@@ -30,7 +30,18 @@ export interface ResumenParseResult {
 }
 
 const PARSE_PROMPT = `Sos un experto en parsear resúmenes de tarjetas de crédito argentinas de cualquier banco.
-Vas a recibir un PDF de resumen de cuenta. Puede ser de cualquier banco: Santander, ICBC, Galicia, HSBC, Supervielle, Patagonia, BBVA, Macro, Naranja X, American Express, u otros.
+Vas a recibir un PDF de resumen de cuenta O un archivo CSV/texto con movimientos exportados desde el banco. Puede ser de cualquier banco: Santander, ICBC, Galicia, HSBC, Supervielle, Patagonia, BBVA, Macro, Naranja X, American Express, u otros.
+
+━━━ FORMATO CSV DE ICBC ━━━
+
+El CSV de ICBC usa asterisco (*) como separador. Formato de cada línea:
+  DD/MM/YYYY*DESCRIPCION*COMPROBANTE*IMPORTE_ARS*IMPORTE_USD
+
+• Las líneas "Consumos Tarjeta:NNNN" indican cambio de tarjeta (usar número como titular)
+• Las líneas "SU PAGO EN PESOS" / "SU PAGO EN DOLARES" son pagos → ignorar
+• Cuotas en descripción: "PASSLINE 03/03" = cuota 3 de 3, "GADNIC 03/06" = cuota 3 de 6
+• Importe ARS usa coma decimal (29766,50 → 29766.50); USD usa punto (167.07)
+• COMPROBANTE = campo comprobante para deduplicación
 
 Tu tarea es identificar y extraer SOLO las transacciones de tarjeta de crédito (consumos/compras) y devolver JSON estructurado.
 
@@ -165,34 +176,51 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData()
     const file = formData.get("pdf") as File | null
     if (!file) return NextResponse.json({ error: "No se recibió ningún archivo" }, { status: 400 })
-    if (file.type !== "application/pdf") return NextResponse.json({ error: "El archivo debe ser un PDF" }, { status: 400 })
+
+    const isCsv = file.name.endsWith(".csv") || file.type === "text/csv"
+    const isPdf = file.type === "application/pdf"
+    if (!isPdf && !isCsv) return NextResponse.json({ error: "El archivo debe ser un PDF o CSV" }, { status: 400 })
 
     const maxSizeMB = 10
     if (file.size > maxSizeMB * 1024 * 1024)
-      return NextResponse.json({ error: `El PDF no puede superar ${maxSizeMB}MB` }, { status: 400 })
+      return NextResponse.json({ error: `El archivo no puede superar ${maxSizeMB}MB` }, { status: 400 })
 
-    const arrayBuffer = await file.arrayBuffer()
-    const base64 = Buffer.from(arrayBuffer).toString("base64")
-
-    const response = await anthropic.messages.create({
-      model: MODEL,
-      max_tokens: 8192,
-      messages: [
-        {
-          role: "user",
-          content: [
-            {
-              type: "document",
-              source: { type: "base64", media_type: "application/pdf", data: base64 },
-            },
-            {
-              type: "text",
-              text: PARSE_PROMPT,
-            },
-          ],
-        },
-      ],
-    })
+    let response
+    if (isCsv) {
+      const csvText = await file.text()
+      response = await anthropic.messages.create({
+        model: MODEL,
+        max_tokens: 8192,
+        messages: [
+          {
+            role: "user",
+            content: `${PARSE_PROMPT}\n\n[ARCHIVO CSV DE MOVIMIENTOS]\n${csvText}\n[FIN DEL ARCHIVO]`,
+          },
+        ],
+      })
+    } else {
+      const arrayBuffer = await file.arrayBuffer()
+      const base64 = Buffer.from(arrayBuffer).toString("base64")
+      response = await anthropic.messages.create({
+        model: MODEL,
+        max_tokens: 8192,
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "document",
+                source: { type: "base64", media_type: "application/pdf", data: base64 },
+              },
+              {
+                type: "text",
+                text: PARSE_PROMPT,
+              },
+            ],
+          },
+        ],
+      })
+    }
 
     const rawText = response.content[0].type === "text" ? response.content[0].text : ""
 
@@ -207,7 +235,7 @@ export async function POST(request: NextRequest) {
     } catch {
       console.error("Claude response could not be parsed as JSON:", rawText.slice(0, 500))
       return NextResponse.json(
-        { error: "No se pudo interpretar el resumen. Verificá que el PDF sea un resumen de tarjeta de crédito." },
+        { error: "No se pudo interpretar el archivo. Verificá que sea un resumen o listado de movimientos de tarjeta de crédito." },
         { status: 422 }
       )
     }
@@ -221,6 +249,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(parsed)
   } catch (error) {
     console.error("Error parsing resumen:", error)
-    return NextResponse.json({ error: "Error al procesar el PDF" }, { status: 500 })
+    return NextResponse.json({ error: "Error al procesar el archivo" }, { status: 500 })
   }
 }
