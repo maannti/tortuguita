@@ -78,11 +78,11 @@ export function BillsView({ month, monthKey, availableMonths, categoryGroups, gr
           className="relative rounded-3xl overflow-hidden px-5 py-4"
           style={{ background: "linear-gradient(135deg, #D8E2DC 0%, #FFE5D9 55%, #FFCAD4 100%)" }}
         >
-          <div className="absolute -top-6 -right-6 w-32 h-32 rounded-full bg-white/20 blur-2xl pointer-events-none" />
+          <div className="absolute -top-6 -right-6 size-32 rounded-full bg-white/20 blur-2xl pointer-events-none" />
           <div className="flex items-center justify-between">
             <button onClick={() => prevMonth && router.push(`/bills?month=${prevMonth}`)} disabled={!prevMonth}
-              className="w-8 h-8 flex items-center justify-center rounded-full bg-white/40 backdrop-blur-sm disabled:opacity-30 active:scale-95 transition-all">
-              <ChevronLeft className="h-4 w-4 text-[#6B5159]" />
+              className="size-8 flex items-center justify-center rounded-full bg-white/40 backdrop-blur-sm disabled:opacity-30 active:scale-95 transition-all">
+              <ChevronLeft className="size-4 text-[#6B5159]" />
             </button>
             <div className="text-center space-y-0.5">
               <button
@@ -121,8 +121,8 @@ export function BillsView({ month, monthKey, availableMonths, categoryGroups, gr
               )}
             </div>
             <button onClick={() => nextMonth && router.push(`/bills?month=${nextMonth}`)} disabled={!nextMonth}
-              className="w-8 h-8 flex items-center justify-center rounded-full bg-white/40 backdrop-blur-sm disabled:opacity-30 active:scale-95 transition-all">
-              <ChevronRight className="h-4 w-4 text-[#6B5159]" />
+              className="size-8 flex items-center justify-center rounded-full bg-white/40 backdrop-blur-sm disabled:opacity-30 active:scale-95 transition-all">
+              <ChevronRight className="size-4 text-[#6B5159]" />
             </button>
           </div>
         </div>
@@ -138,7 +138,7 @@ export function BillsView({ month, monthKey, availableMonths, categoryGroups, gr
                 <div className="flex items-center justify-between mb-2.5 px-1">
                   <div className="flex items-center gap-2">
                     <div
-                      className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+                      className="size-7 rounded-lg flex items-center justify-center flex-shrink-0"
                       style={{ backgroundColor: `${group.color}22` }}
                     >
                       {group.icon
@@ -211,15 +211,15 @@ export function BillsView({ month, monthKey, availableMonths, categoryGroups, gr
             <p className="text-sm text-muted-foreground mb-6">¡La tortuguita descansa!</p>
             <Link href="/bills/new"
               className="inline-flex items-center gap-2 bg-primary text-primary-foreground rounded-full px-6 py-3 text-sm font-medium shadow-md active:scale-95 transition-transform">
-              <Plus className="h-4 w-4" />Agregar gasto
+              <Plus className="size-4" />Agregar gasto
             </Link>
           </div>
         )}
       </div>
 
       <Link href="/bills/new"
-        className="fixed bottom-24 right-4 z-30 flex items-center justify-center w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 active:scale-95 transition-transform">
-        <Plus className="h-6 w-6" />
+        className="fixed bottom-24 right-4 z-30 flex items-center justify-center size-14 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 active:scale-95 transition-transform">
+        <Plus className="size-6" />
       </Link>
 
       {showPicker && (

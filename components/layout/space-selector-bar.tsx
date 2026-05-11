@@ -39,8 +39,8 @@ export function SpaceSelectorBar() {
               )}
             >
               {space.isPersonal
-                ? <User className="h-3 w-3" />
-                : <Home className="h-3 w-3" />}
+                ? <User className="size-3" />
+                : <Home className="size-3" />}
               <span>{space.name.split(" ")[0]}</span>
             </button>
           )

@@ -81,7 +81,7 @@ export function LoginForm() {
                       className="auth-input w-full bg-transparent border-0 border-b border-white/30 px-0 py-3 text-white placeholder:text-white/50 focus:border-white/60 focus:outline-none focus:ring-0 transition-colors pr-8"
                       {...field}
                     />
-                    <Mail className="absolute right-0 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
+                    <Mail className="absolute right-0 top-1/2 -translate-y-1/2 size-4 text-white/40" />
                   </div>
                 </FormControl>
                 <FormMessage className="text-red-300" />
@@ -111,12 +111,12 @@ export function LoginForm() {
                         className="text-white/40 hover:text-white/60 transition-colors"
                       >
                         {showPassword ? (
-                          <EyeOff className="h-4 w-4" />
+                          <EyeOff className="size-4" />
                         ) : (
-                          <Eye className="h-4 w-4" />
+                          <Eye className="size-4" />
                         )}
                       </button>
-                      <Lock className="h-4 w-4 text-white/40" />
+                      <Lock className="size-4 text-white/40" />
                     </div>
                   </div>
                 </FormControl>

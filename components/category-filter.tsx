@@ -49,7 +49,7 @@ export function CategoryFilter({ categories }: CategoryFilterProps) {
             {selectedCategoryData?.icon ? (
               <span>{selectedCategoryData.icon}</span>
             ) : (
-              <Tag className="h-4 w-4" />
+              <Tag className="size-4" />
             )}
             <span className="hidden sm:inline">{selectedLabel}</span>
             <span className="sm:hidden">
@@ -83,9 +83,9 @@ export function CategoryFilter({ categories }: CategoryFilterProps) {
           variant="ghost"
           size="sm"
           onClick={() => handleSelectCategory(null)}
-          className="h-8 w-8 p-0"
+          className="size-8 p-0"
         >
-          <X className="h-4 w-4" />
+          <X className="size-4" />
         </Button>
       )}
     </div>

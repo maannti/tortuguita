@@ -70,7 +70,7 @@ export default function ForgotPasswordPage() {
         {isSubmitted ? (
           <div className="space-y-6">
             <div className="flex flex-col items-center justify-center py-4 space-y-3">
-              <CheckCircle className="h-12 w-12 text-green-400" />
+              <CheckCircle className="size-12 text-green-400" />
               <p className="text-center text-sm text-white/80">
                 {t.auth.resetLinkSent}
               </p>
@@ -80,7 +80,7 @@ export default function ForgotPasswordPage() {
                 variant="outline"
                 className="w-full bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white rounded-full py-5 backdrop-blur-sm transition-all"
               >
-                <ArrowLeft className="mr-2 h-4 w-4" />
+                <ArrowLeft className="mr-2 size-4" />
                 {t.auth.backToLogin}
               </Button>
             </Link>
@@ -103,7 +103,7 @@ export default function ForgotPasswordPage() {
                           className="w-full bg-transparent border-0 border-b border-white/30 px-0 py-3 text-white placeholder:text-white/50 focus:border-white/60 focus:outline-none focus:ring-0 transition-colors pr-8"
                           {...field}
                         />
-                        <Mail className="absolute right-0 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
+                        <Mail className="absolute right-0 top-1/2 -translate-y-1/2 size-4 text-white/40" />
                       </div>
                     </FormControl>
                     <FormMessage className="text-red-300" />

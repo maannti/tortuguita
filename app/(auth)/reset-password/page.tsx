@@ -98,7 +98,7 @@ function ResetPasswordContent() {
         {isSuccess ? (
           <div className="space-y-6">
             <div className="flex flex-col items-center justify-center py-4 space-y-3">
-              <CheckCircle className="h-12 w-12 text-green-400" />
+              <CheckCircle className="size-12 text-green-400" />
               <p className="text-center text-sm text-white/80">
                 {t.auth.passwordResetSuccess}
               </p>
@@ -114,7 +114,7 @@ function ResetPasswordContent() {
         ) : error && !token ? (
           <div className="space-y-6">
             <div className="flex flex-col items-center justify-center py-4 space-y-3">
-              <AlertCircle className="h-12 w-12 text-red-400" />
+              <AlertCircle className="size-12 text-red-400" />
               <p className="text-center text-sm text-red-300">
                 {error}
               </p>
@@ -152,7 +152,7 @@ function ResetPasswordContent() {
                           className="w-full bg-transparent border-0 border-b border-white/30 px-0 py-3 text-white placeholder:text-white/50 focus:border-white/60 focus:outline-none focus:ring-0 transition-colors pr-8"
                           {...field}
                         />
-                        <Lock className="absolute right-0 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
+                        <Lock className="absolute right-0 top-1/2 -translate-y-1/2 size-4 text-white/40" />
                       </div>
                     </FormControl>
                     <FormMessage className="text-red-300" />
@@ -175,7 +175,7 @@ function ResetPasswordContent() {
                           className="w-full bg-transparent border-0 border-b border-white/30 px-0 py-3 text-white placeholder:text-white/50 focus:border-white/60 focus:outline-none focus:ring-0 transition-colors pr-8"
                           {...field}
                         />
-                        <Lock className="absolute right-0 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
+                        <Lock className="absolute right-0 top-1/2 -translate-y-1/2 size-4 text-white/40" />
                       </div>
                     </FormControl>
                     <FormMessage className="text-red-300" />
@@ -197,7 +197,7 @@ function ResetPasswordContent() {
         {!isSuccess && token && (
           <p className="text-center text-sm text-white/60">
             <Link href="/login" className="text-white underline underline-offset-4 hover:text-white/80 transition-colors">
-              <ArrowLeft className="inline-block mr-1 h-3 w-3" />
+              <ArrowLeft className="inline-block mr-1 size-3" />
               {t.auth.backToLogin}
             </Link>
           </p>
@@ -209,7 +209,7 @@ function ResetPasswordContent() {
 
 export default function ResetPasswordPage() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center p-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div></div>}>
+    <Suspense fallback={<div className="flex items-center justify-center p-8"><div className="animate-spin rounded-full size-8 border-b-2 border-white"></div></div>}>
       <ResetPasswordContent />
     </Suspense>
   );

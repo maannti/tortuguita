@@ -525,7 +525,7 @@ export function IncomeForm({ initialData, categories, members, memberIncomes = {
                           {selectedHomes.size} {t.incomes?.homesSelected || "hogares seleccionados"}
                         </span>
                         <svg
-                          className={`h-4 w-4 transition-transform ${homeDropdownOpen ? "rotate-180" : ""}`}
+                          className={`size-4 transition-transform ${homeDropdownOpen ? "rotate-180" : ""}`}
                           fill="none"
                           viewBox="0 0 24 24"
                           stroke="currentColor"
@@ -542,11 +542,11 @@ export function IncomeForm({ initialData, categories, members, memberIncomes = {
                               key={org.id}
                               className="flex items-center gap-3 px-3 py-2 bg-muted/30"
                             >
-                              <div className="h-5 w-5 rounded border border-primary bg-primary flex items-center justify-center">
-                                <Check className="h-3 w-3 text-primary-foreground" />
+                              <div className="size-5 rounded border border-primary bg-primary flex items-center justify-center">
+                                <Check className="size-3 text-primary-foreground" />
                               </div>
                               <div className="flex items-center gap-2 flex-1">
-                                <Home className="h-4 w-4 text-muted-foreground" />
+                                <Home className="size-4 text-muted-foreground" />
                                 <span className="text-sm font-medium">{org.name}</span>
                                 <span className="text-xs text-muted-foreground">(actual)</span>
                               </div>
@@ -561,13 +561,13 @@ export function IncomeForm({ initialData, categories, members, memberIncomes = {
                               onClick={() => toggleHomeSelection(org.id)}
                               className="w-full flex items-center gap-3 px-3 py-2 hover:bg-accent/50 transition-colors"
                             >
-                              <div className={`h-5 w-5 rounded border ${selectedHomes.has(org.id) ? "border-primary bg-primary" : "border-muted-foreground/30"} flex items-center justify-center`}>
+                              <div className={`size-5 rounded border ${selectedHomes.has(org.id) ? "border-primary bg-primary" : "border-muted-foreground/30"} flex items-center justify-center`}>
                                 {selectedHomes.has(org.id) && (
-                                  <Check className="h-3 w-3 text-primary-foreground" />
+                                  <Check className="size-3 text-primary-foreground" />
                                 )}
                               </div>
                               <div className="flex items-center gap-2 flex-1 text-left">
-                                <Home className="h-4 w-4 text-muted-foreground" />
+                                <Home className="size-4 text-muted-foreground" />
                                 <span className="text-sm">{org.name}</span>
                                 {org.isPersonal && (
                                   <span className="text-xs text-muted-foreground">(personal)</span>
@@ -593,7 +593,7 @@ export function IncomeForm({ initialData, categories, members, memberIncomes = {
                           return (
                             <div key={orgId} className="p-3 bg-muted/30 rounded-lg space-y-2">
                               <div className="flex items-center gap-2">
-                                <Home className="h-4 w-4 text-muted-foreground" />
+                                <Home className="size-4 text-muted-foreground" />
                                 <span className="text-sm font-medium flex-1">{org.name}</span>
                               </div>
                               <div className="flex items-center gap-3">
@@ -701,9 +701,9 @@ export function IncomeForm({ initialData, categories, members, memberIncomes = {
                             size="icon"
                             onClick={() => remove(index)}
                             disabled={isLoading}
-                            className="flex-shrink-0 h-8 w-8"
+                            className="flex-shrink-0 size-8"
                           >
-                            <X className="h-4 w-4" />
+                            <X className="size-4" />
                           </Button>
                         </div>
                         {showPercentageControls && (
@@ -776,7 +776,7 @@ export function IncomeForm({ initialData, categories, members, memberIncomes = {
                         disabled={isLoading}
                         className="w-full sm:w-auto"
                       >
-                        <Plus className="h-4 w-4 mr-2" />
+                        <Plus className="size-4 mr-2" />
                         {t.incomes?.addMember || "Agregar Miembro"}
                       </Button>
                       {fields.length > 1 && (

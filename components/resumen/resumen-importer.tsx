@@ -257,7 +257,7 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
           onClick={() => step === "review" ? setStep("upload") : router.back()}
           className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
-          <ChevronLeft className="h-4 w-4" />
+          <ChevronLeft className="size-4" />
           {step === "review" ? "Volver" : "Atrás"}
         </button>
         <h1 className="text-base font-semibold">Importar resumen</h1>
@@ -279,7 +279,7 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
         <div className="px-4 py-5 pb-28 space-y-5">
           {error && (
             <div className="rounded-xl bg-destructive/10 text-destructive text-sm px-4 py-3 flex gap-2">
-              <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+              <AlertTriangle className="size-4 flex-shrink-0 mt-0.5" />
               {error}
             </div>
           )}
@@ -298,14 +298,14 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
                         <button key={org.id} type="button"
                           onClick={() => { setSelectedOrgId(org.id) }}
                           className={`flex items-center gap-3 rounded-2xl border-2 px-4 py-3.5 text-sm text-left transition-all active:scale-[0.97] ${isSelected ? "border-primary bg-primary/5 text-foreground" : "border-border bg-background text-muted-foreground"}`}>
-                          <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
+                          <div className="size-8 rounded-xl flex items-center justify-center flex-shrink-0"
                             style={{ backgroundColor: isSelected ? MAUVE : `${MAUVE}20` }}>
                             {org.isPersonal
-                              ? <User className="h-4 w-4" style={{ color: isSelected ? "#fff" : MAUVE }} />
-                              : <Home className="h-4 w-4" style={{ color: isSelected ? "#fff" : MAUVE }} />}
+                              ? <User className="size-4" style={{ color: isSelected ? "#fff" : MAUVE }} />
+                              : <Home className="size-4" style={{ color: isSelected ? "#fff" : MAUVE }} />}
                           </div>
                           <span className="font-medium truncate">{org.name}</span>
-                          {isSelected && <Check className="h-4 w-4 ml-auto flex-shrink-0 text-primary" />}
+                          {isSelected && <Check className="size-4 ml-auto flex-shrink-0 text-primary" />}
                         </button>
                       )
                     })}
@@ -324,7 +324,7 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
                 >
                   {selectedFile ? (
                     <>
-                      <FileText className="h-8 w-8 text-primary" />
+                      <FileText className="size-8 text-primary" />
                       <div className="text-center">
                         <p className="text-sm font-medium text-foreground">{selectedFile.name}</p>
                         <p className="text-xs text-muted-foreground mt-0.5">{(selectedFile.size / 1024).toFixed(0)} KB · Toca para cambiar</p>
@@ -332,7 +332,7 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
                     </>
                   ) : (
                     <>
-                      <Upload className="h-8 w-8 text-muted-foreground" />
+                      <Upload className="size-8 text-muted-foreground" />
                       <div className="text-center">
                         <p className="text-sm font-medium">Subir PDF del resumen</p>
                         <p className="text-xs text-muted-foreground mt-0.5">Arrastrá o tocá para elegir</p>
@@ -361,7 +361,7 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
                 className="w-full rounded-full bg-primary text-primary-foreground py-3.5 text-sm font-semibold disabled:opacity-40 flex items-center justify-center gap-2 active:scale-[0.98] transition-all"
               >
                 {step === "parsing" ? (
-                  <><Loader2 className="h-4 w-4 animate-spin" /> Analizando con IA...</>
+                  <><Loader2 className="size-4 animate-spin" /> Analizando con IA...</>
                 ) : (
                   "Analizar resumen"
                 )}
@@ -413,7 +413,7 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
                   </div>
                 ) : usdRateError ? (
                   <span className="text-[11px] text-amber-700 flex items-center gap-1">
-                    <AlertTriangle className="h-3 w-3" />No se pudo obtener el tipo de cambio oficial
+                    <AlertTriangle className="size-3" />No se pudo obtener el tipo de cambio oficial
                   </span>
                 ) : (
                   <span className="text-[11px] text-muted-foreground animate-pulse">Obteniendo tipo de cambio...</span>
@@ -518,9 +518,9 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
                                 <button
                                   type="button"
                                   onClick={() => setTxOv(tx.id, { incluir: !ov.incluir })}
-                                  className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-all ${ov.incluir ? "bg-primary border-primary" : "border-border"}`}
+                                  className={`size-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-all ${ov.incluir ? "bg-primary border-primary" : "border-border"}`}
                                 >
-                                  {ov.incluir && <Check className="h-3 w-3 text-white" />}
+                                  {ov.incluir && <Check className="size-3 text-white" />}
                                 </button>
 
                                 <div className="flex-1 min-w-0 space-y-1.5">
@@ -550,7 +550,7 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
                                     )}
                                     {tx.nota && (
                                       <span className="text-[10px] text-amber-700 flex items-center gap-1">
-                                        <AlertTriangle className="h-3 w-3" />{tx.nota}
+                                        <AlertTriangle className="size-3" />{tx.nota}
                                       </span>
                                     )}
                                   </div>
@@ -568,7 +568,7 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
                                           <option value="">Sin categoría</option>
                                           {categories.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
                                         </select>
-                                        <ChevronDown className="h-3 w-3 absolute right-1.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                                        <ChevronDown className="size-3 absolute right-1.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
                                       </div>
 
                                       {/* USD toggle — solo cuando hay ambas monedas */}
@@ -593,7 +593,7 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
                                               <option key={m.id} value={m.id}>{m.name || m.email}</option>
                                             ))}
                                           </select>
-                                          <ChevronDown className="h-3 w-3 absolute right-1.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                                          <ChevronDown className="size-3 absolute right-1.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
                                         </div>
                                       )}
                                     </div>
@@ -636,7 +636,7 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
           {/* ── STEP: IMPORTING ── */}
           {step === "importing" && (
             <div className="flex flex-col items-center justify-center py-20 gap-4 text-muted-foreground">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <Loader2 className="size-8 animate-spin text-primary" />
               <p className="text-sm">Importando {selectedTxs.length} transacciones...</p>
             </div>
           )}
@@ -644,8 +644,8 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
           {/* ── STEP: DONE ── */}
           {step === "done" && importResult && (
             <div className="flex flex-col items-center justify-center py-16 gap-5 text-center">
-              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-                <Check className="h-8 w-8 text-primary" />
+              <div className="size-16 rounded-full bg-primary/10 flex items-center justify-center">
+                <Check className="size-8 text-primary" />
               </div>
               <div>
                 <p className="text-lg font-semibold" style={{ fontFamily: "var(--font-fraunces, serif)" }}>

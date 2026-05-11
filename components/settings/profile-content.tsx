@@ -72,7 +72,7 @@ export function ProfileContent({ user }: Props) {
           onClick={() => router.push("/settings")}
           className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
-          <ChevronLeft className="h-4 w-4" />Volver
+          <ChevronLeft className="size-4" />Volver
         </button>
         <h1 className="text-base font-semibold">Perfil</h1>
         <div className="w-12" />
@@ -81,9 +81,9 @@ export function ProfileContent({ user }: Props) {
       <form onSubmit={handleSave} className="px-4 pt-6 space-y-5">
         {/* Avatar */}
         <div className="flex justify-center pb-2">
-          <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
+          <div className="size-20 rounded-full bg-primary/10 flex items-center justify-center">
             {user.image
-              ? <img src={user.image} alt="" className="w-20 h-20 rounded-full object-cover" />
+              ? <img src={user.image} alt="" className="size-20 rounded-full object-cover" />
               : <span className="text-2xl font-semibold text-primary">{getInitials(user.name)}</span>
             }
           </div>
@@ -136,7 +136,7 @@ export function ProfileContent({ user }: Props) {
           disabled={isSaving}
           className="w-full rounded-xl bg-primary text-primary-foreground py-3.5 text-sm font-semibold disabled:opacity-40 flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
         >
-          {saved ? <><Check className="h-4 w-4" />Guardado</> : isSaving ? "Guardando..." : "Guardar cambios"}
+          {saved ? <><Check className="size-4" />Guardado</> : isSaving ? "Guardando..." : "Guardar cambios"}
         </button>
 
         {/* Zona de peligro */}
@@ -149,7 +149,7 @@ export function ProfileContent({ user }: Props) {
               onClick={() => setDeleteConfirm(true)}
               className="w-full flex items-center justify-center gap-2 rounded-xl border border-destructive/30 py-3 text-sm font-medium text-destructive hover:bg-destructive/5 active:scale-[0.98] transition-all"
             >
-              <Trash2 className="h-4 w-4" />
+              <Trash2 className="size-4" />
               Eliminar mi cuenta
             </button>
           ) : (

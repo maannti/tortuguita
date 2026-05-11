@@ -118,20 +118,20 @@ export function IncomesContent({ incomes, availableMonths, categories }: Incomes
                   <Dialog>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0 rounded-full hover:bg-black/10 -mr-2">
-                          <MoreVertical className="h-4 w-4 text-foreground/70" />
+                        <Button variant="ghost" size="icon" className="size-8 flex-shrink-0 rounded-full hover:bg-black/10 -mr-2">
+                          <MoreVertical className="size-4 text-foreground/70" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-44 rounded-2xl bg-background/95 backdrop-blur-sm border-border/50 p-1.5">
                         <DialogTrigger asChild>
                           <DropdownMenuItem className="flex items-center gap-2 rounded-xl py-2.5 px-3">
-                            <Info className="h-4 w-4" />
+                            <Info className="size-4" />
                             {t.incomes?.details || "Detalles"}
                           </DropdownMenuItem>
                         </DialogTrigger>
                         <DropdownMenuItem asChild className="rounded-xl py-2.5 px-3">
                           <Link href={`/incomes/${income.id}/edit`} className="flex items-center gap-2">
-                            <Pencil className="h-4 w-4" />
+                            <Pencil className="size-4" />
                             {t.common.edit}
                           </Link>
                         </DropdownMenuItem>

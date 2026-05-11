@@ -90,7 +90,7 @@ export function HomeDashboard({ month, monthKey, availableMonths, spaces, curren
           className="relative rounded-3xl overflow-hidden"
           style={{ background: "linear-gradient(135deg, #D8E2DC 0%, #FFE5D9 55%, #FFCAD4 100%)" }}
         >
-          <div className="absolute -top-8 -right-8 w-40 h-40 rounded-full bg-white/20 blur-2xl pointer-events-none" />
+          <div className="absolute -top-8 -right-8 size-40 rounded-full bg-white/20 blur-2xl pointer-events-none" />
           <div className="absolute bottom-0 left-0 w-32 h-24 rounded-full bg-[#F4ACB7]/20 blur-xl pointer-events-none" />
 
           <div className="relative px-5 pt-6 pb-6 space-y-4">
@@ -99,9 +99,9 @@ export function HomeDashboard({ month, monthKey, availableMonths, spaces, curren
               <button
                 onClick={() => prevMonth && router.push(`/dashboard?month=${prevMonth}`)}
                 disabled={!prevMonth}
-                className="w-8 h-8 flex items-center justify-center rounded-full bg-white/40 backdrop-blur-sm disabled:opacity-30 active:scale-95 transition-all"
+                className="size-8 flex items-center justify-center rounded-full bg-white/40 backdrop-blur-sm disabled:opacity-30 active:scale-95 transition-all"
               >
-                <ChevronLeft className="h-4 w-4 text-[#6B5159]" />
+                <ChevronLeft className="size-4 text-[#6B5159]" />
               </button>
               <button
                 onClick={() => setShowPicker(true)}
@@ -113,9 +113,9 @@ export function HomeDashboard({ month, monthKey, availableMonths, spaces, curren
               <button
                 onClick={() => nextMonth && router.push(`/dashboard?month=${nextMonth}`)}
                 disabled={!nextMonth}
-                className="w-8 h-8 flex items-center justify-center rounded-full bg-white/40 backdrop-blur-sm disabled:opacity-30 active:scale-95 transition-all"
+                className="size-8 flex items-center justify-center rounded-full bg-white/40 backdrop-blur-sm disabled:opacity-30 active:scale-95 transition-all"
               >
-                <ChevronRight className="h-4 w-4 text-[#6B5159]" />
+                <ChevronRight className="size-4 text-[#6B5159]" />
               </button>
             </div>
 
@@ -211,7 +211,7 @@ export function HomeDashboard({ month, monthKey, availableMonths, spaces, curren
               ) : (
                 <div className="flex items-center justify-between px-4 py-3.5">
                   <span className="text-sm text-muted-foreground">Ver cuotas</span>
-                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                  <ChevronRight className="size-4 text-muted-foreground" />
                 </div>
               )}
             </Link>
@@ -267,9 +267,9 @@ export function HomeDashboard({ month, monthKey, availableMonths, spaces, curren
       {/* FAB */}
       <button
         onClick={() => router.push("/bills/new")}
-        className="fixed bottom-24 right-4 z-30 flex items-center justify-center w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 active:scale-95 transition-transform"
+        className="fixed bottom-24 right-4 z-30 flex items-center justify-center size-14 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 active:scale-95 transition-transform"
       >
-        <Plus className="h-6 w-6" />
+        <Plus className="size-6" />
       </button>
 
       {/* Month picker */}

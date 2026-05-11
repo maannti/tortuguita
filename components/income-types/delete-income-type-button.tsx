@@ -54,8 +54,8 @@ export function DeleteIncomeTypeButton({ id, name }: DeleteIncomeTypeButtonProps
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="destructive" size="icon" className="h-10 w-10">
-          <Trash2 className="h-4 w-4" />
+        <Button variant="destructive" size="icon" className="size-10">
+          <Trash2 className="size-4" />
         </Button>
       </DialogTrigger>
       <DialogContent>

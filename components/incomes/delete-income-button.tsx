@@ -62,12 +62,12 @@ export function DeleteIncomeButton({ id, label, iconOnly, asMenuItem }: DeleteIn
             onSelect={(e) => e.preventDefault()}
             className="flex items-center gap-2 text-destructive focus:text-destructive rounded-xl py-2.5 px-3"
           >
-            <Trash2 className="h-4 w-4" />
+            <Trash2 className="size-4" />
             {t.common.delete}
           </DropdownMenuItem>
         ) : iconOnly ? (
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10">
-            <X className="h-4 w-4" />
+          <Button variant="ghost" size="icon" className="size-8 text-destructive hover:text-destructive hover:bg-destructive/10">
+            <X className="size-4" />
           </Button>
         ) : (
           <Button variant="destructive" size="sm">

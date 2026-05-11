@@ -70,13 +70,13 @@ export function JoinCodeCard({ organizationId, initialJoinCode }: JoinCodeCardPr
                 onClick={copyToClipboard}
                 title={copied ? t.settings.codeCopied : t.settings.copyCode}
               >
-                <Copy className="h-4 w-4" />
+                <Copy className="size-4" />
               </Button>
             </div>
             {copied && <p className="text-sm text-green-600 dark:text-green-400">{t.settings.codeCopied}</p>}
             <div className="space-y-2">
               <Button variant="outline" size="sm" onClick={generateJoinCode} disabled={isLoading}>
-                <RefreshCw className="h-4 w-4 mr-2" />
+                <RefreshCw className="size-4 mr-2" />
                 {isLoading ? t.common.loading : t.settings.regenerateCode}
               </Button>
             </div>

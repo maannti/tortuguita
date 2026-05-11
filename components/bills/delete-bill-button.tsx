@@ -68,16 +68,16 @@ export function DeleteBillButton({ id, label, iconOnly, asMenuItem, fullWidth, r
             onSelect={(e) => e.preventDefault()}
             className="flex items-center gap-2 text-destructive focus:text-destructive rounded-xl py-2.5 px-3"
           >
-            <Trash2 className="h-4 w-4" />
+            <Trash2 className="size-4" />
             {t.common.delete}
           </DropdownMenuItem>
         ) : iconOnly ? (
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10">
-            <X className="h-4 w-4" />
+          <Button variant="ghost" size="icon" className="size-8 text-destructive hover:text-destructive hover:bg-destructive/10">
+            <X className="size-4" />
           </Button>
         ) : fullWidth ? (
           <Button variant="destructive" size="lg" className="w-full">
-            <Trash2 className="h-4 w-4 mr-2" />
+            <Trash2 className="size-4 mr-2" />
             Eliminar gasto
           </Button>
         ) : (
@@ -88,8 +88,8 @@ export function DeleteBillButton({ id, label, iconOnly, asMenuItem, fullWidth, r
       </DialogTrigger>
       <DialogContent className="rounded-3xl border-border/40 bg-card w-[calc(100%-2rem)] max-w-sm p-6 [&>.absolute]:hidden">
         <DialogHeader className="items-center text-center gap-4 pb-1">
-          <div className="w-14 h-14 rounded-full bg-destructive/10 flex items-center justify-center">
-            <Trash2 className="h-6 w-6 text-destructive" />
+          <div className="size-14 rounded-full bg-destructive/10 flex items-center justify-center">
+            <Trash2 className="size-6 text-destructive" />
           </div>
           <div className="space-y-1.5">
             <DialogTitle className="text-xl" style={{ fontFamily: "var(--font-fraunces, serif)" }}>

@@ -12,7 +12,7 @@ export function SettingsBackHeader({ title, backHref = "/settings" }: Props) {
         onClick={() => backHref ? router.push(backHref) : router.back()}
         className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
       >
-        <ChevronLeft className="h-4 w-4" />Volver
+        <ChevronLeft className="size-4" />Volver
       </button>
       <h1 className="text-base font-semibold">{title}</h1>
       <div className="w-14" />

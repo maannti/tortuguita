@@ -103,7 +103,7 @@ export function CategoryFormV2({ mode, initialData, organizationId, spaceName, r
       <div className="flex items-center justify-between px-4 py-3 border-b sticky top-0 bg-background/95 backdrop-blur-sm z-10">
         <button type="button" onClick={() => router.push(backPath)}
           className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
-          <ChevronLeft className="h-4 w-4" />Volver
+          <ChevronLeft className="size-4" />Volver
         </button>
         <h1 className="text-base font-semibold" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
           {mode === "create" ? "Nueva categoría" : "Editar categoría"}
@@ -128,11 +128,11 @@ export function CategoryFormV2({ mode, initialData, organizationId, spaceName, r
 
           {/* Preview */}
           <div className="glass rounded-2xl px-4 py-3.5 flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0"
+            <div className="size-11 rounded-2xl flex items-center justify-center flex-shrink-0"
               style={{ backgroundColor: `${color}22` }}>
               {displayEmoji
                 ? <span className="text-2xl leading-none">{displayEmoji}</span>
-                : <span className="w-5 h-5 rounded-full" style={{ backgroundColor: color }} />
+                : <span className="size-5 rounded-full" style={{ backgroundColor: color }} />
               }
             </div>
             <div>
@@ -169,14 +169,14 @@ export function CategoryFormV2({ mode, initialData, organizationId, spaceName, r
               {/* Expand */}
               <button type="button" onClick={() => setExpanded(o => !o)}
                 className="aspect-square rounded-2xl flex items-center justify-center bg-muted/50 hover:bg-muted transition-all active:scale-90">
-                <Plus className={`h-5 w-5 text-muted-foreground transition-transform ${expanded ? "rotate-45" : ""}`} />
+                <Plus className={`size-5 text-muted-foreground transition-transform ${expanded ? "rotate-45" : ""}`} />
               </button>
 
               {/* Custom emoji */}
               <button type="button" onClick={openCustom}
                 className={`aspect-square rounded-2xl flex items-center justify-center transition-all active:scale-90
                   ${customMode ? "ring-2 ring-primary bg-primary/8" : "bg-muted/50 hover:bg-muted"}`}>
-                <Pencil className="h-4 w-4 text-muted-foreground" />
+                <Pencil className="size-4 text-muted-foreground" />
               </button>
             </div>
 

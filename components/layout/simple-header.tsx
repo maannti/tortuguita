@@ -110,7 +110,7 @@ export function SimpleHeader() {
                       style={active ? { backgroundColor: `${MAUVE}12` } : {}}
                     >
                       <div
-                        className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 transition-all"
+                        className="size-7 rounded-lg flex items-center justify-center flex-shrink-0 transition-all"
                         style={{ backgroundColor: active ? MAUVE : `${MAUVE}20` }}
                       >
                         {space.isPersonal

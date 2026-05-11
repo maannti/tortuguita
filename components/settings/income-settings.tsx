@@ -131,7 +131,7 @@ export function IncomeSettings({ organizationId, members, initialIncomes }: Prop
         disabled={isSaving}
         className="w-full rounded-xl bg-primary text-primary-foreground py-2.5 text-sm font-semibold disabled:opacity-40 flex items-center justify-center gap-2 transition-colors"
       >
-        {saved ? <><Check className="h-4 w-4" /> Guardado</> : isSaving ? "Guardando..." : "Guardar ingresos"}
+        {saved ? <><Check className="size-4" /> Guardado</> : isSaving ? "Guardando..." : "Guardar ingresos"}
       </button>
     </div>
   )

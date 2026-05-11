@@ -204,9 +204,9 @@ export function SettingsHub({ creditCards, categories }: Props) {
       {/* ── User card ── */}
       <div className="px-4 pt-6 pb-5">
         <div className="flex items-center gap-4">
-          <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 ring-2 ring-primary/20">
+          <div className="size-16 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 ring-2 ring-primary/20">
             {session?.user?.image
-              ? <img src={session.user.image} alt="" className="w-16 h-16 rounded-full object-cover" />
+              ? <img src={session.user.image} alt="" className="size-16 rounded-full object-cover" />
               : <span className="text-xl font-semibold text-primary">{getInitials(session?.user?.name)}</span>
             }
           </div>
@@ -258,8 +258,8 @@ export function SettingsHub({ creditCards, categories }: Props) {
                     className="w-full rounded-xl border border-border/50 bg-background px-3 py-2.5 text-sm outline-none focus:border-primary transition-colors"
                   />
                   <button type="button" onClick={() => setNewSpacePersonal(v => !v)} className="flex items-center gap-3 w-full">
-                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors ${newSpacePersonal ? "bg-primary/10" : "bg-muted"}`}>
-                      {newSpacePersonal ? <User className="h-4 w-4 text-primary" /> : <Home className="h-4 w-4 text-muted-foreground" />}
+                    <div className={`size-8 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors ${newSpacePersonal ? "bg-primary/10" : "bg-muted"}`}>
+                      {newSpacePersonal ? <User className="size-4 text-primary" /> : <Home className="size-4 text-muted-foreground" />}
                     </div>
                     <div className="text-left">
                       <p className="text-sm font-medium">{newSpacePersonal ? "Personal" : "Compartido"}</p>
@@ -307,12 +307,12 @@ export function SettingsHub({ creditCards, categories }: Props) {
                       className="flex items-center gap-3 flex-1 min-w-0 text-left"
                     >
                       <div
-                        className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
+                        className="size-8 rounded-xl flex items-center justify-center flex-shrink-0"
                         style={{ backgroundColor: org.isPersonal ? "#9D8189" : "#7B9E87" }}
                       >
                         {org.isPersonal
-                          ? <User className="h-4 w-4 text-white" />
-                          : <Home className="h-4 w-4 text-white" />}
+                          ? <User className="size-4 text-white" />
+                          : <Home className="size-4 text-white" />}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{org.name}</p>
@@ -320,12 +320,12 @@ export function SettingsHub({ creditCards, categories }: Props) {
                           {org.isPersonal ? "Personal" : `${org.memberCount} miembro${org.memberCount !== 1 ? "s" : ""}`}
                         </p>
                       </div>
-                      {isActive && <Check className="h-4 w-4 text-primary flex-shrink-0" />}
+                      {isActive && <Check className="size-4 text-primary flex-shrink-0" />}
                     </button>
                     {/* Manage button */}
                     <button
                       onClick={(e) => openManage(org, e)}
-                      className="w-7 h-7 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 active:scale-95 transition-all flex-shrink-0"
+                      className="size-7 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 active:scale-95 transition-all flex-shrink-0"
                     >
                       <Settings2 className="h-3.5 w-3.5" />
                     </button>
@@ -341,16 +341,16 @@ export function SettingsHub({ creditCards, categories }: Props) {
           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2 px-1">Gestión</p>
           <div className="glass rounded-2xl divide-y divide-white/60 overflow-hidden">
             {[
-              { label: "Mis tarjetas", href: "/cards", icon: <CreditCard className="h-4 w-4 text-white" />, bg: "#7B9E87" },
-              { label: "Categorías de gastos", href: "/categories", icon: <Tag className="h-4 w-4 text-white" />, bg: "#9D8189" },
+              { label: "Mis tarjetas", href: "/cards", icon: <CreditCard className="size-4 text-white" />, bg: "#7B9E87" },
+              { label: "Categorías de gastos", href: "/categories", icon: <Tag className="size-4 text-white" />, bg: "#9D8189" },
             ].map((item) => (
               <button key={item.label} onClick={() => router.push(item.href)}
                 className="w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-white/30 transition-colors">
-                <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: item.bg }}>
+                <div className="size-8 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: item.bg }}>
                   {item.icon}
                 </div>
                 <p className="flex-1 text-sm font-medium">{item.label}</p>
-                <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                <ChevronRight className="size-4 text-muted-foreground flex-shrink-0" />
               </button>
             ))}
           </div>
@@ -378,7 +378,7 @@ export function SettingsHub({ creditCards, categories }: Props) {
                     <p className="text-sm font-medium">{item.label}</p>
                     <p className="text-xs text-muted-foreground">{item.desc}</p>
                   </div>
-                  <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                  <ChevronRight className="size-4 text-muted-foreground flex-shrink-0" />
                 </button>
               ))
             })()}
@@ -393,13 +393,13 @@ export function SettingsHub({ creditCards, categories }: Props) {
             {mounted && (
               <div className="flex items-center gap-2 text-muted-foreground">
                 <span className="text-xs">{theme === "dark" ? "Oscuro" : "Claro"}</span>
-                {theme === "dark" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+                {theme === "dark" ? <Moon className="size-4" /> : <Sun className="size-4" />}
               </div>
             )}
           </button>
           <button onClick={() => signOut({ callbackUrl: "/login" })}
             className="w-full flex items-center gap-3 px-4 py-3.5 text-destructive hover:bg-destructive/5 transition-colors">
-            <LogOut className="h-4 w-4" />
+            <LogOut className="size-4" />
             <span className="text-sm font-medium">Cerrar sesión</span>
           </button>
         </div>
@@ -446,7 +446,7 @@ export function SettingsHub({ creditCards, categories }: Props) {
                     const isMe = m.userId === session?.user?.id
                     return (
                       <div key={m.userId} className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-muted/40">
-                        <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 bg-primary/10">
+                        <div className="size-7 rounded-lg flex items-center justify-center flex-shrink-0 bg-primary/10">
                           <User className="h-3.5 w-3.5 text-primary" />
                         </div>
                         <div className="flex-1 min-w-0">
@@ -459,7 +459,7 @@ export function SettingsHub({ creditCards, categories }: Props) {
                           <button
                             onClick={() => removeMember(m.userId)}
                             disabled={removingMemberId === m.userId}
-                            className="w-7 h-7 flex items-center justify-center rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 active:scale-95 transition-all disabled:opacity-40"
+                            className="size-7 flex items-center justify-center rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 active:scale-95 transition-all disabled:opacity-40"
                           >
                             {removingMemberId === m.userId
                               ? <span className="text-xs">…</span>
@@ -506,7 +506,7 @@ export function SettingsHub({ creditCards, categories }: Props) {
                     onClick={() => setLeaveConfirm(true)}
                     className="w-full flex items-center gap-2 py-2.5 text-sm font-medium text-destructive active:scale-[0.98] transition-all"
                   >
-                    <LogOut className="h-4 w-4" />
+                    <LogOut className="size-4" />
                     Salir del espacio
                   </button>
                 ) : (
@@ -540,7 +540,7 @@ export function SettingsHub({ creditCards, categories }: Props) {
                     onClick={() => setDeleteConfirm(true)}
                     className="w-full flex items-center gap-2 py-2.5 text-sm font-medium text-destructive active:scale-[0.98] transition-all"
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="size-4" />
                     Eliminar espacio
                   </button>
                 ) : (
