@@ -28,7 +28,3 @@ export function haptic(pattern: HapticPattern = 'light'): void {
   const value = patterns[pattern]
   haptics.trigger(value as any)
 }
-
-export function isHapticSupported(): boolean {
-  return typeof window !== 'undefined'
-}
