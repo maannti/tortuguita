@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { billingPeriodSchema } from "@/lib/validations/bill-type"
 import { z } from "zod"
-import { needsRotation, rotateBillingPeriod } from "@/lib/budget-date"
+import { needsRotation } from "@/lib/budget-date"
 import { getUserOrganizations } from "@/lib/organization-utils"
 
 async function getOrgIds(userId: string) {
@@ -40,21 +40,7 @@ export async function GET(
       nextDueDate: billType.nextDueDate,
     }
 
-    if (needsRotation(billingPeriod)) {
-      const rotated = rotateBillingPeriod(billingPeriod)
-      await prisma.billType.update({
-        where: { id },
-        data: {
-          currentClosingDate: rotated.currentClosingDate,
-          currentDueDate: rotated.currentDueDate,
-          nextClosingDate: rotated.nextClosingDate,
-          nextDueDate: rotated.nextDueDate,
-        },
-      })
-      return NextResponse.json({ ...billType, ...rotated, wasRotated: true })
-    }
-
-    return NextResponse.json(billType)
+    return NextResponse.json({ ...billType, needsRotation: needsRotation(billingPeriod) })
   } catch (error) {
     console.error("Error fetching billing period:", error)
     return NextResponse.json({ error: "Failed to fetch billing period" }, { status: 500 })
