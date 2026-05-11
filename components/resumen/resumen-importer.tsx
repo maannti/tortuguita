@@ -8,7 +8,7 @@ import { CardIcon, isNetworkId, BANKS, NetworkId } from "@/components/ui/card-ne
 interface CCCard { id: string; name: string; color: string | null; icon: string | null; organizationId: string }
 interface Member { id: string; name: string | null; email: string | null; organizationId: string }
 interface Organization { id: string; name: string; isPersonal: boolean }
-interface Category { id: string; name: string; color: string | null; icon: string | null }
+interface Category { id: string; name: string; color: string | null; icon: string | null; organizationId: string }
 
 interface Props {
   ccCards: CCCard[]
@@ -34,7 +34,8 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
 
   // Upload step state
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
-  const [selectedOrgId, setSelectedOrgId] = useState(organizations[0]?.id ?? "")
+  // Category sheet: which transaction's picker is open
+  const [categorySheetFor, setCategorySheetFor] = useState<string | null>(null)
 
   // Review step state
   const [parsed, setParsed] = useState<ResumenParseResult | null>(null)
@@ -190,10 +191,14 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
 
       const userId = txOverrides[tx.id]?.userId ?? titularMap[tx.titular] ?? currentUserId
 
-      // Resolve categoryId from name → UUID
-      const categoryId = categories.find(
+      // Resolve categoryId + org from category name → UUID
+      const matchedCat = categories.find(
         c => c.name.toLowerCase() === (ov.categoria ?? "").toLowerCase()
-      )?.id ?? null
+      )
+      const categoryId = matchedCat?.id ?? null
+      // Org: derived from category's org; fallback to personal space
+      const personalOrg = organizations.find(o => o.isPersonal) ?? organizations[0]
+      const txOrgId = matchedCat?.organizationId ?? personalOrg?.id ?? ""
 
       // Determine final ARS amount — convert USD at official rate if user chose that path
       let finalMontoARS = tx.montoARS
@@ -212,6 +217,7 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
         usarUSD: false,
         billTypeId,
         categoryId,
+        organizationId: txOrgId,
         userId,
         comprobante: tx.comprobante ?? null,
       })
@@ -227,7 +233,7 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
       const res = await fetch("/api/resumen/import", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ organizationId: selectedOrgId, transacciones }),
+        body: JSON.stringify({ transacciones }),
       })
       if (!res.ok) { const d = await res.json(); throw new Error(d.error || "Error al importar") }
       const result = await res.json()
@@ -288,33 +294,7 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
           {/* ── STEP: UPLOAD ── */}
           {(step === "upload" || step === "parsing") && (
             <>
-              {/* Espacio */}
-              {organizations.length > 1 && (
-                <div className="space-y-1.5">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Espacio</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    {organizations.map(org => {
-                      const isSelected = selectedOrgId === org.id
-                      return (
-                        <button key={org.id} type="button"
-                          onClick={() => { setSelectedOrgId(org.id) }}
-                          className={`flex items-center gap-3 rounded-2xl border-2 px-4 py-3.5 text-sm text-left transition-all active:scale-[0.97] ${isSelected ? "border-primary bg-primary/5 text-foreground" : "border-border bg-background text-muted-foreground"}`}>
-                          <div className="size-8 rounded-xl flex items-center justify-center flex-shrink-0"
-                            style={{ backgroundColor: isSelected ? MAUVE : `${MAUVE}20` }}>
-                            {org.isPersonal
-                              ? <User className="size-4" style={{ color: isSelected ? "#fff" : MAUVE }} />
-                              : <Home className="size-4" style={{ color: isSelected ? "#fff" : MAUVE }} />}
-                          </div>
-                          <span className="font-medium truncate">{org.name}</span>
-                          {isSelected && <Check className="size-4 ml-auto flex-shrink-0 text-primary" />}
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* PDF upload */}
+              {/* File upload */}
               <div className="space-y-1.5">
                 <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Archivo</p>
                 <div
@@ -559,18 +539,24 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
                                   {/* Categoría + moneda + user override */}
                                   {ov.incluir && (
                                     <div className="flex items-center gap-2 flex-wrap pt-0.5">
-                                      {/* Categoría */}
-                                      <div className="relative">
-                                        <select
-                                          value={ov.categoria ?? ""}
-                                          onChange={e => setTxOv(tx.id, { categoria: e.target.value || null })}
-                                          className="appearance-none text-xs bg-muted/50 border border-border/60 rounded-lg px-2 py-1 pr-5 focus:outline-none"
-                                        >
-                                          <option value="">Sin categoría</option>
-                                          {categories.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
-                                        </select>
-                                        <ChevronDown className="size-3 absolute right-1.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-                                      </div>
+                                      {/* Categoría — button opens bottom sheet */}
+                                      {(() => {
+                                        const matchedCat = categories.find(c => c.name.toLowerCase() === (ov.categoria ?? "").toLowerCase())
+                                        const orgName = matchedCat ? (organizations.find(o => o.id === matchedCat.organizationId)?.name ?? "") : ""
+                                        return (
+                                          <button
+                                            type="button"
+                                            onClick={() => setCategorySheetFor(tx.id)}
+                                            className="flex items-center gap-1.5 text-xs bg-muted/50 border border-border/60 rounded-lg px-2 py-1 hover:border-foreground/30 transition-colors"
+                                          >
+                                            <span className={ov.categoria ? "text-foreground" : "text-muted-foreground"}>
+                                              {ov.categoria ?? "Sin categoría"}
+                                            </span>
+                                            {orgName && <span className="text-muted-foreground/60">· {orgName}</span>}
+                                            <ChevronDown className="size-3 text-muted-foreground" />
+                                          </button>
+                                        )
+                                      })()}
 
                                       {/* USD toggle — solo cuando hay ambas monedas */}
                                       {hasUSD && hasARS && (
@@ -679,6 +665,78 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
           )}
         </div>
       </div>
+
+      {/* ── Category bottom sheet ────────────────────────────────────────── */}
+      {categorySheetFor && (
+        <div className="fixed inset-0 z-50 flex flex-col justify-end">
+          {/* Backdrop */}
+          <div className="absolute inset-0 bg-black/40" onClick={() => setCategorySheetFor(null)} />
+          {/* Sheet */}
+          <div className="relative bg-background rounded-t-3xl max-h-[70vh] flex flex-col">
+            <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-border/50">
+              <p className="text-sm font-semibold">Categoría</p>
+              <button onClick={() => setCategorySheetFor(null)} className="text-muted-foreground active:scale-90 transition-all">
+                <X className="size-5" />
+              </button>
+            </div>
+            <div className="overflow-y-auto flex-1 px-4 py-3 space-y-4">
+              {/* Sin categoría */}
+              {(() => {
+                const sheetCatName = txOverrides[categorySheetFor]?.categoria ?? parsed?.transacciones.find(t => t.id === categorySheetFor)?.categoriaSugerida ?? null
+                const hasCategory = !!categories.find(c => c.name.toLowerCase() === (sheetCatName ?? "").toLowerCase())
+                return (
+                  <button
+                    type="button"
+                    onClick={() => { setTxOv(categorySheetFor, { categoria: null }); setCategorySheetFor(null) }}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors ${
+                      !hasCategory ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-muted/60"
+                    }`}
+                  >
+                    Sin categoría
+                  </button>
+                )
+              })()}
+              {/* Categories grouped by space */}
+              {organizations.map(org => {
+                const orgCats = categories.filter(c => c.organizationId === org.id)
+                if (orgCats.length === 0) return null
+                const sheetCatName = txOverrides[categorySheetFor]?.categoria ?? parsed?.transacciones.find(t => t.id === categorySheetFor)?.categoriaSugerida ?? null
+                const currentCat = sheetCatName
+                return (
+                  <div key={org.id}>
+                    <div className="flex items-center gap-2 mb-2 px-1">
+                      <div className="size-5 rounded-md flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${MAUVE}20` }}>
+                        {org.isPersonal
+                          ? <User className="size-3" style={{ color: MAUVE }} />
+                          : <Home className="size-3" style={{ color: MAUVE }} />}
+                      </div>
+                      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{org.name}</p>
+                    </div>
+                    <div className="space-y-0.5">
+                      {orgCats.map(cat => {
+                        const isSelected = currentCat?.toLowerCase() === cat.name.toLowerCase()
+                        return (
+                          <button
+                            key={cat.id}
+                            type="button"
+                            onClick={() => { setTxOv(categorySheetFor, { categoria: cat.name }); setCategorySheetFor(null) }}
+                            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition-colors ${
+                              isSelected ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted/60 text-foreground"
+                            }`}
+                          >
+                            {cat.name}
+                            {isSelected && <Check className="size-4 text-primary" />}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

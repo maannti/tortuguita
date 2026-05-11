@@ -17,12 +17,12 @@ const transactionSchema = z.object({
   usarUSD: z.boolean().default(false),
   billTypeId: z.string().min(1),
   categoryId: z.string().nullable(),
+  organizationId: z.string().min(1), // per-transaction: derived from chosen category's org
   userId: z.string().min(1),
   comprobante: z.string().nullable().optional(), // banco voucher/ID for deduplication
 })
 
 const importSchema = z.object({
-  organizationId: z.string().min(1),
   transacciones: z.array(transactionSchema).min(1),
 })
 
@@ -32,17 +32,17 @@ export async function POST(request: NextRequest) {
     if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
     const body = await request.json()
-    const { organizationId, transacciones } = importSchema.parse(body)
+    const { transacciones } = importSchema.parse(body)
 
-    // Validate org membership
+    // Validate org membership — each transaction's org must belong to the user
     const userOrgs = await getUserOrganizations(session.user.id)
-    const validOrg = userOrgs.find(o => o.id === organizationId)
-    if (!validOrg) return NextResponse.json({ error: "Invalid space" }, { status: 403 })
+    const userOrgIds = userOrgs.map(o => o.id)
+    const invalidOrg = transacciones.find(tx => !userOrgIds.includes(tx.organizationId))
+    if (invalidOrg) return NextResponse.json({ error: "Invalid space" }, { status: 403 })
 
     // Load the billType (CC card) to get billing period.
-    // Cards can belong to any org the user has access to — the target org (organizationId)
-    // is where bills get created, but the card itself may live in a different space.
-    const userOrgIds = userOrgs.map(o => o.id)
+    // Cards can belong to any org the user has access to — each tx.organizationId
+    // determines where its bills get created, but the card may live in a different space.
 
     const billTypeCache = new Map<string, { id: string; currentClosingDate: Date | null; currentDueDate: Date | null; nextClosingDate: Date | null; nextDueDate: Date | null } | null>()
     const getBillType = async (id: string) => {
@@ -138,7 +138,7 @@ export async function POST(request: NextRequest) {
                 budgetDate: cuotaBudgetDate,
                 billTypeId: tx.billTypeId,
                 categoryId: tx.categoryId || null,
-                organizationId,
+                organizationId: tx.organizationId,
                 userId: tx.userId,
                 totalInstallments,
                 currentInstallment: i,
@@ -162,7 +162,7 @@ export async function POST(request: NextRequest) {
               budgetDate,
               billTypeId: tx.billTypeId,
               categoryId: tx.categoryId || null,
-              organizationId,
+              organizationId: tx.organizationId,
               userId: tx.userId,
               externalRef: externalRef ?? undefined,
               assignments: {

@@ -23,7 +23,7 @@ export default async function ResumenPage() {
     }),
     prisma.billType.findMany({
       where: { organizationId: { in: orgIds }, isCreditCard: false },
-      select: { id: true, name: true, color: true, icon: true },
+      select: { id: true, name: true, color: true, icon: true, organizationId: true },
       orderBy: { name: "asc" },
     }),
   ])
