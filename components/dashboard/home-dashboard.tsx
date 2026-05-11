@@ -37,12 +37,14 @@ export interface SpaceData {
 
 interface Props { month: string; monthKey: string; availableMonths: string[]; spaces: SpaceData[]; currentUserId: string }
 
-function formatARS(n: number) { return new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(n) }
+const arsFormatter = new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", minimumFractionDigits: 0, maximumFractionDigits: 2 })
+const arsFormatterFull = new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", minimumFractionDigits: 2, maximumFractionDigits: 2 })
+function formatARS(n: number) { return arsFormatter.format(n) }
 function capitalize(s: string) { return s.charAt(0).toUpperCase() + s.slice(1) }
 
 /** Renders a currency amount with superscript cents. Omits cents when they are "00". */
 function HeroAmount({ amount, className }: { amount: number; className?: string }) {
-  const full = new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount)
+  const full = arsFormatterFull.format(amount)
   const commaIdx = full.lastIndexOf(",")
   const intPart = commaIdx >= 0 ? full.slice(0, commaIdx) : full
   const decPart = commaIdx >= 0 ? full.slice(commaIdx + 1) : ""
@@ -232,7 +234,7 @@ export function HomeDashboard({ month, monthKey, availableMonths, spaces, curren
                 <Link key={expense.id} href={`/bills/${expense.id}`} className="flex items-center justify-between px-4 py-3.5 active:bg-muted/50 transition-colors">
                   <div className="flex items-center gap-3 min-w-0">
                     <div
-                      className="w-2.5 h-2.5 rounded-full flex-shrink-0 shadow-sm"
+                      className="size-2.5 rounded-full flex-shrink-0 shadow-sm"
                       style={{ backgroundColor: expense.billTypeColor }}
                     />
                     <div className="min-w-0">

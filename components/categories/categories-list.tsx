@@ -42,7 +42,7 @@ export function CategoriesList({ categories, spaceId, spaceName }: CategoriesLis
                   style={{ backgroundColor: `${cat.color || "#9D8189"}22` }}>
                   {cat.icon
                     ? <span className="text-lg">{cat.icon}</span>
-                    : <span className="w-3.5 h-3.5 rounded-full" style={{ backgroundColor: cat.color || "#9D8189" }} />
+                    : <span className="size-3.5 rounded-full" style={{ backgroundColor: cat.color || "#9D8189" }} />
                   }
                 </div>
                 <div className="flex-1 min-w-0">

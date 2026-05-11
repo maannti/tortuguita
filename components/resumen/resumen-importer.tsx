@@ -20,9 +20,8 @@ interface Props {
 
 const MAUVE = "#9D8189"
 
-function formatARS(n: number) {
-  return new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(Math.round(n))
-}
+const arsFormatter = new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", minimumFractionDigits: 0, maximumFractionDigits: 0 })
+function formatARS(n: number) { return arsFormatter.format(Math.round(n)) }
 
 type Step = "upload" | "parsing" | "review" | "importing" | "done"
 
@@ -384,7 +383,7 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
           {step === "review" && parsed && (
             <>
               {/* Summary header */}
-              <div className="rounded-2xl bg-muted/40 px-4 py-4 space-y-2">
+              <div className="rounded-2xl bg-muted/40 p-4 space-y-2">
                 {parsed.banco && (
                   <span className="inline-flex items-center text-[11px] font-medium px-2 py-0.5 rounded-full bg-foreground/8 text-muted-foreground border border-border/50">
                     {parsed.banco}

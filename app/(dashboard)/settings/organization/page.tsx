@@ -153,7 +153,7 @@ export default async function OrganizationSettingsPage({ searchParams }: PagePro
             <Link
               key={org.id}
               href={`/settings/organization?spaceId=${org.id}`}
-              className="flex items-center gap-3 px-4 py-4 active:bg-muted/50 transition-colors"
+              className="flex items-center gap-3 p-4 active:bg-muted/50 transition-colors"
             >
               <div className="size-9 rounded-xl bg-muted flex items-center justify-center flex-shrink-0">
                 <Home className="size-4 text-muted-foreground" />

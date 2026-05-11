@@ -61,7 +61,7 @@ export default async function CategoriesPage({ searchParams }: PageProps) {
       <div className="px-4 pt-4">
         <div className="glass rounded-2xl divide-y divide-white/60 overflow-hidden">
           {categoryCounts.map((org) => (
-            <Link key={org.id} href={`/categories?spaceId=${org.id}`} className="flex items-center gap-3 px-4 py-4 active:bg-muted/50 transition-colors">
+            <Link key={org.id} href={`/categories?spaceId=${org.id}`} className="flex items-center gap-3 p-4 active:bg-muted/50 transition-colors">
               <div className="size-9 rounded-xl bg-muted flex items-center justify-center flex-shrink-0">
                 {org.isPersonal ? <User className="size-4 text-muted-foreground" /> : <Home className="size-4 text-muted-foreground" />}
               </div>
