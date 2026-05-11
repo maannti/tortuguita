@@ -17,9 +17,8 @@ function formatDisplay(n: number): string {
   const f = int.replace(/\B(?=(\d{3})+(?!\d))/g, ".")
   return dec ? `${f},${dec}` : f
 }
-function formatARS(n: number) {
-  return new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(Math.round(n))
-}
+const arsFormatter = new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", minimumFractionDigits: 0, maximumFractionDigits: 0 })
+function formatARS(n: number) { return arsFormatter.format(Math.round(n)) }
 
 export function IncomeSettings({ organizationId, members, initialIncomes }: Props) {
   const [amounts, setAmounts] = useState<Record<string, string>>(
