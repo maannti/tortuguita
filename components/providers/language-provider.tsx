@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { use } from "react";
 import { translations, defaultLanguage, type Language, type Translations } from "@/lib/i18n";
 
 type LanguageContextType = {
@@ -59,7 +60,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
 }
 
 export function useLanguage() {
-  const context = React.useContext(LanguageContext);
+  const context = use(LanguageContext);
   if (context === undefined) {
     throw new Error("useLanguage must be used within a LanguageProvider");
   }
