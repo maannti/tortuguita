@@ -47,3 +47,6 @@ next-env.d.ts
 /public/workbox-*.js
 /public/sw.js.map
 /public/workbox-*.js.map
+
+# Claude Code worktrees (excluded from react-doctor scans via git ls-files)
+/.claude/worktrees/
