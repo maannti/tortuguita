@@ -321,11 +321,11 @@ export function CuotasView({ cards, monthLabel, monthKey, prevMonth, nextMonth, 
         </div>
       )}
 
-      {/* FABs */}
+      {/* FABs — stacked vertically, right-aligned */}
       <Link href="/resumen"
-        className="fixed bottom-24 right-20 z-30 flex items-center gap-1.5 px-4 h-11 rounded-full bg-background border border-border text-muted-foreground text-sm font-medium shadow-sm active:scale-95 transition-transform">
+        className="fixed bottom-40 right-4 z-30 flex items-center gap-2 px-4 h-11 rounded-full bg-background border border-border text-muted-foreground text-sm font-medium shadow-sm active:scale-95 transition-transform">
         <FileText className="size-4" />
-        Importar
+        Importar gastos
       </Link>
       <Link href="/cuotas/new"
         className="fixed bottom-24 right-4 z-30 flex items-center justify-center size-14 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 active:scale-95 transition-transform">
