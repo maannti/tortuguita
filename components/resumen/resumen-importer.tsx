@@ -39,6 +39,8 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   // Category sheet: which transaction's picker is open
   const [categorySheetFor, setCategorySheetFor] = useState<string | null>(null)
+  // Space picker for new category (shown inside the sheet header)
+  const [newCatSpacePicker, setNewCatSpacePicker] = useState(false)
 
   // Review step state
   const [parsed, setParsed] = useState<ResumenParseResult | null>(null)
@@ -705,21 +707,52 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
         const hasCategory = !!categories.find(c => c.name.toLowerCase() === (sheetCatName ?? "").toLowerCase())
         return (
           <div className="fixed inset-0 z-50 flex flex-col justify-end">
-            <div className="absolute inset-0 bg-black/40" onClick={() => setCategorySheetFor(null)} />
+            <div className="absolute inset-0 bg-black/40" onClick={() => { setCategorySheetFor(null); setNewCatSpacePicker(false) }} />
             <div className="relative bg-background rounded-t-3xl max-h-[75vh] flex flex-col">
               {/* Header */}
-              <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-border/50">
-                <p className="text-sm font-semibold">Categoría</p>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => openNewCategory()}
-                    className="flex items-center gap-1 text-xs font-medium text-primary bg-primary/10 hover:bg-primary/15 px-2.5 py-1.5 rounded-full transition-colors active:scale-95"
-                  >
-                    <Plus className="size-3" /> Nueva
-                  </button>
-                  <button onClick={() => setCategorySheetFor(null)} className="text-muted-foreground active:scale-90 transition-all">
-                    <X className="size-5" />
-                  </button>
+              <div className="flex-shrink-0">
+                <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-border/50">
+                  <p className="text-sm font-semibold">Categoría</p>
+                  <div className="flex items-center gap-2">
+                    <div className="relative">
+                      <button
+                        onClick={() => {
+                          if (organizations.length === 1) {
+                            openNewCategory(organizations[0].id)
+                          } else {
+                            setNewCatSpacePicker(v => !v)
+                          }
+                        }}
+                        className="flex items-center gap-1 text-xs font-medium text-primary bg-primary/10 hover:bg-primary/15 px-2.5 py-1.5 rounded-full transition-colors active:scale-95"
+                      >
+                        <Plus className="size-3" /> Nueva
+                        {organizations.length > 1 && <ChevronDown className={`size-3 transition-transform ${newCatSpacePicker ? "rotate-180" : ""}`} />}
+                      </button>
+                      {/* Inline space picker */}
+                      {newCatSpacePicker && (
+                        <div className="absolute right-0 top-full mt-1.5 z-10 bg-background border border-border rounded-2xl shadow-lg overflow-hidden min-w-[160px]">
+                          {organizations.map(org => (
+                            <button
+                              key={org.id}
+                              type="button"
+                              onClick={() => { setNewCatSpacePicker(false); openNewCategory(org.id) }}
+                              className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm hover:bg-muted/60 transition-colors text-left"
+                            >
+                              <div className="size-5 rounded-md flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${MAUVE}25` }}>
+                                {org.isPersonal
+                                  ? <User className="size-3" style={{ color: MAUVE }} />
+                                  : <Home className="size-3" style={{ color: MAUVE }} />}
+                              </div>
+                              <span className="truncate">{org.name}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <button onClick={() => { setCategorySheetFor(null); setNewCatSpacePicker(false) }} className="text-muted-foreground active:scale-90 transition-all">
+                      <X className="size-5" />
+                    </button>
+                  </div>
                 </div>
               </div>
 
