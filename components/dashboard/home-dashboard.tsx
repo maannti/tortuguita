@@ -79,7 +79,21 @@ export function HomeDashboard({ month, monthKey, availableMonths, spaces, curren
   const hasSharedSpace = activeSpaces.some(sp => !sp.isPersonal && sp.members.length > 1)
   const displayAmount = showMyPart ? myAmount : totalAmount
   const recentExpenses = activeSpaces.flatMap(sp => sp.recentExpenses)
-  const creditCardGroups = activeSpaces.flatMap(sp => sp.creditCardGroups)
+  // Merge CC groups across spaces: same card name → one block with summed totals and members
+  const creditCardGroups = activeSpaces.flatMap(sp => sp.creditCardGroups).reduce((acc, group) => {
+    const existing = acc.find(g => g.name === group.name)
+    if (existing) {
+      existing.totalAmount += group.totalAmount
+      for (const m of group.memberAmounts) {
+        const em = existing.memberAmounts.find(x => x.name === m.name)
+        if (em) em.amount += m.amount
+        else existing.memberAmounts.push({ ...m })
+      }
+    } else {
+      acc.push({ ...group, memberAmounts: [...group.memberAmounts] })
+    }
+    return acc
+  }, [] as CreditCardGroup[])
   // Show member split for the first active shared space (even if personal is also active)
   const sharedSpace = activeSpaces.find(sp => !sp.isPersonal && sp.members.length > 1)
   const members = sharedSpace ? sharedSpace.members : (activeSpaces.length === 1 ? activeSpaces[0].members : [])
