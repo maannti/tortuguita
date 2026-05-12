@@ -8,7 +8,7 @@ import { MonthPicker } from "@/components/ui/month-picker"
 import { cn } from "@/lib/utils"
 
 interface BillItem {
-  id: string; label: string; amount: number; amountUSD: number | null; budgetDate: string
+  id: string; label: string; amount: number; amountUSD: number | null; paymentDate: string
   cardName: string | null; currentInstallment: number | null; totalInstallments: number | null
 }
 interface CategoryGroup {
@@ -181,7 +181,7 @@ export function BillsView({ month, monthKey, availableMonths, categoryGroups, gr
                         <div className="min-w-0 flex-1">
                           <p className="text-sm font-medium truncate">{bill.label}</p>
                           <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                            <span className="text-xs text-muted-foreground">{bill.budgetDate}</span>
+                            <span className="text-xs text-muted-foreground">{bill.paymentDate}</span>
                             {bill.totalInstallments && bill.totalInstallments > 1 && (
                               <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-primary/10 text-primary">
                                 {bill.currentInstallment}/{bill.totalInstallments}

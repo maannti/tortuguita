@@ -54,7 +54,7 @@ export default async function BillsPage({ searchParams }: PageProps) {
   const catGroupMap = new Map<string, {
     name: string; color: string; icon: string | null; total: number; totalUSD: number | null
     bills: Array<{
-      id: string; label: string; amount: number; amountUSD: number | null; budgetDate: string
+      id: string; label: string; amount: number; amountUSD: number | null; paymentDate: string
       cardName: string | null; currentInstallment: number | null; totalInstallments: number | null
     }>
   }>()
@@ -83,7 +83,7 @@ export default async function BillsPage({ searchParams }: PageProps) {
       label: bill.label,
       amount: Number(bill.amount),
       amountUSD: billUSD,
-      budgetDate: format(new Date(bill.budgetDate), "d MMM"),
+      paymentDate: format(new Date(bill.paymentDate), "d MMM"),
       cardName: bill.billType.isCreditCard ? bill.billType.name : null,
       currentInstallment: bill.currentInstallment,
       totalInstallments: bill.totalInstallments,
