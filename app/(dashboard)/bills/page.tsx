@@ -65,6 +65,10 @@ export default async function BillsPage({ searchParams }: PageProps) {
       catName  = bill.category.name
       catColor = bill.category.color || "#6b7280"
       catIcon  = bill.category.icon  || null
+    } else if (bill.billType.isCreditCard && !bill.category) {
+      catName  = "Sin categoría"
+      catColor = "#9D8189"
+      catIcon  = null
     } else {
       catName  = bill.billType.name
       catColor = bill.billType.color || "#6b7280"
