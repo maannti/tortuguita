@@ -91,12 +91,17 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
 
   function getTx(tx: ParsedTransaction) {
     const ov = txOverrides[tx.id] ?? {}
-    // Default usarUSD=true when there's no ARS amount (pure USD transaction)
     const defaultUsarUSD = tx.montoARS === null && tx.montoUSD !== null
+    // Only pre-select Claude's suggestion if it exactly matches an existing user category
+    const suggestedCat = (() => {
+      if (!tx.categoriaSugerida) return null
+      const match = categories.find(c => c.name.toLowerCase() === tx.categoriaSugerida!.toLowerCase())
+      return match ? match.name : null
+    })()
     return {
       incluir: ov.incluir ?? tx.incluir,
       descripcion: ov.descripcion ?? tx.descripcion,
-      categoria: "categoria" in ov ? ov.categoria : tx.categoriaSugerida,
+      categoria: "categoria" in ov ? ov.categoria : suggestedCat,
       usarUSD: ov.usarUSD ?? defaultUsarUSD,
     }
   }
