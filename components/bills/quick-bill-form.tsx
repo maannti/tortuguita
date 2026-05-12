@@ -251,7 +251,13 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
     const d = new Date(due); d.setHours(0,0,0,0)
     // If the current closing is already in the past and the expense is after it → next period
     // If the current due date already passed → rotation needed (stale period)
-    if (today > d) return { type: "no-next" }  // period fully expired, needs rotation
+    if (today > d) {
+      // Current period expired — check if next period is already configured
+      const nextDue2     = selectedCard.nextDueDate     ? new Date(selectedCard.nextDueDate)     : null
+      const nextClosing2 = selectedCard.nextClosingDate ? new Date(selectedCard.nextClosingDate) : null
+      if (!nextDue2) return { type: "no-next" }
+      return { type: "next", dueDate: formatShortDate(nextDue2), closingDate: formatShortDate(nextClosing2) }
+    }
     if (p <= c) {
       // Expense is before closing. If closing already passed, show as "closed" (amber), not green
       if (today > c) return { type: "current-closed", dueDate: formatShortDate(due), closingDate: formatShortDate(closing) }
