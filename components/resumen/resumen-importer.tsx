@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { ChevronLeft, Upload, FileText, Check, X, AlertTriangle, ChevronDown, User, Home, Loader2, Plus } from "lucide-react"
 import type { ResumenParseResult, ParsedTransaction } from "@/app/api/resumen/parse/route"
+import type { DuplicateMatch } from "@/app/api/resumen/check-duplicates/route"
 import { CardIcon, isNetworkId, BANKS, NetworkId } from "@/components/ui/card-network"
 
 interface CCCard { id: string; name: string; color: string | null; icon: string | null; organizationId: string }
@@ -65,6 +66,11 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
   // Done step
   const [importResult, setImportResult] = useState<{ imported: number; duplicates?: number; errors?: string[] } | null>(null)
 
+  // Duplicate detection
+  const [duplicateMatches, setDuplicateMatches] = useState<Record<string, DuplicateMatch | null>>({})
+  const [duplicatesLoading, setDuplicatesLoading] = useState(false)
+  const [expandedDuplicates, setExpandedDuplicates] = useState<Set<string>>(new Set())
+
   // Restore cached state when returning from category creation
   useEffect(() => {
     if (searchParams.get("restore") !== "1") return
@@ -74,7 +80,10 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
       const cache = JSON.parse(raw)
       if (cache.parsed) { setParsed(cache.parsed); setStep("review") }
       if (cache.titularMap) setTitularMap(cache.titularMap)
-      if (cache.titularCardMap) setTitularCardMap(cache.titularCardMap)
+      if (cache.titularCardMap) {
+        setTitularCardMap(cache.titularCardMap)
+        if (cache.parsed) checkDuplicates(cache.parsed.transacciones, cache.titularCardMap)
+      }
       if (cache.txOverrides) setTxOverrides(cache.txOverrides)
       if (cache.usdRate) setUsdRate(cache.usdRate)
       sessionStorage.removeItem(IMPORT_CACHE_KEY)
@@ -141,6 +150,33 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
 
   // ── Handlers ─────────────────────────────────────────────────────────────
 
+  const checkDuplicates = async (txs: ParsedTransaction[], cardMap: Record<string, string>) => {
+    setDuplicatesLoading(true)
+    setDuplicateMatches({})
+    try {
+      const payload = txs
+        .filter(tx => tx.montoARS !== null && tx.montoARS > 0)
+        .map(tx => ({
+          id: tx.id,
+          fecha: tx.fecha,
+          descripcion: tx.descripcion,
+          montoARS: tx.montoARS,
+          billTypeId: cardMap[tx.titular] ?? orgCcCards[0]?.id ?? "",
+        }))
+      if (payload.length === 0) { setDuplicatesLoading(false); return }
+      const res = await fetch("/api/resumen/check-duplicates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ transacciones: payload }),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setDuplicateMatches(data.matches ?? {})
+      }
+    } catch { /* non-blocking: ignore errors */ }
+    setDuplicatesLoading(false)
+  }
+
   const handleFileSelect = (file: File) => {
     const isCsv = file.name.endsWith(".csv") || file.type === "text/csv"
     const isPdf = file.type === "application/pdf"
@@ -192,7 +228,11 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
 
       setParsed(data)
       setTxOverrides({})
+      setExpandedDuplicates(new Set())
       setStep("review")
+
+      // Non-blocking: check for similar already-registered bills
+      checkDuplicates(data.transacciones, autoCardMap)
 
       // Fetch live USD→ARS official rate (non-blocking)
       fetch("/api/exchange-rate")
@@ -419,6 +459,21 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
                 <p className="text-xs text-muted-foreground">
                   {txList.length} transacciones encontradas · {selectedTxs.length} seleccionadas · {formatARS(totalImport())}
                 </p>
+                {/* Duplicate detection status */}
+                {duplicatesLoading && (
+                  <p className="text-[11px] text-muted-foreground flex items-center gap-1 animate-pulse">
+                    <Loader2 className="size-3 animate-spin" />Buscando gastos similares...
+                  </p>
+                )}
+                {!duplicatesLoading && (() => {
+                  const count = Object.values(duplicateMatches).filter(Boolean).length
+                  return count > 0 ? (
+                    <p className="text-[11px] text-amber-700 flex items-center gap-1 font-medium">
+                      <AlertTriangle className="size-3" />
+                      {count} posible{count !== 1 ? "s" : ""} duplicado{count !== 1 ? "s" : ""} detectado{count !== 1 ? "s" : ""} — revisá antes de importar
+                    </p>
+                  ) : null
+                })()}
                 {/* Exchange rate chip */}
                 {usdRate !== null ? (
                   <div className="flex items-center gap-1.5">
@@ -649,6 +704,78 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
                                   )}
                                 </div>
                               </div>
+
+                              {/* ── Duplicate warning ───────────────────────────── */}
+                              {duplicateMatches[tx.id] && ov.incluir && (() => {
+                                const match = duplicateMatches[tx.id]!
+                                const isExpanded = expandedDuplicates.has(tx.id)
+                                const toggleExpand = () => setExpandedDuplicates(prev => {
+                                  const next = new Set(prev)
+                                  next.has(tx.id) ? next.delete(tx.id) : next.add(tx.id)
+                                  return next
+                                })
+                                return (
+                                  <div className="border-t border-amber-200/60">
+                                    <button
+                                      type="button"
+                                      onClick={toggleExpand}
+                                      className="w-full flex items-center gap-2 px-4 py-2.5 bg-amber-50 hover:bg-amber-100/80 transition-colors text-xs font-medium text-amber-700 rounded-b-2xl"
+                                      style={{ borderRadius: isExpanded ? "0" : undefined }}
+                                    >
+                                      <AlertTriangle className="size-3 flex-shrink-0" />
+                                      Gasto similar ya registrado
+                                      <ChevronDown className={`size-3 ml-auto transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} />
+                                    </button>
+                                    {isExpanded && (
+                                      <div className="px-4 pb-4 pt-2 bg-amber-50 space-y-3 rounded-b-2xl">
+                                        {/* Side-by-side comparison */}
+                                        <div className="grid grid-cols-2 gap-2">
+                                          <div className="rounded-xl bg-white/80 border border-amber-100 p-3 space-y-1">
+                                            <p className="text-[10px] font-semibold uppercase tracking-wide text-amber-600">Importando</p>
+                                            <p className="text-xs font-medium text-foreground leading-snug">{ov.descripcion}</p>
+                                            <p className="text-xs text-muted-foreground" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
+                                              {formatARS(tx.montoARS ?? 0)}
+                                            </p>
+                                            <p className="text-[11px] text-muted-foreground">
+                                              {new Date(tx.fecha + "T12:00:00").toLocaleDateString("es-AR", { day: "numeric", month: "short" })}
+                                            </p>
+                                          </div>
+                                          <div className="rounded-xl bg-white/80 border border-amber-100 p-3 space-y-1">
+                                            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Ya registrado</p>
+                                            <p className="text-xs font-medium text-foreground leading-snug">{match.label}</p>
+                                            <p className="text-xs text-muted-foreground" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
+                                              {formatARS(match.amount)}
+                                            </p>
+                                            <p className="text-[11px] text-muted-foreground">
+                                              {new Date(match.paymentDate).toLocaleDateString("es-AR", { day: "numeric", month: "short" })}
+                                            </p>
+                                          </div>
+                                        </div>
+                                        {/* Actions */}
+                                        <div className="flex gap-2">
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              setTxOv(tx.id, { incluir: false })
+                                              setExpandedDuplicates(prev => { const n = new Set(prev); n.delete(tx.id); return n })
+                                            }}
+                                            className="flex-1 text-xs font-semibold py-2.5 rounded-xl bg-amber-200/70 text-amber-900 hover:bg-amber-200 transition-colors active:scale-95"
+                                          >
+                                            Omitir este
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={toggleExpand}
+                                            className="flex-1 text-xs font-semibold py-2.5 rounded-xl bg-white/80 text-foreground border border-amber-100 hover:bg-white transition-colors active:scale-95"
+                                          >
+                                            Importar igual
+                                          </button>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                )
+                              })()}
                             </div>
                           )
                         })}
