@@ -1,5 +1,5 @@
 "use client"
-import { useState, useTransition, useCallback } from "react"
+import { useState, useTransition, useCallback, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Plus, ChevronLeft, ChevronRight, FileText, ChevronDown, Check, AlertTriangle, X } from "lucide-react"
 import { isNetworkId, CardIcon, BANKS, NetworkId } from "@/components/ui/card-network"
@@ -164,7 +164,14 @@ export function CuotasView({ cards, monthLabel, monthKey, prevMonth, nextMonth, 
   const [activeCard, setActiveCard] = useState(0)
   const [showPicker, setShowPicker] = useState(false)
   const [staleDismissed, setStaleDismissed] = useState(false)
-  const current = cards[activeCard]
+
+  // Reset to first card when month changes (cards array changes)
+  // Avoids out-of-bounds index showing "Sin gastos" on a month with fewer cards
+  useEffect(() => {
+    setActiveCard(prev => (prev >= cards.length ? 0 : prev))
+  }, [cards])
+
+  const current = cards[activeCard] ?? cards[0]
 
   return (
     <div className="pb-28">

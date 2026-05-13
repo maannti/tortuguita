@@ -192,8 +192,8 @@ export default async function CuotasPage({ searchParams }: PageProps) {
       cards={Array.from(byCard.values()).filter(c => c.installmentGroups.length > 0 || c.singleBills.length > 0)}
       monthLabel={format(monthStart, "MMMM yyyy", { locale: es })}
       monthKey={monthKey}
-      prevMonth={currentIndex < availableMonths.length - 1 ? availableMonths[currentIndex + 1] : null}
-      nextMonth={currentIndex > 0 ? availableMonths[currentIndex - 1] : null}
+      prevMonth={currentIndex > 0 ? availableMonths[currentIndex - 1] : null}
+      nextMonth={currentIndex < availableMonths.length - 1 ? availableMonths[currentIndex + 1] : null}
       staleCards={staleCards}
     />
   )
