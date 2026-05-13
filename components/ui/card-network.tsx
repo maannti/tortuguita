@@ -30,6 +30,7 @@ const BANK_FILES: Record<string, string> = {
   patagonia:   "patagonia.jpg",
   mercadopago: "mercadopago.png",
   uala:        "uala.png",
+  amexprop:    "amexprop.png",
   otro:        "otro.svg",
 }
 
@@ -56,7 +57,8 @@ export const BANKS = [
   { id: "ciudad",      name: "Ciudad",       color: "#003087" },
   { id: "supervielle", name: "Supervielle",  color: "#E05C00" },
   { id: "patagonia",   name: "Patagonia",    color: "#005B8E" },
-  { id: "otro",        name: "Otro",         color: "#9D8189" },
+  { id: "amexprop",   name: "Amex Propietaria", color: "#016FD0" },
+  { id: "otro",       name: "Otro",         color: "#9D8189" },
 ]
 
 // ── Network logo ─────────────────────────────────────────────────────────────
