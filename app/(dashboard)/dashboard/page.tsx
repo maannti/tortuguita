@@ -43,8 +43,12 @@ export default async function DashboardPage({ searchParams }: PageProps) {
     orderBy: { joinedAt: "asc" },
   })
 
-  // Parallel: available months + per-org data
-  const [availableMonths, allOrgData] = await Promise.all([
+  const TEST_EMAILS = ["santimarcos8@gmail.com"]
+  const isTestUser = !!(session.user.email && TEST_EMAILS.includes(session.user.email))
+
+  // Parallel: available months + per-org data + onboarding + checklist
+  const allOrgIds = userOrgs.map(uo => uo.organization.id)
+  const [availableMonths, allOrgData, userRecord, checklistRaw] = await Promise.all([
     getAvailableMonths(userId),
     Promise.all(userOrgs.map(uo => Promise.all([
       prisma.bill.findMany({
@@ -61,6 +65,13 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         include: { user: { select: { id: true, name: true } } },
       }),
     ]))),
+    prisma.user.findUnique({ where: { id: userId }, select: { onboardingSeenAt: true } }),
+    Promise.all([
+      prisma.bill.count({ where: { userId } }),
+      prisma.userOrganization.count({ where: { organizationId: { in: allOrgIds }, userId: { not: userId } } }),
+      prisma.billType.count({ where: { organizationId: { in: allOrgIds }, isCreditCard: true } }),
+      prisma.bill.count({ where: { userId, externalRef: { not: null } } }),
+    ]),
   ])
 
   // Build SpaceData per org
@@ -121,6 +132,15 @@ export default async function DashboardPage({ searchParams }: PageProps) {
     }
   })
 
+  const showOnboarding = isTestUser || !userRecord?.onboardingSeenAt
+  const [billCount, extraMemberCount, creditCardCount, importedBillCount] = checklistRaw
+  const checklistData = {
+    hasBills: billCount > 0,
+    hasExtraMember: extraMemberCount > 0,
+    hasCreditCard: creditCardCount > 0,
+    hasImportedBill: importedBillCount > 0,
+  }
+
   return (
     <HomeDashboard
       month={format(monthStart, "MMMM yyyy", { locale: es })}
@@ -128,6 +148,8 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       availableMonths={availableMonths}
       spaces={spaces}
       currentUserId={userId}
+      showOnboarding={showOnboarding}
+      checklistData={checklistData}
     />
   )
 }

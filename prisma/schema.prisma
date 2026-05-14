@@ -69,6 +69,7 @@ model User {
   organizationId        String?       // Legacy field - kept for migration
   currentOrganizationId String?       // Active organization for the user
   language              String        @default("es")
+  onboardingSeenAt      DateTime?
   createdAt             DateTime      @default(now())
   updatedAt             DateTime      @updatedAt
 

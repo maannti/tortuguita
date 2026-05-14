@@ -1,11 +1,13 @@
 "use client"
 import { CardIcon, isNetworkId, NetworkId, BANKS } from "@/components/ui/card-network"
-import { useState } from "react"
+import { useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react"
 import { MonthPicker } from "@/components/ui/month-picker"
 import { useSpaces } from "@/lib/spaces-context"
+import { OnboardingSlides } from "@/components/onboarding/onboarding-slides"
+import { OnboardingChecklist, ChecklistData } from "@/components/onboarding/onboarding-checklist"
 
 interface Member { id: string; name: string; expenses: number; income: number; percentage: number }
 interface RecentExpense {
@@ -35,7 +37,7 @@ export interface SpaceData {
   creditCardGroups: CreditCardGroup[]
 }
 
-interface Props { month: string; monthKey: string; availableMonths: string[]; spaces: SpaceData[]; currentUserId: string }
+interface Props { month: string; monthKey: string; availableMonths: string[]; spaces: SpaceData[]; currentUserId: string; showOnboarding?: boolean; checklistData?: ChecklistData }
 
 const arsFormatter = new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", minimumFractionDigits: 0, maximumFractionDigits: 2 })
 const arsFormatterFull = new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -58,10 +60,16 @@ function HeroAmount({ amount, className }: { amount: number; className?: string 
   )
 }
 
-export function HomeDashboard({ month, monthKey, availableMonths, spaces, currentUserId }: Props) {
+export function HomeDashboard({ month, monthKey, availableMonths, spaces, currentUserId, showOnboarding = false, checklistData }: Props) {
   const router = useRouter()
   const [showPicker, setShowPicker] = useState(false)
   const [showMyPart, setShowMyPart] = useState(false)
+  const [slidesVisible, setSlidesVisible] = useState(showOnboarding)
+
+  const handleSlidesDone = useCallback(() => {
+    setSlidesVisible(false)
+    fetch("/api/user/onboarding-seen", { method: "POST" }).catch(() => {})
+  }, [])
 
   const { activeSpaceIds } = useSpaces()
 
@@ -101,6 +109,7 @@ export function HomeDashboard({ month, monthKey, availableMonths, spaces, curren
 
   return (
     <div className="pb-28">
+      {slidesVisible && <OnboardingSlides onDone={handleSlidesDone} />}
 
       {/* ── Hero card ── */}
       <div className="px-4 pt-5 pb-2">
@@ -280,6 +289,9 @@ export function HomeDashboard({ month, monthKey, availableMonths, spaces, curren
             <p className="text-sm text-muted-foreground">¡La tortuguita descansa!</p>
           </div>
         )}
+
+        {/* Onboarding checklist — shown until dismissed via localStorage */}
+        {checklistData && <OnboardingChecklist data={checklistData} />}
       </div>
 
       {/* FAB */}
