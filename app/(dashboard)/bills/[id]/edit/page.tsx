@@ -54,11 +54,15 @@ export default async function EditBillPage({
     return acc
   }, {})
   const organizations = userOrgs.map(o => ({ id: o.id, name: o.name, isPersonal: o.isPersonal }))
+  const typedCategories = categories.map(c => ({
+    ...c,
+    defaultAssignments: c.defaultAssignments as { userId: string; percentage: number }[] | null,
+  }))
 
   return (
     <QuickBillForm
       mode="edit"
-      categories={categories}
+      categories={typedCategories}
       members={members}
       memberIncomes={memberIncomes}
       currentUserId={session.user.id}
