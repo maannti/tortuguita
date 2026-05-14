@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { Prisma } from "@prisma/client"
 import { billTypeSchema } from "@/lib/validations/bill-type"
 import { getUserOrganizations } from "@/lib/organization-utils"
 import { z } from "zod"
@@ -45,7 +46,14 @@ export async function POST(request: NextRequest) {
     if (!validOrg) return NextResponse.json({ error: "Invalid space" }, { status: 403 })
 
     const billType = await prisma.billType.create({
-      data: { ...data, organizationId: validOrg.id },
+      data: {
+        ...data,
+        organizationId: validOrg.id,
+        // Prisma requires JsonNull (not JS null) to explicitly null a Json? field
+        defaultAssignments: data.defaultAssignments === null
+          ? Prisma.JsonNull
+          : data.defaultAssignments ?? undefined,
+      },
     })
 
     return NextResponse.json(billType, { status: 201 })
