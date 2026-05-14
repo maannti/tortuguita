@@ -1,4 +1,63 @@
 @import "tailwindcss";
+@import "driver.js/dist/driver.css";
+
+/* ── driver.js tour — brand overrides ── */
+.driver-popover {
+  background: rgba(255, 255, 255, 0.97) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.8) !important;
+  border-radius: 1.25rem !important;
+  box-shadow: 0 8px 32px rgba(157, 129, 137, 0.22), 0 2px 8px rgba(157, 129, 137, 0.10) !important;
+  padding: 1.25rem 1.25rem 1rem !important;
+  max-width: 280px !important;
+}
+.driver-popover-title {
+  font-family: var(--font-fraunces, serif) !important;
+  font-size: 1rem !important;
+  font-weight: 500 !important;
+  color: #4A3540 !important;
+  margin-bottom: 0.25rem !important;
+}
+.driver-popover-description {
+  font-size: 0.8125rem !important;
+  color: #9D8189 !important;
+  line-height: 1.5 !important;
+}
+.driver-popover-progress-text {
+  font-size: 0.7rem !important;
+  color: #9D8189 !important;
+}
+.driver-popover-footer {
+  margin-top: 0.875rem !important;
+  gap: 0.4rem !important;
+}
+.driver-popover-prev-btn,
+.driver-popover-next-btn,
+.driver-popover-close-btn {
+  border-radius: 999px !important;
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+  padding: 0.4rem 0.9rem !important;
+  border: none !important;
+  cursor: pointer !important;
+  transition: opacity 0.15s !important;
+}
+.driver-popover-next-btn {
+  background: #9D8189 !important;
+  color: #fff !important;
+}
+.driver-popover-next-btn:hover { opacity: 0.85 !important; }
+.driver-popover-prev-btn {
+  background: rgba(157, 129, 137, 0.1) !important;
+  color: #9D8189 !important;
+}
+.driver-popover-close-btn {
+  background: transparent !important;
+  color: #9D8189 !important;
+  font-size: 1rem !important;
+}
+.driver-overlay { opacity: 0.55 !important; }
 
 /* ── Paleta: Sage · Peach · Blush · Rose · Mauve ── */
 :root {
