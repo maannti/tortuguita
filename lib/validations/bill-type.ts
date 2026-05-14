@@ -1,11 +1,17 @@
 import { z } from "zod"
 
+const defaultAssignmentItem = z.object({
+  userId: z.string(),
+  percentage: z.number().min(0).max(100),
+})
+
 export const billTypeSchema = z.object({
   name: z.string().min(1, "Name is required").max(50, "Name is too long"),
   description: z.string().optional(),
   color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Invalid color format").optional(),
   icon: z.string().optional(),
   isCreditCard: z.boolean(),
+  defaultAssignments: z.array(defaultAssignmentItem).nullable().optional(),
 })
 
 // Base billing period schema without refinements for proper type inference

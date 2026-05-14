@@ -132,6 +132,7 @@ model BillType {
   color              String?
   icon               String?
   isCreditCard       Boolean      @default(false)
+  defaultAssignments Json?        // [{ userId: string, percentage: number }] — pre-filled when creating a bill
   currentClosingDate DateTime?    // Closing date for current billing period
   currentDueDate     DateTime?    // Due date for current billing period
   nextClosingDate    DateTime?    // Closing date for next billing period

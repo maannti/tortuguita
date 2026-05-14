@@ -4,12 +4,14 @@ import { useRouter } from "next/navigation"
 import { ChevronLeft, Check, CreditCard, Banknote, Wallet, Ellipsis, ChevronDown, Plus, User, Home, X } from "lucide-react"
 import { CardIcon, isNetworkId, BANKS, NetworkId } from "@/components/ui/card-network"
 
+interface DefaultAssignment { userId: string; percentage: number }
 interface Category {
   id: string; name: string; color: string | null; icon: string | null; isCreditCard: boolean; organizationId: string
   currentClosingDate?: Date | string | null
   currentDueDate?: Date | string | null
   nextClosingDate?: Date | string | null
   nextDueDate?: Date | string | null
+  defaultAssignments?: DefaultAssignment[] | null
 }
 interface Member { id: string; name: string | null; email: string | null; organizationId: string }
 interface Organization { id: string; name: string; isPersonal: boolean }
@@ -58,6 +60,25 @@ function formatDateDisplay(iso: string): string { if (!iso) return ""; const [y,
 function formatShortDate(d: Date | string | null | undefined): string {
   if (!d) return ""
   return new Date(d).toLocaleDateString("es-AR", { day: "numeric", month: "short" })
+}
+
+/** Convert category defaultAssignments → splitMode string (returns null if can't map) */
+function defaultAssignmentsToSplitMode(
+  assignments: DefaultAssignment[] | null | undefined,
+  currentUserId: string,
+  orgMembers: Member[]
+): string | null {
+  if (!assignments || assignments.length === 0) return null
+  if (assignments.length === 1 && assignments[0].percentage === 100) {
+    return assignments[0].userId === currentUserId ? "mine" : assignments[0].userId
+  }
+  const equalShare = Math.round(100 / orgMembers.length)
+  const allEqual = orgMembers.every(m => {
+    const a = assignments.find(x => x.userId === m.id)
+    return a && Math.abs(a.percentage - equalShare) <= 1
+  })
+  if (allEqual && assignments.length === orgMembers.length) return "equal"
+  return null
 }
 
 /** Infer a simple splitMode from saved assignments */
@@ -165,6 +186,15 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
   // For CC bills: show ALL expense categories from ALL spaces (org is derived from chosen category)
   const allNormalCats = categories.filter(c => !c.isCreditCard)
   const orgMembers = members.filter(m => m.organizationId === selectedOrgId)
+
+  // Auto-apply default assignments when category changes (create mode only)
+  function applyDefaultAssignments(catId: string) {
+    if (isEdit) return
+    const cat = categories.find(c => c.id === catId)
+    if (!cat?.defaultAssignments) return
+    const mode = defaultAssignmentsToSplitMode(cat.defaultAssignments, currentUserId, orgMembers)
+    if (mode) setSplitMode(mode)
+  }
 
   const billTypeId = isCreditCard ? cardId : categoryId
 
@@ -728,6 +758,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
                                 setCategoryId(cat.id)
                                 setSelectedOrgId(cat.organizationId)
                                 setCatSheetOpen(false)
+                                applyDefaultAssignments(cat.id)
                               }}
                               className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition-colors ${isSelected ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted/60 text-foreground"}`}>
                               <span className="flex items-center gap-2.5">
