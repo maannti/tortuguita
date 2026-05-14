@@ -9,6 +9,7 @@ import { useSpaces } from "@/lib/spaces-context"
 import { OnboardingSlides } from "@/components/onboarding/onboarding-slides"
 import { OnboardingChecklist, ChecklistData } from "@/components/onboarding/onboarding-checklist"
 import { TourInviteCard } from "@/components/onboarding/tour-invite-card"
+import { startAppTour } from "@/components/onboarding/app-tour"
 
 interface Member { id: string; name: string; expenses: number; income: number; percentage: number }
 interface RecentExpense {
@@ -70,6 +71,8 @@ export function HomeDashboard({ month, monthKey, availableMonths, spaces, curren
   const handleSlidesDone = useCallback(() => {
     setSlidesVisible(false)
     fetch("/api/user/onboarding-seen", { method: "POST" }).catch(() => {})
+    // Pequeño delay para que el dashboard se pinte antes de que arranque el tour
+    setTimeout(() => startAppTour(), 400)
   }, [])
 
   const { activeSpaceIds } = useSpaces()
