@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { Prisma } from "@prisma/client"
 import { billTypeSchema } from "@/lib/validations/bill-type"
 import { getUserOrganizations } from "@/lib/organization-utils"
 import { z } from "zod"
@@ -53,7 +54,16 @@ export async function PATCH(
 
     if (!billType) return NextResponse.json({ error: "Categoría no encontrada" }, { status: 404 })
 
-    const updated = await prisma.billType.update({ where: { id }, data })
+    const updated = await prisma.billType.update({
+      where: { id },
+      data: {
+        ...data,
+        // Prisma requires JsonNull (not JS null) to explicitly null a Json? field
+        defaultAssignments: data.defaultAssignments === null
+          ? Prisma.JsonNull
+          : data.defaultAssignments ?? undefined,
+      },
+    })
     return NextResponse.json(updated)
   } catch (error) {
     if (error instanceof z.ZodError) {
