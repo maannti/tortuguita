@@ -266,6 +266,10 @@ async function createCategory(input: any, organizationId: string) {
       data: {
         ...validated,
         organizationId,
+        // Prisma requires JsonNull (not JS null) to explicitly null a Json? field
+        defaultAssignments: validated.defaultAssignments === null
+          ? Prisma.JsonNull
+          : validated.defaultAssignments ?? undefined,
       },
     });
 
