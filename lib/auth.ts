@@ -1,6 +1,7 @@
 import NextAuth from "next-auth";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import CredentialsProvider from "next-auth/providers/credentials";
+import GoogleProvider from "next-auth/providers/google";
 import { prisma } from "@/lib/prisma";
 import { compare } from "bcryptjs";
 import { hit, limiters, clientIdFromRequest } from "@/lib/rate-limit";
@@ -14,6 +15,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     signIn: "/login",
   },
   providers: [
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+    }),
     CredentialsProvider({
       name: "credentials",
       credentials: {
@@ -64,6 +69,30 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       },
     }),
   ],
+  events: {
+    // Fires only once when a brand-new user is created via OAuth.
+    // Creates a personal org so the user lands on a working dashboard.
+    async createUser({ user }) {
+      if (!user.id) return;
+      const displayName = user.name || user.email || "Mi espacio";
+      const org = await prisma.organization.create({
+        data: {
+          name: `${displayName} Personal`,
+          isPersonal: true,
+          userOrganizations: {
+            create: { userId: user.id, role: "owner" },
+          },
+        },
+      });
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          currentOrganizationId: org.id,
+          organizationId: org.id, // keep legacy field in sync
+        },
+      });
+    },
+  },
   callbacks: {
     async jwt({ token, user, trigger, session }) {
       // 1. Initial sign-in: copy fields from `user` returned by authorize()

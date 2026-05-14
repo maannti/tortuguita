@@ -10,10 +10,10 @@ import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import Link from "next/link";
 import { useTranslations } from "@/components/providers/language-provider";
 import { Eye, EyeOff, User, Home, Users, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
+// Note: Link to login lives in SignupCard header now
 
 type OrgChoice = "personal" | "create" | "join";
 
@@ -313,12 +313,7 @@ export function SignupForm() {
         </form>
       </Form>
 
-      <p className="text-center text-sm text-muted-foreground">
-        {t.auth.alreadyHaveAccount}{" "}
-        <Link href="/login" className="underline underline-offset-4 hover:text-primary">
-          {t.auth.signIn}
-        </Link>
-      </p>
+      {/* Link to login is shown in SignupCard header */}
     </div>
   );
 }
