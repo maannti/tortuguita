@@ -30,9 +30,13 @@ export default async function NewBillPage() {
   const members = memberships.map((m) => ({ ...m.user, organizationId: m.organizationId }))
   const memberIncomes = incomeRows.reduce((acc: Record<string, number>, r) => { acc[r.userId] = Number(r._sum.amount || 0); return acc }, {})
   const organizations = userOrgs.map(o => ({ id: o.id, name: o.name, isPersonal: o.isPersonal }))
+  const typedCategories = categories.map(c => ({
+    ...c,
+    defaultAssignments: c.defaultAssignments as { userId: string; percentage: number }[] | null,
+  }))
   return (
     <QuickBillForm
-      categories={categories}
+      categories={typedCategories}
       members={members}
       memberIncomes={memberIncomes}
       currentUserId={session.user.id}
