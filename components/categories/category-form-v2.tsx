@@ -1,8 +1,11 @@
 "use client"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { ChevronLeft, Plus, Pencil } from "lucide-react"
+import { ChevronLeft, Plus, Pencil, Check } from "lucide-react"
 import { ColorInputWithPicker } from "@/components/ui/color-picker-dialog"
+
+interface Member { id: string; name: string | null; email: string | null }
+interface DefaultAssignment { userId: string; percentage: number }
 
 const EMOJI_BASICS = [
   { emoji: "🏠", color: "#9D8189" },
@@ -35,19 +38,46 @@ const ALL_EMOJIS = [...EMOJI_BASICS, ...EMOJI_MORE]
 
 interface Props {
   mode: "create" | "edit"
-  initialData?: { id: string; name: string; color: string | null; icon: string | null }
+  initialData?: { id: string; name: string; color: string | null; icon: string | null; defaultAssignments?: DefaultAssignment[] | null }
   organizationId?: string
   spaceName?: string
   returnTo?: string
+  members?: Member[]
+  currentUserId?: string
 }
 
-export function CategoryFormV2({ mode, initialData, organizationId, spaceName, returnTo }: Props) {
+export function CategoryFormV2({ mode, initialData, organizationId, spaceName, returnTo, members = [], currentUserId }: Props) {
   const { push, refresh } = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [name, setName] = useState(initialData?.name || "")
   const [color, setColor] = useState(initialData?.color || "#9D8189")
   const [expanded, setExpanded] = useState(false)
+
+  // Default assignments: null = no preference, or array of { userId, percentage }
+  const [defaultAssignments, setDefaultAssignments] = useState<DefaultAssignment[] | null>(
+    initialData?.defaultAssignments ?? null
+  )
+  const isShared = members.length > 1
+
+  function setDefaultFor(userId: string) {
+    setDefaultAssignments([{ userId, percentage: 100 }])
+  }
+  function setDefaultEqual() {
+    const share = Math.floor(100 / members.length)
+    const rem = 100 - share * members.length
+    setDefaultAssignments(members.map((m, i) => ({ userId: m.id, percentage: i === 0 ? share + rem : share })))
+  }
+  function clearDefault() { setDefaultAssignments(null) }
+
+  function isDefaultFor(userId: string) {
+    return defaultAssignments?.length === 1 && defaultAssignments[0].userId === userId && defaultAssignments[0].percentage === 100
+  }
+  function isDefaultEqual() {
+    if (!defaultAssignments || defaultAssignments.length !== members.length) return false
+    const share = Math.round(100 / members.length)
+    return defaultAssignments.every(a => Math.abs(a.percentage - share) <= 1)
+  }
 
   // Emoji state: which preset is selected, or custom text
   const initialIsPreset = !!initialData?.icon && ALL_EMOJIS.some(e => e.emoji === initialData.icon)
@@ -81,7 +111,7 @@ export function CategoryFormV2({ mode, initialData, organizationId, spaceName, r
       const res = await fetch(url, {
         method: mode === "create" ? "POST" : "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), color, icon: finalEmoji, isCreditCard: false, organizationId: organizationId || undefined }),
+        body: JSON.stringify({ name: name.trim(), color, icon: finalEmoji, isCreditCard: false, organizationId: organizationId || undefined, defaultAssignments: defaultAssignments ?? null }),
       })
       if (!res.ok) { const err = await res.json(); throw new Error(err.error || "Error al guardar") }
       const dest = returnTo || (organizationId ? `/categories?spaceId=${organizationId}` : "/categories")
@@ -208,6 +238,41 @@ export function CategoryFormV2({ mode, initialData, organizationId, spaceName, r
             <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Color</label>
             <ColorInputWithPicker value={color} onChange={setColor} />
           </div>
+
+          {/* Default assignments — only for shared spaces */}
+          {isShared && (
+            <div className="space-y-2">
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">¿Quién paga por defecto?</label>
+                <p className="text-xs text-muted-foreground mt-0.5">Se pre-seleccionará al crear un gasto en esta categoría.</p>
+              </div>
+              <div className="grid gap-2">
+                {/* No preference */}
+                <button type="button" onClick={clearDefault}
+                  className={`flex items-center justify-between px-4 py-3 rounded-xl border-2 text-sm transition-all ${!defaultAssignments ? "border-primary bg-primary/5 font-medium" : "border-muted hover:border-muted-foreground/40"}`}>
+                  <span>Sin preferencia</span>
+                  {!defaultAssignments && <Check className="size-4 text-primary" />}
+                </button>
+                {/* Equal split */}
+                <button type="button" onClick={setDefaultEqual}
+                  className={`flex items-center justify-between px-4 py-3 rounded-xl border-2 text-sm transition-all ${isDefaultEqual() ? "border-primary bg-primary/5 font-medium" : "border-muted hover:border-muted-foreground/40"}`}>
+                  <span>Partes iguales</span>
+                  {isDefaultEqual() && <Check className="size-4 text-primary" />}
+                </button>
+                {/* Per member */}
+                {members.map(m => (
+                  <button key={m.id} type="button" onClick={() => setDefaultFor(m.id)}
+                    className={`flex items-center justify-between px-4 py-3 rounded-xl border-2 text-sm transition-all ${isDefaultFor(m.id) ? "border-primary bg-primary/5 font-medium" : "border-muted hover:border-muted-foreground/40"}`}>
+                    <span>
+                      {m.name || m.email || "Usuario"}
+                      {m.id === currentUserId && <span className="text-muted-foreground font-normal ml-1">(yo)</span>}
+                    </span>
+                    {isDefaultFor(m.id) && <Check className="size-4 text-primary" />}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </form>

@@ -31,7 +31,7 @@ export default async function EditBillPage({
     }),
     prisma.billType.findMany({
       where: { organizationId: { in: orgIds } },
-      select: { id: true, name: true, color: true, icon: true, isCreditCard: true, organizationId: true, currentClosingDate: true, currentDueDate: true, nextClosingDate: true, nextDueDate: true },
+      select: { id: true, name: true, color: true, icon: true, isCreditCard: true, organizationId: true, currentClosingDate: true, currentDueDate: true, nextClosingDate: true, nextDueDate: true, defaultAssignments: true },
       orderBy: { name: "asc" },
     }),
     prisma.userOrganization.findMany({
