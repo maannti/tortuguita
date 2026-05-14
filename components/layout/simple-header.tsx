@@ -62,6 +62,7 @@ export function SimpleHeader() {
           <div ref={wrapperRef} className="relative">
             {/* Trigger: colored dots — active = solid mauve, inactive = ghost */}
             <button
+              data-tour="space-selector"
               onClick={() => setOpen(v => !v)}
               className="flex items-center gap-2 px-3 py-2 rounded-full transition-all active:scale-95"
               style={open

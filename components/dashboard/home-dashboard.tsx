@@ -8,6 +8,7 @@ import { MonthPicker } from "@/components/ui/month-picker"
 import { useSpaces } from "@/lib/spaces-context"
 import { OnboardingSlides } from "@/components/onboarding/onboarding-slides"
 import { OnboardingChecklist, ChecklistData } from "@/components/onboarding/onboarding-checklist"
+import { TourInviteCard } from "@/components/onboarding/tour-invite-card"
 
 interface Member { id: string; name: string; expenses: number; income: number; percentage: number }
 interface RecentExpense {
@@ -114,6 +115,7 @@ export function HomeDashboard({ month, monthKey, availableMonths, spaces, curren
       {/* ── Hero card ── */}
       <div className="px-4 pt-5 pb-2">
         <div
+          data-tour="hero"
           className="relative rounded-3xl overflow-hidden"
           style={{ background: "linear-gradient(135deg, #D8E2DC 0%, #FFE5D9 55%, #FFCAD4 100%)" }}
         >
@@ -122,7 +124,7 @@ export function HomeDashboard({ month, monthKey, availableMonths, spaces, curren
 
           <div className="relative px-5 pt-6 pb-6 space-y-4">
             {/* Month nav */}
-            <div className="flex items-center justify-between">
+            <div data-tour="month-nav" className="flex items-center justify-between">
               <button
                 onClick={() => prevMonth && router.push(`/dashboard?month=${prevMonth}`)}
                 disabled={!prevMonth}
@@ -205,8 +207,8 @@ export function HomeDashboard({ month, monthKey, availableMonths, spaces, curren
       <div className="px-4 pt-3 space-y-5">
 
         {/* Credit card groups — summary only, tappable → /cuotas */}
-        {creditCardGroups.map((group) => (
-          <section key={group.name}>
+        {creditCardGroups.map((group, i) => (
+          <section key={group.name} {...(i === 0 ? { "data-tour": "cc-groups" } : {})}>
             <div className="flex items-center justify-between mb-2.5 px-1">
               <div className="flex items-center gap-3">
                 <CardIcon
@@ -247,7 +249,7 @@ export function HomeDashboard({ month, monthKey, availableMonths, spaces, curren
 
         {/* Recent expenses — all bills (CC + non-CC) */}
         {recentExpenses.length > 0 && (
-          <section>
+          <section data-tour="recent-expenses">
             <div className="flex items-center justify-between mb-2.5 px-1">
               <h2 className="text-base font-medium text-foreground" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
                 Gastos recientes
@@ -292,10 +294,14 @@ export function HomeDashboard({ month, monthKey, availableMonths, spaces, curren
 
         {/* Onboarding checklist — shown until dismissed via localStorage */}
         {checklistData && <OnboardingChecklist data={checklistData} />}
+
+        {/* Tour invite card */}
+        <TourInviteCard />
       </div>
 
       {/* FAB */}
       <button
+        data-tour="fab"
         onClick={() => router.push("/bills/new")}
         className="fixed bottom-24 right-4 z-30 flex items-center justify-center size-14 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 active:scale-95 transition-transform"
       >
