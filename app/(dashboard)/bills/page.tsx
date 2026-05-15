@@ -7,7 +7,7 @@ import { BillsView } from "@/components/bills/bills-view"
 import { getUserOrganizations } from "@/lib/organization-utils"
 
 interface PageProps {
-  searchParams: Promise<{ month?: string }>
+  searchParams: Promise<{ month?: string; search?: string }>
 }
 
 export default async function BillsPage({ searchParams }: PageProps) {
@@ -30,6 +30,7 @@ export default async function BillsPage({ searchParams }: PageProps) {
   const targetDate = params.month ? parse(params.month, "yyyy-MM", new Date()) : now
   const monthStart = startOfMonth(targetDate)
   const monthEnd = endOfMonth(targetDate)
+  const searchQuery = params.search?.trim() || ""
 
   const [allBills, bills] = await Promise.all([
     prisma.bill.findMany({
@@ -37,7 +38,18 @@ export default async function BillsPage({ searchParams }: PageProps) {
       select: { budgetDate: true },
     }),
     prisma.bill.findMany({
-      where: { organizationId: { in: orgIds }, budgetDate: { gte: monthStart, lte: monthEnd } },
+      where: {
+        organizationId: { in: orgIds },
+        budgetDate: { gte: monthStart, lte: monthEnd },
+        ...(searchQuery && {
+          OR: [
+            { label: { contains: searchQuery, mode: "insensitive" } },
+            { notes: { contains: searchQuery, mode: "insensitive" } },
+            { billType: { name: { contains: searchQuery, mode: "insensitive" } } },
+            { category: { name: { contains: searchQuery, mode: "insensitive" } } },
+          ],
+        }),
+      },
       include: { billType: true, category: true },
       orderBy: { budgetDate: "asc" },
     }),
@@ -106,6 +118,7 @@ export default async function BillsPage({ searchParams }: PageProps) {
       categoryGroups={categoryGroups}
       grandTotal={grandTotal}
       hasAnyUSD={hasAnyUSD}
+      searchQuery={searchQuery}
     />
   )
 }
