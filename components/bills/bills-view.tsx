@@ -5,6 +5,7 @@ import Link from "next/link"
 import { useState, useEffect } from "react"
 import { ChevronLeft, ChevronRight, Plus, CreditCard, ChevronDown } from "lucide-react"
 import { MonthPicker } from "@/components/ui/month-picker"
+import { SearchInput } from "@/components/ui/search-input"
 import { cn } from "@/lib/utils"
 
 interface BillItem {
@@ -19,6 +20,7 @@ interface Props {
   categoryGroups: CategoryGroup[]
   grandTotal: number
   hasAnyUSD: boolean
+  searchQuery?: string
 }
 
 const arsFormatter = new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", minimumFractionDigits: 0, maximumFractionDigits: 2 })
@@ -27,7 +29,7 @@ function formatARS(n: number) { return arsFormatter.format(n) }
 function formatUSD(n: number) { return usdFormatter.format(n) }
 function capitalize(s: string) { return s.charAt(0).toUpperCase() + s.slice(1) }
 
-export function BillsView({ month, monthKey, availableMonths, categoryGroups, grandTotal, hasAnyUSD }: Props) {
+export function BillsView({ month, monthKey, availableMonths, categoryGroups, grandTotal, hasAnyUSD, searchQuery = "" }: Props) {
   const { push } = useRouter()
   const [showPicker, setShowPicker] = useState(false)
   const [showUSD, setShowUSD] = useState(false)
@@ -128,6 +130,11 @@ export function BillsView({ month, monthKey, availableMonths, categoryGroups, gr
         </div>
       </div>
 
+      {/* Search input */}
+      <div className="px-4 pt-3">
+        <SearchInput placeholder="Buscar gastos..." />
+      </div>
+
       <div className="px-4 pt-4 space-y-5">
         {categoryGroups.length > 0 ? (
           categoryGroups.map((group) => {
@@ -217,15 +224,25 @@ export function BillsView({ month, monthKey, availableMonths, categoryGroups, gr
             )
           })
         ) : (
-          /* Empty state */
+          /* Empty state - different for search vs no bills */
           <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="text-5xl mb-4">🐢</div>
-            <p className="text-lg font-medium mb-1" style={{ fontFamily: "var(--font-fraunces, serif)" }}>Sin gastos este mes</p>
-            <p className="text-sm text-muted-foreground mb-6">¡La tortuguita descansa!</p>
-            <Link href="/bills/new"
-              className="inline-flex items-center gap-2 bg-primary text-primary-foreground rounded-full px-6 py-3 text-sm font-medium shadow-md active:scale-95 transition-transform">
-              <Plus className="size-4" />Agregar gasto
-            </Link>
+            {searchQuery ? (
+              <>
+                <div className="text-5xl mb-4">🔍</div>
+                <p className="text-lg font-medium mb-1" style={{ fontFamily: "var(--font-fraunces, serif)" }}>Sin resultados</p>
+                <p className="text-sm text-muted-foreground">No encontramos gastos con "{searchQuery}"</p>
+              </>
+            ) : (
+              <>
+                <div className="text-5xl mb-4">🐢</div>
+                <p className="text-lg font-medium mb-1" style={{ fontFamily: "var(--font-fraunces, serif)" }}>Sin gastos este mes</p>
+                <p className="text-sm text-muted-foreground mb-6">¡La tortuguita descansa!</p>
+                <Link href="/bills/new"
+                  className="inline-flex items-center gap-2 bg-primary text-primary-foreground rounded-full px-6 py-3 text-sm font-medium shadow-md active:scale-95 transition-transform">
+                  <Plus className="size-4" />Agregar gasto
+                </Link>
+              </>
+            )}
           </div>
         )}
       </div>
