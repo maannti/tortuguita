@@ -29,6 +29,14 @@ interface CreditCardGroup {
   memberAmounts: Array<{ name: string; amount: number }>
 }
 
+interface CardDebtEntry {
+  name: string
+  color: string
+  icon: string | null
+  totalDebt: number
+  remainingCuotas: number
+}
+
 export interface SpaceData {
   id: string
   name: string
@@ -39,7 +47,7 @@ export interface SpaceData {
   creditCardGroups: CreditCardGroup[]
 }
 
-interface Props { month: string; monthKey: string; availableMonths: string[]; spaces: SpaceData[]; currentUserId: string; showOnboarding?: boolean; checklistData?: ChecklistData }
+interface Props { month: string; monthKey: string; availableMonths: string[]; spaces: SpaceData[]; currentUserId: string; showOnboarding?: boolean; checklistData?: ChecklistData; cardDebtSummary?: CardDebtEntry[] }
 
 const arsFormatter = new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", minimumFractionDigits: 0, maximumFractionDigits: 2 })
 const arsFormatterFull = new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -62,7 +70,7 @@ function HeroAmount({ amount, className }: { amount: number; className?: string 
   )
 }
 
-export function HomeDashboard({ month, monthKey, availableMonths, spaces, currentUserId, showOnboarding = false, checklistData }: Props) {
+export function HomeDashboard({ month, monthKey, availableMonths, spaces, currentUserId, showOnboarding = false, checklistData, cardDebtSummary = [] }: Props) {
   const router = useRouter()
   const [showPicker, setShowPicker] = useState(false)
   const [showMyPart, setShowMyPart] = useState(false)
@@ -208,6 +216,60 @@ export function HomeDashboard({ month, monthKey, availableMonths, spaces, curren
 
       {/* ── Content sections ── */}
       <div className="px-4 pt-3 space-y-5">
+
+        {/* Card Wallet — Apple Wallet style debt summary */}
+        {cardDebtSummary.length > 0 && (
+          <section>
+            <div className="flex items-center justify-between mb-3 px-1">
+              <h2 className="text-base font-medium text-foreground" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
+                Deuda en cuotas
+              </h2>
+              <span className="text-sm font-medium text-muted-foreground">
+                {formatARS(cardDebtSummary.reduce((s, c) => s + c.totalDebt, 0))}
+              </span>
+            </div>
+            <Link href="/cuotas" className="block">
+              <div className="relative" style={{ height: `${Math.min(cardDebtSummary.length * 70 + 60, 250)}px` }}>
+                {cardDebtSummary.map((card, index) => (
+                  <div
+                    key={card.name}
+                    className="absolute left-0 right-0 rounded-2xl p-4 shadow-lg transition-all duration-200 active:scale-[0.98]"
+                    style={{
+                      top: `${index * 70}px`,
+                      zIndex: cardDebtSummary.length - index,
+                      background: `linear-gradient(135deg, ${card.color} 0%, ${card.color}dd 100%)`,
+                    }}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className="text-white/80 text-xs font-medium uppercase tracking-wide">{card.name}</p>
+                        <p className="text-white text-2xl font-medium mt-1" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
+                          {formatARS(card.totalDebt)}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-white/70 text-[10px] uppercase tracking-wide">Cuotas</p>
+                        <p className="text-white text-lg font-semibold">{card.remainingCuotas}</p>
+                      </div>
+                    </div>
+                    {/* Card network icon */}
+                    {card.icon && isNetworkId(card.icon) && (
+                      <div className="absolute bottom-3 right-4">
+                        <CardIcon
+                          bankId={null}
+                          bankColor={card.color}
+                          bankName={card.name}
+                          network={card.icon as NetworkId}
+                          size="sm"
+                        />
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </Link>
+          </section>
+        )}
 
         {/* Credit card groups — summary only, tappable → /cuotas */}
         {creditCardGroups.map((group, i) => (
