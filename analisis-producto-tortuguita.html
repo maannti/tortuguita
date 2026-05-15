@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Análisis de Producto: Tortuguita v2</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:wght@500;600&display=swap');
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      line-height: 1.6;
+      color: #2C1F24;
+      background: #FDFAF9;
+      padding: 40px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    h1, h2, h3 {
+      font-family: 'Fraunces', Georgia, serif;
+      color: #4A3540;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    h2 {
+      font-size: 1.5rem;
+      margin-top: 2.5rem;
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid #F4ACB7;
+    }
+
+    h3 {
+      font-size: 1.1rem;
+      margin-top: 1.5rem;
+      margin-bottom: 0.75rem;
+      color: #6B5159;
+    }
+
+    .subtitle {
+      font-size: 1.1rem;
+      color: #9D8189;
+      margin-bottom: 2rem;
+    }
+
+    .executive-summary {
+      background: linear-gradient(135deg, #D8E2DC 0%, #FFE5D9 55%, #FFCAD4 100%);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 2rem;
+    }
+
+    .executive-summary p {
+      color: #4A3540;
+      font-size: 1.05rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+      font-size: 0.9rem;
+    }
+
+    th, td {
+      padding: 12px 16px;
+      text-align: left;
+      border-bottom: 1px solid #E8E0E3;
+    }
+
+    th {
+      background: #F4ACB7;
+      color: #4A3540;
+      font-weight: 600;
+    }
+
+    tr:nth-child(even) {
+      background: rgba(216, 226, 220, 0.3);
+    }
+
+    .strength { color: #2E7D32; }
+    .weakness { color: #C62828; }
+    .opportunity { color: #1565C0; }
+
+    .priority-high {
+      background: #FFCDD2;
+      color: #B71C1C;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    .priority-medium {
+      background: #FFF9C4;
+      color: #F57F17;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    .priority-low {
+      background: #C8E6C9;
+      color: #2E7D32;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      margin: 1rem 0;
+      box-shadow: 0 2px 8px rgba(157, 129, 137, 0.1);
+      border: 1px solid rgba(244, 172, 183, 0.3);
+    }
+
+    .recommendation {
+      background: linear-gradient(135deg, rgba(216, 226, 220, 0.5), rgba(255, 229, 217, 0.5));
+      border-left: 4px solid #9D8189;
+      padding: 16px 20px;
+      margin: 1rem 0;
+      border-radius: 0 8px 8px 0;
+    }
+
+    .recommendation strong {
+      color: #4A3540;
+    }
+
+    ul {
+      margin: 0.5rem 0 0.5rem 1.5rem;
+    }
+
+    li {
+      margin-bottom: 0.5rem;
+    }
+
+    .roadmap {
+      display: grid;
+      gap: 16px;
+    }
+
+    .roadmap-item {
+      background: white;
+      border-radius: 12px;
+      padding: 16px 20px;
+      border-left: 4px solid #9D8189;
+      box-shadow: 0 2px 8px rgba(157, 129, 137, 0.08);
+    }
+
+    .roadmap-item h4 {
+      font-family: 'Fraunces', serif;
+      color: #4A3540;
+      margin-bottom: 8px;
+    }
+
+    .roadmap-item ul {
+      margin: 0;
+      padding-left: 20px;
+    }
+
+    .conclusion {
+      background: #4A3540;
+      color: white;
+      border-radius: 16px;
+      padding: 24px;
+      margin-top: 2rem;
+    }
+
+    .conclusion h2 {
+      color: #FFCAD4;
+      border-bottom-color: #9D8189;
+    }
+
+    .conclusion p {
+      margin-bottom: 1rem;
+    }
+
+    .conclusion strong {
+      color: #F4ACB7;
+    }
+
+    .color-swatch {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border-radius: 4px;
+      vertical-align: middle;
+      margin-right: 8px;
+      border: 1px solid rgba(0,0,0,0.1);
+    }
+
+    .page-break {
+      page-break-before: always;
+      margin-top: 2rem;
+    }
+
+    @media print {
+      body {
+        padding: 20px;
+        font-size: 11pt;
+      }
+
+      .page-break {
+        page-break-before: always;
+      }
+
+      h2 {
+        page-break-after: avoid;
+      }
+
+      table, .card, .roadmap-item {
+        page-break-inside: avoid;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Análisis de Producto: Tortuguita v2</h1>
+  <p class="subtitle">Análisis de diseño, UX/UI, mercado y estrategia de producto</p>
+
+  <div class="executive-summary">
+    <h3 style="margin-top: 0;">Resumen Ejecutivo</h3>
+    <p><strong>Tortuguita</strong> es una PWA de gestión de finanzas personales y compartidas con foco en el mercado argentino. Combina tracking de gastos, manejo de tarjetas de crédito con cuotas, split de gastos entre miembros, y AI para parsear resúmenes bancarios.</p>
+  </div>
+
+  <h2>1. Análisis UX</h2>
+
+  <h3>Fortalezas</h3>
+  <table>
+    <tr>
+      <th>Aspecto</th>
+      <th>Por qué funciona</th>
+    </tr>
+    <tr>
+      <td><strong>Mobile-first real</strong></td>
+      <td>Diseñado desde cero para móvil. El nav flotante tipo pill, el FAB para agregar gastos, y los gestos táctiles demuestran prioridad mobile.</td>
+    </tr>
+    <tr>
+      <td><strong>Flujo de un solo tap</strong></td>
+      <td>Dashboard → ver gasto → editar. Máximo 2-3 taps para cualquier acción core.</td>
+    </tr>
+    <tr>
+      <td><strong>Multi-space bien resuelto</strong></td>
+      <td>Poder ver gastos de "Personal + Familia" combinados es un diferenciador real.</td>
+    </tr>
+    <tr>
+      <td><strong>AI contextual</strong></td>
+      <td>El parsing de resúmenes de TC con Claude es un killer feature. Elimina la fricción más grande de apps de finanzas: el data entry manual.</td>
+    </tr>
+    <tr>
+      <td><strong>Onboarding progresivo</strong></td>
+      <td>Slides + checklist + tour interactivo. No abruma al usuario nuevo.</td>
+    </tr>
+    <tr>
+      <td><strong>Split inteligente</strong></td>
+      <td>"Por ingresos" es una opción que ninguna app competidora ofrece bien.</td>
+    </tr>
+  </table>
+
+  <h3>Debilidades</h3>
+  <table>
+    <tr>
+      <th>Problema</th>
+      <th>Impacto</th>
+      <th>Severidad</th>
+    </tr>
+    <tr>
+      <td><strong>No hay búsqueda</strong></td>
+      <td>Usuario con 100+ gastos no puede encontrar uno específico</td>
+      <td><span class="priority-high">Alta</span></td>
+    </tr>
+    <tr>
+      <td><strong>Sin filtros en /bills</strong></td>
+      <td>Solo navegación por mes, no por categoría/monto/tarjeta</td>
+      <td><span class="priority-medium">Media</span></td>
+    </tr>
+    <tr>
+      <td><strong>Cuotas confusas</strong></td>
+      <td>El usuario no ve claramente cuánto le queda por pagar de una compra en cuotas</td>
+      <td><span class="priority-high">Alta</span></td>
+    </tr>
+    <tr>
+      <td><strong>No hay notificaciones</strong></td>
+      <td>Sin recordatorios de vencimiento de TC</td>
+      <td><span class="priority-medium">Media</span></td>
+    </tr>
+    <tr>
+      <td><strong>Chat AI aislado</strong></td>
+      <td>La AI no tiene acceso a los gastos del usuario para dar consejos personalizados</td>
+      <td><span class="priority-high">Alta</span></td>
+    </tr>
+    <tr>
+      <td><strong>Sin presupuestos</strong></td>
+      <td>No hay forma de establecer límites por categoría</td>
+      <td><span class="priority-medium">Media</span></td>
+    </tr>
+    <tr>
+      <td><strong>Sin recurrencias</strong></td>
+      <td>Gastos fijos (Netflix, gimnasio) hay que agregarlos manualmente cada mes</td>
+      <td><span class="priority-medium">Media</span></td>
+    </tr>
+  </table>
+
+  <h3>Flujos que necesitan mejora</h3>
+  <ul>
+    <li><strong>Agregar gasto de TC:</strong> Usuario debe saber la fecha de cierre. Debería ser automático.</li>
+    <li><strong>Ver cuotas pendientes:</strong> Tiene que ir a /cuotas → tap en tarjeta → scroll. Debería verse desde el dashboard.</li>
+    <li><strong>Reconciliar resumen:</strong> Después de importar un resumen, no hay forma de marcar el mes como "cerrado".</li>
+  </ul>
+
+  <div class="page-break"></div>
+
+  <h2>2. Análisis UI</h2>
+
+  <h3>Sistema de Diseño</h3>
+  <table>
+    <tr>
+      <th>Elemento</th>
+      <th>Evaluación</th>
+    </tr>
+    <tr>
+      <td><strong>Paleta</strong></td>
+      <td>Excelente. Sage/Peach/Pink/Rose/Mauve es sofisticada y diferenciada. Transmite calma y confianza.</td>
+    </tr>
+    <tr>
+      <td><strong>Tipografía</strong></td>
+      <td>Fraunces para montos es elegante. DM Sans para body es legible.</td>
+    </tr>
+    <tr>
+      <td><strong>Glassmorphism</strong></td>
+      <td>Bien ejecutado. El blur es consistente (16-20px), los bordes blancos dan profundidad.</td>
+    </tr>
+    <tr>
+      <td><strong>Iconografía</strong></td>
+      <td>Lucide + íconos custom del nav. Consistentes en tamaño y stroke.</td>
+    </tr>
+    <tr>
+      <td><strong>Espaciado</strong></td>
+      <td>Generoso pero no desperdiciado. 4px grid system evidente.</td>
+    </tr>
+    <tr>
+      <td><strong>Dark mode</strong></td>
+      <td>Implementado, pero el gradiente de fondo pierde personalidad.</td>
+    </tr>
+  </table>
+
+  <h3>Paleta de Colores</h3>
+  <table>
+    <tr>
+      <th>Color</th>
+      <th>Hex</th>
+      <th>Uso</th>
+    </tr>
+    <tr>
+      <td><span class="color-swatch" style="background: #D8E2DC;"></span>Sage</td>
+      <td>#D8E2DC</td>
+      <td>Gradient hero — inicio</td>
+    </tr>
+    <tr>
+      <td><span class="color-swatch" style="background: #FFE5D9;"></span>Peach</td>
+      <td>#FFE5D9</td>
+      <td>Gradient hero — medio</td>
+    </tr>
+    <tr>
+      <td><span class="color-swatch" style="background: #FFCAD4;"></span>Pink</td>
+      <td>#FFCAD4</td>
+      <td>Gradient hero — fin</td>
+    </tr>
+    <tr>
+      <td><span class="color-swatch" style="background: #F4ACB7;"></span>Dusty Rose</td>
+      <td>#F4ACB7</td>
+      <td>Orbs decorativos, acentos</td>
+    </tr>
+    <tr>
+      <td><span class="color-swatch" style="background: #9D8189;"></span>Mauve</td>
+      <td>#9D8189</td>
+      <td>Textos secundarios, íconos, primary color</td>
+    </tr>
+  </table>
+
+  <h3>Patrones que funcionan</h3>
+  <ul>
+    <li><strong>Hero card con gradiente</strong> — Statement visual fuerte, diferenciador de competidores</li>
+    <li><strong>Cards con color dot</strong> — Identificación rápida de categorías</li>
+    <li><strong>Nav pill flotante</strong> — Moderno, no intrusivo, fácil de alcanzar con pulgar</li>
+    <li><strong>FAB para acción primaria</strong> — Patrón material design probado</li>
+  </ul>
+
+  <h3>Patrones a mejorar</h3>
+  <table>
+    <tr>
+      <th>Actual</th>
+      <th>Problema</th>
+      <th>Sugerencia</th>
+    </tr>
+    <tr>
+      <td>Listas planas</td>
+      <td>Sin jerarquía visual en /bills</td>
+      <td>Agrupar por día o semana</td>
+    </tr>
+    <tr>
+      <td>Forms modales</td>
+      <td>Crear gasto lleva a página nueva</td>
+      <td>Bottom sheet para gastos rápidos</td>
+    </tr>
+    <tr>
+      <td>Empty states</td>
+      <td>Genéricos</td>
+      <td>Personalizar por contexto</td>
+    </tr>
+    <tr>
+      <td>Loading states</td>
+      <td>Inconsistentes</td>
+      <td>Skeleton screens uniformes</td>
+    </tr>
+  </table>
+
+  <div class="page-break"></div>
+
+  <h2>3. Propuestas de Mejora (Priorizadas)</h2>
+
+  <h3><span class="priority-high">Alta Prioridad</span> — Quick Wins</h3>
+  <table>
+    <tr>
+      <th>Mejora</th>
+      <th>Esfuerzo</th>
+      <th>Impacto</th>
+    </tr>
+    <tr>
+      <td><strong>Búsqueda global</strong></td>
+      <td>2-3 días</td>
+      <td>Desbloquea usuarios con muchos datos</td>
+    </tr>
+    <tr>
+      <td><strong>Filtros en /bills</strong></td>
+      <td>1-2 días</td>
+      <td>Reduce fricción diaria</td>
+    </tr>
+    <tr>
+      <td><strong>Resumen de cuotas en dashboard</strong></td>
+      <td>1 día</td>
+      <td>Visibilidad de deuda total</td>
+    </tr>
+    <tr>
+      <td><strong>Gastos recurrentes</strong></td>
+      <td>3-4 días</td>
+      <td>Elimina data entry repetitivo</td>
+    </tr>
+  </table>
+
+  <h3><span class="priority-medium">Media Prioridad</span> — Features nuevos</h3>
+  <table>
+    <tr>
+      <th>Mejora</th>
+      <th>Esfuerzo</th>
+      <th>Impacto</th>
+    </tr>
+    <tr>
+      <td><strong>Presupuestos por categoría</strong></td>
+      <td>1 semana</td>
+      <td>Core feature esperado</td>
+    </tr>
+    <tr>
+      <td><strong>AI con contexto de gastos</strong></td>
+      <td>3-4 días</td>
+      <td>Diferenciador único</td>
+    </tr>
+    <tr>
+      <td><strong>Notificaciones (vencimientos TC)</strong></td>
+      <td>1 semana</td>
+      <td>Retención de usuarios</td>
+    </tr>
+    <tr>
+      <td><strong>Quick-add desde dashboard</strong></td>
+      <td>2 días</td>
+      <td>Reduce fricción</td>
+    </tr>
+    <tr>
+      <td><strong>Compartir gasto individual</strong></td>
+      <td>1-2 días</td>
+      <td>Social proof / viralidad</td>
+    </tr>
+  </table>
+
+  <h3><span class="priority-low">Baja Prioridad</span> — Nice to have</h3>
+  <table>
+    <tr>
+      <th>Mejora</th>
+      <th>Esfuerzo</th>
+      <th>Impacto</th>
+    </tr>
+    <tr>
+      <td><strong>Widgets iOS/Android</strong></td>
+      <td>1-2 semanas</td>
+      <td>Engagement pasivo</td>
+    </tr>
+    <tr>
+      <td><strong>Exportar a Excel/CSV</strong></td>
+      <td>2-3 días</td>
+      <td>Power users</td>
+    </tr>
+    <tr>
+      <td><strong>Gráficos de tendencia</strong></td>
+      <td>1 semana</td>
+      <td>Analytics</td>
+    </tr>
+    <tr>
+      <td><strong>Multi-moneda</strong></td>
+      <td>1 semana</td>
+      <td>Usuarios con USD</td>
+    </tr>
+  </table>
+
+  <div class="page-break"></div>
+
+  <h2>4. Análisis de Mercado</h2>
+
+  <h3>Competencia directa (Argentina)</h3>
+  <table>
+    <tr>
+      <th>App</th>
+      <th>Fortaleza</th>
+      <th>Debilidad vs Tortuguita</th>
+    </tr>
+    <tr>
+      <td><strong>Wallet by BudgetBakers</strong></td>
+      <td>Madura, muchas features</td>
+      <td>No entiende cuotas argentinas, sin AI</td>
+    </tr>
+    <tr>
+      <td><strong>Money Manager</strong></td>
+      <td>Simple, gratis</td>
+      <td>Sin colaboración, sin TC</td>
+    </tr>
+    <tr>
+      <td><strong>Splitwise</strong></td>
+      <td>Split expenses</td>
+      <td>Solo split, no tracking personal</td>
+    </tr>
+    <tr>
+      <td><strong>Excel/Notion</strong></td>
+      <td>Flexible</td>
+      <td>Fricción alta, no mobile-native</td>
+    </tr>
+  </table>
+
+  <h3>Diferenciadores únicos de Tortuguita</h3>
+  <div class="card">
+    <ol>
+      <li><strong>AI parsing de resúmenes</strong> — Nadie más lo tiene bien resuelto en LATAM</li>
+      <li><strong>Multi-space con vista combinada</strong> — Competidores hacen uno u otro</li>
+      <li><strong>Split "por ingresos"</strong> — Feature único</li>
+      <li><strong>Entendimiento de cuotas argentinas</strong> — Crítico para el mercado local</li>
+      <li><strong>UX premium</strong> — La mayoría de apps de finanzas tienen UI de 2015</li>
+    </ol>
+  </div>
+
+  <h3>TAM/SAM/SOM (Argentina)</h3>
+  <table>
+    <tr>
+      <th>Métrica</th>
+      <th>Estimación</th>
+    </tr>
+    <tr>
+      <td><strong>TAM</strong></td>
+      <td>15M adultos con smartphone en Argentina</td>
+    </tr>
+    <tr>
+      <td><strong>SAM</strong></td>
+      <td>3-5M que usan apps de finanzas o spreadsheets</td>
+    </tr>
+    <tr>
+      <td><strong>SOM realista (2 años)</strong></td>
+      <td>50K-100K usuarios activos</td>
+    </tr>
+  </table>
+
+  <div class="page-break"></div>
+
+  <h2>5. Estrategia de Producto</h2>
+
+  <h3>Camino a app nativa</h3>
+  <table>
+    <tr>
+      <th>Opción</th>
+      <th>Pros</th>
+      <th>Contras</th>
+    </tr>
+    <tr>
+      <td><strong>Mantener PWA</strong></td>
+      <td>Ya funciona, un solo codebase</td>
+      <td>Limitaciones en notificaciones iOS, sin App Store visibility</td>
+    </tr>
+    <tr>
+      <td><strong>React Native</strong></td>
+      <td>Código compartido con web, acceso a APIs nativas</td>
+      <td>Nuevo codebase, curva de aprendizaje</td>
+    </tr>
+    <tr>
+      <td><strong>Capacitor/Ionic</strong></td>
+      <td>Wrappea el código actual, mínimo esfuerzo</td>
+      <td>Performance inferior, quirks</td>
+    </tr>
+    <tr>
+      <td><strong>Flutter</strong></td>
+      <td>Performance nativa, single codebase</td>
+      <td>Rewrite completo</td>
+    </tr>
+  </table>
+
+  <div class="recommendation">
+    <strong>Recomendación:</strong> Capacitor a corto plazo para ganar presencia en stores, luego evaluar React Native si el volumen lo justifica.
+  </div>
+
+  <h3>Monetización</h3>
+  <table>
+    <tr>
+      <th>Modelo</th>
+      <th>Viabilidad</th>
+      <th>Notas</th>
+    </tr>
+    <tr>
+      <td><strong>Freemium</strong></td>
+      <td>⭐⭐⭐⭐</td>
+      <td>Free: 1 space, 2 TC. Pro: ilimitado + AI</td>
+    </tr>
+    <tr>
+      <td><strong>Suscripción</strong></td>
+      <td>⭐⭐⭐</td>
+      <td>$1-3 USD/mes en Argentina es límite</td>
+    </tr>
+    <tr>
+      <td><strong>One-time purchase</strong></td>
+      <td>⭐⭐</td>
+      <td>Difícil sustentar desarrollo continuo</td>
+    </tr>
+    <tr>
+      <td><strong>B2B / White-label</strong></td>
+      <td>⭐⭐⭐</td>
+      <td>Bancos/fintechs interesados en AI parsing</td>
+    </tr>
+  </table>
+
+  <div class="recommendation">
+    <strong>Recomendación:</strong> Freemium con tier Pro a ~$2 USD/mes. El AI parsing como feature premium tiene valor percibido alto.
+  </div>
+
+  <h3>Potencial de venta/exit</h3>
+  <table>
+    <tr>
+      <th>Comprador potencial</th>
+      <th>Interés</th>
+      <th>Valuación potencial</th>
+    </tr>
+    <tr>
+      <td><strong>Fintechs argentinas</strong> (Ualá, Naranja X, Personal Pay)</td>
+      <td>Alto — necesitan engagement</td>
+      <td>$500K-2M USD</td>
+    </tr>
+    <tr>
+      <td><strong>Bancos tradicionales</strong></td>
+      <td>Medio — innovación via adquisición</td>
+      <td>$1-3M USD</td>
+    </tr>
+    <tr>
+      <td><strong>Apps de finanzas globales</strong></td>
+      <td>Bajo — mercado pequeño</td>
+      <td>$200-500K USD</td>
+    </tr>
+    <tr>
+      <td><strong>Acqui-hire</strong></td>
+      <td>Medio — equipo técnico con AI experience</td>
+      <td>$150-300K USD</td>
+    </tr>
+  </table>
+
+  <div class="recommendation">
+    <strong>Realidad:</strong> Con 50K+ usuarios activos y métricas de retención sólidas, una fintech argentina sería comprador natural. El AI parsing es el asset más valioso.
+  </div>
+
+  <div class="page-break"></div>
+
+  <h2>6. Roadmap Sugerido</h2>
+
+  <div class="roadmap">
+    <div class="roadmap-item">
+      <h4>Q3 2025 — Foundation</h4>
+      <ul>
+        <li>Búsqueda global</li>
+        <li>Filtros en /bills</li>
+        <li>Gastos recurrentes</li>
+        <li>AI con contexto de gastos</li>
+      </ul>
+    </div>
+
+    <div class="roadmap-item">
+      <h4>Q4 2025 — Growth</h4>
+      <ul>
+        <li>Presupuestos por categoría</li>
+        <li>Capacitor wrapper → App Store/Play Store</li>
+        <li>Notificaciones push</li>
+        <li>Referral system</li>
+      </ul>
+    </div>
+
+    <div class="roadmap-item">
+      <h4>Q1 2026 — Monetization</h4>
+      <ul>
+        <li>Tier Pro con AI ilimitado</li>
+        <li>Analytics avanzados</li>
+        <li>Exportación de datos</li>
+        <li>Integraciones bancarias (si hay APIs)</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="conclusion">
+    <h2>7. Conclusión</h2>
+
+    <p><strong>Tortuguita tiene fundamentos sólidos:</strong> tech stack moderno, UX superior a competidores, y un killer feature (AI parsing) que resuelve el problema #1 de las apps de finanzas.</p>
+
+    <p><strong>Lo que falta para ser un producto vendible:</strong></p>
+    <ul style="margin-left: 1.5rem; margin-bottom: 1rem;">
+      <li>Features de retención (notificaciones, recurrencias)</li>
+      <li>Presencia en app stores</li>
+      <li>Monetización clara</li>
+      <li>Base de usuarios demostrable (10K+ activos)</li>
+    </ul>
+
+    <p><strong>Oportunidad de mercado:</strong> Real. En Argentina no hay una app de finanzas personales que entienda cuotas, sea colaborativa, y tenga AI. El timing es bueno.</p>
+
+    <p><strong>Siguiente paso inmediato:</strong> Implementar búsqueda + filtros, que desbloquean power users y mejoran retención.</p>
+  </div>
+
+  <p style="text-align: center; margin-top: 3rem; color: #9D8189; font-size: 0.85rem;">
+    Análisis generado por Claude · Mayo 2025
+  </p>
+
+</body>
+</html>
