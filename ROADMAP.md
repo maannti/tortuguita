@@ -9,15 +9,17 @@
 
 | Fase | Progreso | Próximo paso |
 |------|----------|--------------|
-| **Foundation (Q3 2025)** | 1/4 completados | Filtros en /bills |
-| **Growth (Q4 2025)** | 0/4 completados | — |
-| **Monetization (Q1 2026)** | 0/4 completados | — |
+| **Alta Prioridad** | 1/5 completados | Filtros en /bills |
+| **Media Prioridad** | 0/7 completados | — |
+| **Baja Prioridad** | 0/6 completados | — |
 
 ---
 
-## FASE 1: Foundation (Q3 2025)
+## ALTA PRIORIDAD — Quick Wins
 
-### 1.1 Búsqueda Global
+> Mejoras con alto impacto y esfuerzo bajo-medio. Atacar primero.
+
+### 1. Búsqueda Global
 - **Estado:** `[x]` ✅ Completado (15 Mayo 2025)
 - **Prioridad:** Alta
 - **Esfuerzo real:** ~30 minutos
@@ -56,7 +58,7 @@ Patrón usado: URL params + Server Component (Next.js App Router pattern)
 
 ---
 
-### 1.2 Filtros en /bills
+### 2. Filtros en /bills
 - **Estado:** `[ ]` Pendiente
 - **Prioridad:** Alta
 - **Esfuerzo estimado:** 1-2 días
@@ -92,7 +94,29 @@ Permitir filtrar gastos por: categoría, tarjeta de crédito, rango de monto, mi
 
 ---
 
-### 1.3 Gastos Recurrentes
+### 3. Resumen de Cuotas en Dashboard
+- **Estado:** `[ ]` Pendiente
+- **Prioridad:** Alta
+- **Esfuerzo estimado:** 1 día
+- **Impacto:** Visibilidad de deuda total de TC
+
+#### Descripción
+El usuario no ve claramente cuánto le queda por pagar de compras en cuotas. Agregar un resumen en el dashboard que muestre deuda total de cuotas activas.
+
+#### Plan de implementación
+1. [ ] Calcular total de cuotas pendientes por tarjeta
+2. [ ] Mostrar widget en dashboard con deuda total
+3. [ ] Desglose por tarjeta (cuántas cuotas, monto restante)
+4. [ ] Link a /cuotas para ver detalle
+
+#### Criterios de éxito
+- Veo deuda total de cuotas en dashboard
+- Sé cuántas cuotas me quedan por pagar
+- Puedo ver el desglose por tarjeta
+
+---
+
+### 4. Gastos Recurrentes
 - **Estado:** `[ ]` Pendiente
 - **Prioridad:** Alta
 - **Esfuerzo estimado:** 3-4 días
@@ -133,7 +157,7 @@ Permitir marcar un gasto como recurrente (mensual, semanal, etc.) y que se cree 
 
 ---
 
-### 1.4 AI con Contexto de Gastos
+### 5. AI con Contexto de Gastos
 - **Estado:** `[ ]` Pendiente
 - **Prioridad:** Alta
 - **Esfuerzo estimado:** 3-4 días
@@ -176,9 +200,11 @@ El chat de AI actualmente no tiene acceso a los gastos del usuario. Debería pod
 
 ---
 
-## FASE 2: Growth (Q4 2025)
+## MEDIA PRIORIDAD — Features Nuevos
 
-### 2.1 Presupuestos por Categoría
+> Funcionalidades que agregan valor significativo pero requieren más esfuerzo.
+
+### 6. Presupuestos por Categoría
 - **Estado:** `[ ]` Pendiente
 - **Prioridad:** Media
 - **Esfuerzo estimado:** 1 semana
@@ -208,7 +234,51 @@ Permitir establecer un límite mensual por categoría. Mostrar progreso visual y
 
 ---
 
-### 2.2 Capacitor → App Stores
+### 7. Quick-Add desde Dashboard
+- **Estado:** `[ ]` Pendiente
+- **Prioridad:** Media
+- **Esfuerzo estimado:** 2 días
+- **Impacto:** Reduce fricción para agregar gastos
+
+#### Descripción
+Agregar gasto sin salir del dashboard. Bottom sheet que se abre desde el FAB con formulario simplificado.
+
+#### Plan de implementación
+1. [ ] Crear bottom sheet con formulario mínimo (monto, descripción, categoría)
+2. [ ] Abrir desde FAB en dashboard (en vez de navegar a /bills/new)
+3. [ ] Opción "Más opciones" para ir al formulario completo
+4. [ ] Animación suave de apertura/cierre
+
+#### Criterios de éxito
+- Puedo agregar un gasto en <5 segundos
+- No pierdo el contexto del dashboard
+- Puedo acceder al formulario completo si necesito
+
+---
+
+### 8. Compartir Gasto Individual
+- **Estado:** `[ ]` Pendiente
+- **Prioridad:** Media
+- **Esfuerzo estimado:** 1-2 días
+- **Impacto:** Social proof, viralidad
+
+#### Descripción
+Generar imagen compartible de un gasto para redes sociales. Útil para mostrar compras grandes o splits con amigos.
+
+#### Plan de implementación
+1. [ ] Diseñar template de imagen con branding Tortuguita
+2. [ ] Usar html2canvas o similar para generar imagen
+3. [ ] Botón "Compartir" en detalle del gasto
+4. [ ] Integrar Web Share API para compartir nativo
+
+#### Criterios de éxito
+- Puedo generar imagen de un gasto
+- La imagen tiene buen diseño y branding
+- Puedo compartir directamente a WhatsApp/Instagram
+
+---
+
+### 9. Capacitor → App Stores
 - **Estado:** `[ ]` Pendiente
 - **Prioridad:** Media
 - **Esfuerzo estimado:** 1-2 semanas
@@ -235,7 +305,7 @@ Wrappear la PWA con Capacitor para publicar en App Store y Play Store. Ganar vis
 
 ---
 
-### 2.3 Notificaciones Push
+### 10. Notificaciones Push
 - **Estado:** `[ ]` Pendiente
 - **Prioridad:** Media
 - **Esfuerzo estimado:** 1 semana
@@ -253,7 +323,7 @@ Notificar vencimientos de TC, recordatorios de gastos recurrentes, alertas de pr
 
 ---
 
-### 2.4 Referral System
+### 11. Referral System
 - **Estado:** `[ ]` Pendiente
 - **Prioridad:** Baja
 - **Esfuerzo estimado:** 3-4 días
@@ -270,9 +340,7 @@ Sistema de referidos para crecimiento orgánico. "Invitá a un amigo y ambos rec
 
 ---
 
-## FASE 3: Monetization (Q1 2026)
-
-### 3.1 Tier Pro
+### 12. Tier Pro (Monetización)
 - **Estado:** `[ ]` Pendiente
 - **Prioridad:** Alta (para sustentabilidad)
 - **Esfuerzo estimado:** 2 semanas
@@ -290,7 +358,11 @@ Plan pago con features premium: AI ilimitado, más spaces, analytics avanzados.
 
 ---
 
-### 3.2 Analytics Avanzados
+## BAJA PRIORIDAD — Nice to Have
+
+> Features deseables pero no críticos. Implementar cuando haya tiempo.
+
+### 13. Analytics Avanzados (Gráficos de Tendencia)
 - **Estado:** `[ ]` Pendiente
 - **Prioridad:** Media
 - **Esfuerzo estimado:** 1 semana
@@ -300,7 +372,7 @@ Gráficos de tendencia, comparación mes a mes, proyecciones.
 
 ---
 
-### 3.3 Exportación de Datos
+### 14. Exportación de Datos (CSV/Excel)
 - **Estado:** `[ ]` Pendiente
 - **Prioridad:** Baja
 - **Esfuerzo estimado:** 2-3 días
@@ -310,7 +382,7 @@ Exportar gastos a CSV/Excel. Feature para power users y compliance.
 
 ---
 
-### 3.4 Integraciones Bancarias
+### 15. Integraciones Bancarias
 - **Estado:** `[ ]` Pendiente
 - **Prioridad:** Baja (depende de APIs disponibles)
 - **Esfuerzo estimado:** Variable
@@ -320,26 +392,53 @@ Conexión directa con bancos para importar transacciones automáticamente.
 
 ---
 
-## Mejoras Menores (Backlog)
+### 16. Widgets iOS/Android
+- **Estado:** `[ ]` Pendiente
+- **Prioridad:** Baja
+- **Esfuerzo estimado:** 1-2 semanas
+- **Impacto:** Engagement pasivo
 
-### UI/UX Quick Wins
+#### Descripción
+Widgets para home screen que muestren gasto del mes, presupuesto restante, o próximos vencimientos.
+
+---
+
+### 17. Multi-moneda (USD/EUR)
+- **Estado:** `[ ]` Pendiente
+- **Prioridad:** Baja
+- **Esfuerzo estimado:** 1 semana
+- **Impacto:** Usuarios con gastos en dólares
+
+#### Descripción
+Soporte nativo para múltiples monedas, conversión automática, y reportes por moneda.
+
+---
+
+### 18. Modo Offline Mejorado
+- **Estado:** `[ ]` Pendiente
+- **Prioridad:** Baja
+- **Esfuerzo estimado:** 1 semana
+- **Impacto:** Uso sin conexión
+
+#### Descripción
+Permitir agregar gastos offline y sincronizar cuando vuelva la conexión.
+
+---
+
+## Backlog — Mejoras Menores
+
+### UI/UX
 - [ ] Agrupar gastos por día en /bills
-- [ ] Bottom sheet para quick-add desde dashboard
 - [ ] Skeleton screens consistentes
 - [ ] Empty states personalizados por contexto
 - [ ] Mejorar dark mode del hero gradient
+- [ ] Command palette global (Cmd+K)
 
 ### Tech Debt
 - [ ] Migrar forwardRef restantes (shadcn)
 - [ ] Unificar loading states
 - [ ] Tests E2E con Playwright
 - [ ] Documentar API con OpenAPI/Swagger
-
-### Nice to Have
-- [ ] Widgets iOS/Android
-- [ ] Multi-moneda (USD/EUR)
-- [ ] Compartir gasto individual (imagen)
-- [ ] Modo offline mejorado
 
 ---
 
