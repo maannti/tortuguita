@@ -3,7 +3,7 @@
 import { useRouter, useSearchParams, usePathname } from "next/navigation"
 import Link from "next/link"
 import { useState, useEffect, useRef, useTransition } from "react"
-import { ChevronLeft, ChevronRight, Plus, CreditCard, ChevronDown, Search, X } from "lucide-react"
+import { ChevronLeft, ChevronRight, Plus, CreditCard, ChevronDown, Search, X, SlidersHorizontal, Check, User, Home, Loader2 } from "lucide-react"
 import { MonthPicker } from "@/components/ui/month-picker"
 import { cn } from "@/lib/utils"
 
@@ -19,11 +19,17 @@ interface FilterOption {
   name: string
   color?: string
   icon?: string | null
+  organizationId: string
+}
+interface Organization {
+  id: string
+  name: string
+  isPersonal: boolean
 }
 
 interface ActiveFilters {
-  categoryId?: string
-  cardId?: string
+  categoryIds: string[]
+  cardIds: string[]
 }
 
 interface Props {
@@ -35,6 +41,7 @@ interface Props {
   activeFilters?: ActiveFilters
   availableCategories?: FilterOption[]
   availableCards?: FilterOption[]
+  organizations?: Organization[]
 }
 
 const arsFormatter = new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", minimumFractionDigits: 0, maximumFractionDigits: 2 })
@@ -43,9 +50,12 @@ function formatARS(n: number) { return arsFormatter.format(n) }
 function formatUSD(n: number) { return usdFormatter.format(n) }
 function capitalize(s: string) { return s.charAt(0).toUpperCase() + s.slice(1) }
 
+const MAUVE = "#9D8189"
+
 export function BillsView({
   month, monthKey, availableMonths, categoryGroups, grandTotal, hasAnyUSD,
-  searchQuery = "", activeFilters = {}, availableCategories = [], availableCards = []
+  searchQuery = "", activeFilters = { categoryIds: [], cardIds: [] },
+  availableCategories = [], availableCards = [], organizations = []
 }: Props) {
   const router = useRouter()
   const pathname = usePathname()
@@ -57,68 +67,125 @@ export function BillsView({
   const [usdRate, setUsdRate] = useState<number | null>(null)
   const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set())
 
-  // Search & Filter sheet state
-  const [searchOpen, setSearchOpen] = useState(false)
+  // ActionBar state
+  const [searchExpanded, setSearchExpanded] = useState(false)
   const [localSearch, setLocalSearch] = useState(searchQuery)
-  const [localFilters, setLocalFilters] = useState<ActiveFilters>(activeFilters)
   const searchInputRef = useRef<HTMLInputElement>(null)
+  const searchDebounceRef = useRef<NodeJS.Timeout | null>(null)
 
-  const hasActiveFilters = !!(activeFilters.categoryId || activeFilters.cardId)
+  // Filter sheet state
+  const [filterSheetOpen, setFilterSheetOpen] = useState(false)
+  const [localCategoryIds, setLocalCategoryIds] = useState<Set<string>>(new Set(activeFilters.categoryIds))
+  const [localCardIds, setLocalCardIds] = useState<Set<string>>(new Set(activeFilters.cardIds))
+
+  const hasActiveFilters = activeFilters.categoryIds.length > 0 || activeFilters.cardIds.length > 0
+  const totalActiveFilters = activeFilters.categoryIds.length + activeFilters.cardIds.length
 
   // Sync local state when props change
   useEffect(() => {
     setLocalSearch(searchQuery)
-    setLocalFilters(activeFilters)
+    setLocalCategoryIds(new Set(activeFilters.categoryIds))
+    setLocalCardIds(new Set(activeFilters.cardIds))
   }, [searchQuery, activeFilters])
 
-  // Focus input when sheet opens
+  // Focus input when search expands
   useEffect(() => {
-    if (searchOpen && searchInputRef.current) {
-      setTimeout(() => searchInputRef.current?.focus(), 100)
+    if (searchExpanded && searchInputRef.current) {
+      setTimeout(() => searchInputRef.current?.focus(), 50)
     }
-  }, [searchOpen])
+  }, [searchExpanded])
+
+  // Debounced search - updates URL in real-time
+  function handleSearchChange(value: string) {
+    setLocalSearch(value)
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current)
+    searchDebounceRef.current = setTimeout(() => {
+      const params = new URLSearchParams(searchParams.toString())
+      if (value.trim()) {
+        params.set("search", value.trim())
+      } else {
+        params.delete("search")
+      }
+      startTransition(() => {
+        router.replace(`${pathname}?${params.toString()}`, { scroll: false })
+      })
+    }, 300)
+  }
+
+  function clearSearch() {
+    setLocalSearch("")
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current)
+    const params = new URLSearchParams(searchParams.toString())
+    params.delete("search")
+    startTransition(() => {
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false })
+    })
+    setSearchExpanded(false)
+  }
+
+  // Filter sheet actions
+  function toggleCategory(id: string) {
+    setLocalCategoryIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  function toggleCard(id: string) {
+    setLocalCardIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
 
   function applyFilters() {
     const params = new URLSearchParams(searchParams.toString())
 
-    // Search
-    if (localSearch.trim()) {
-      params.set("search", localSearch.trim())
+    if (localCategoryIds.size > 0) {
+      params.set("categoryIds", Array.from(localCategoryIds).join(","))
     } else {
-      params.delete("search")
+      params.delete("categoryIds")
     }
 
-    // Category filter
-    if (localFilters.categoryId) {
-      params.set("categoryId", localFilters.categoryId)
+    if (localCardIds.size > 0) {
+      params.set("cardIds", Array.from(localCardIds).join(","))
     } else {
-      params.delete("categoryId")
-    }
-
-    // Card filter
-    if (localFilters.cardId) {
-      params.set("cardId", localFilters.cardId)
-    } else {
-      params.delete("cardId")
+      params.delete("cardIds")
     }
 
     startTransition(() => {
       router.replace(`${pathname}?${params.toString()}`, { scroll: false })
     })
-    setSearchOpen(false)
+    setFilterSheetOpen(false)
   }
 
   function clearAllFilters() {
-    setLocalSearch("")
-    setLocalFilters({})
+    setLocalCategoryIds(new Set())
+    setLocalCardIds(new Set())
     const params = new URLSearchParams(searchParams.toString())
-    params.delete("search")
-    params.delete("categoryId")
-    params.delete("cardId")
+    params.delete("categoryIds")
+    params.delete("cardIds")
     startTransition(() => {
       router.replace(`${pathname}?${params.toString()}`, { scroll: false })
     })
-    setSearchOpen(false)
+    setFilterSheetOpen(false)
+  }
+
+  function clearEverything() {
+    setLocalSearch("")
+    setLocalCategoryIds(new Set())
+    setLocalCardIds(new Set())
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current)
+    const params = new URLSearchParams()
+    if (monthKey) params.set("month", monthKey)
+    startTransition(() => {
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false })
+    })
+    setSearchExpanded(false)
   }
 
   const currentIndex = availableMonths.indexOf(monthKey)
@@ -217,27 +284,73 @@ export function BillsView({
         </div>
       </div>
 
-      {/* Search & Filter button */}
+      {/* ActionBar - Search & Filter */}
       <div className="px-4 pt-3 pb-1">
-        <button
-          onClick={() => setSearchOpen(true)}
-          className={cn(
-            "flex items-center gap-2 px-4 py-2.5 rounded-full",
-            "bg-white/60 backdrop-blur-sm border border-white/80",
-            "active:scale-[0.98] transition-all",
-            (searchQuery || hasActiveFilters) && "ring-2 ring-primary/20"
-          )}
+        <div
+          className="rounded-2xl overflow-hidden"
+          style={{ background: "linear-gradient(135deg, #D8E2DC 0%, #FFE5D9 55%, #FFCAD4 100%)" }}
         >
-          <Search className="size-4 text-[#9D8189]" />
-          {searchQuery ? (
-            <span className="text-sm text-[#4A3540]">"{searchQuery}"</span>
+          {searchExpanded ? (
+            /* Expanded search input */
+            <div className="flex items-center gap-2 px-3 py-2">
+              <Search className="size-4 text-[#6B5159] flex-shrink-0" />
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={localSearch}
+                onChange={(e) => handleSearchChange(e.target.value)}
+                onKeyDown={(e) => e.key === "Escape" && clearSearch()}
+                placeholder="Buscar gastos..."
+                className="flex-1 bg-transparent text-sm text-[#4A3540] placeholder:text-[#9D8189] focus:outline-none"
+              />
+              {isPending ? (
+                <Loader2 className="size-4 text-[#9D8189] animate-spin flex-shrink-0" />
+              ) : localSearch ? (
+                <button onClick={clearSearch} className="p-1 rounded-full hover:bg-white/30 active:scale-95 transition-all">
+                  <X className="size-4 text-[#6B5159]" />
+                </button>
+              ) : (
+                <button onClick={() => setSearchExpanded(false)} className="p-1 rounded-full hover:bg-white/30 active:scale-95 transition-all">
+                  <X className="size-4 text-[#6B5159]" />
+                </button>
+              )}
+            </div>
           ) : (
-            <span className="text-sm text-[#9D8189]">Buscar y filtrar</span>
+            /* Collapsed ActionBar with two buttons */
+            <div className="flex items-center">
+              {/* Search button */}
+              <button
+                onClick={() => setSearchExpanded(true)}
+                className={cn(
+                  "flex-1 flex items-center justify-center gap-2 py-3 transition-all active:bg-white/20",
+                  searchQuery && "bg-white/30"
+                )}
+              >
+                <Search className="size-4 text-[#6B5159]" />
+                <span className="text-sm font-medium text-[#4A3540]">
+                  {searchQuery ? `"${searchQuery}"` : "Buscar"}
+                </span>
+              </button>
+
+              {/* Divider */}
+              <div className="w-px h-6 bg-white/50" />
+
+              {/* Filter button */}
+              <button
+                onClick={() => setFilterSheetOpen(true)}
+                className={cn(
+                  "flex-1 flex items-center justify-center gap-2 py-3 transition-all active:bg-white/20",
+                  hasActiveFilters && "bg-white/30"
+                )}
+              >
+                <SlidersHorizontal className="size-4 text-[#6B5159]" />
+                <span className="text-sm font-medium text-[#4A3540]">
+                  Filtros{totalActiveFilters > 0 && ` (${totalActiveFilters})`}
+                </span>
+              </button>
+            </div>
           )}
-          {(searchQuery || hasActiveFilters) && (
-            <span className="size-2 rounded-full bg-primary ml-1" />
-          )}
-        </button>
+        </div>
       </div>
 
       <div className="px-4 pt-4 space-y-5">
@@ -344,7 +457,7 @@ export function BillsView({
                   }
                 </p>
                 <button
-                  onClick={clearAllFilters}
+                  onClick={clearEverything}
                   className="text-sm text-primary font-medium active:scale-95 transition-transform"
                 >
                   Limpiar filtros
@@ -378,136 +491,142 @@ export function BillsView({
         />
       )}
 
-      {/* Search & Filter Sheet */}
-      {searchOpen && (
-        <div className="fixed inset-0 z-50">
+      {/* Filter Sheet */}
+      {filterSheetOpen && (
+        <div className="fixed inset-0 z-50 flex flex-col justify-end">
           {/* Backdrop */}
           <div
             className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-            onClick={() => setSearchOpen(false)}
+            onClick={() => setFilterSheetOpen(false)}
           />
 
           {/* Sheet */}
-          <div className="absolute bottom-0 left-0 right-0 bg-background rounded-t-3xl shadow-xl animate-slide-up">
-            <div className="p-4 space-y-4">
-              {/* Handle */}
-              <div className="flex justify-center">
+          <div className="relative bg-background rounded-t-3xl max-h-[80vh] flex flex-col shadow-xl">
+            {/* Header */}
+            <div className="flex-shrink-0 px-5 pt-4 pb-3 border-b border-border/50">
+              <div className="flex justify-center mb-3">
                 <div className="w-10 h-1 rounded-full bg-muted" />
               </div>
-
-              {/* Title */}
-              <h2 className="text-lg font-medium" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
-                Buscar y filtrar
-              </h2>
-
-              {/* Search input */}
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                <input
-                  ref={searchInputRef}
-                  type="text"
-                  value={localSearch}
-                  onChange={(e) => setLocalSearch(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && applyFilters()}
-                  placeholder="Buscar por nombre, notas..."
-                  className={cn(
-                    "w-full h-12 pl-10 pr-4 rounded-xl",
-                    "bg-muted/50 border border-border",
-                    "text-sm placeholder:text-muted-foreground",
-                    "focus:outline-none focus:ring-2 focus:ring-primary/20"
-                  )}
-                />
-              </div>
-
-              {/* Category filter */}
-              {availableCategories.length > 0 && (
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-muted-foreground">Categoría</label>
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      onClick={() => setLocalFilters(f => ({ ...f, categoryId: undefined }))}
-                      className={cn(
-                        "px-3 py-1.5 rounded-full text-sm transition-all",
-                        !localFilters.categoryId
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted/50 text-muted-foreground hover:bg-muted"
-                      )}
-                    >
-                      Todas
-                    </button>
-                    {availableCategories.map(cat => (
-                      <button
-                        key={cat.id}
-                        onClick={() => setLocalFilters(f => ({ ...f, categoryId: cat.id }))}
-                        className={cn(
-                          "px-3 py-1.5 rounded-full text-sm transition-all flex items-center gap-1.5",
-                          localFilters.categoryId === cat.id
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-muted/50 text-muted-foreground hover:bg-muted"
-                        )}
-                      >
-                        {cat.icon && <span className="text-xs">{cat.icon}</span>}
-                        {cat.name}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Card filter */}
-              {availableCards.length > 0 && (
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-muted-foreground">Tarjeta</label>
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      onClick={() => setLocalFilters(f => ({ ...f, cardId: undefined }))}
-                      className={cn(
-                        "px-3 py-1.5 rounded-full text-sm transition-all",
-                        !localFilters.cardId
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted/50 text-muted-foreground hover:bg-muted"
-                      )}
-                    >
-                      Todas
-                    </button>
-                    {availableCards.map(card => (
-                      <button
-                        key={card.id}
-                        onClick={() => setLocalFilters(f => ({ ...f, cardId: card.id }))}
-                        className={cn(
-                          "px-3 py-1.5 rounded-full text-sm transition-all flex items-center gap-1.5",
-                          localFilters.cardId === card.id
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-muted/50 text-muted-foreground hover:bg-muted"
-                        )}
-                      >
-                        <CreditCard className="size-3" />
-                        {card.name}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Actions */}
-              <div className="flex gap-3 pt-2 pb-safe">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
+                  Filtros
+                </h2>
                 <button
-                  onClick={clearAllFilters}
-                  className="flex-1 h-12 rounded-xl bg-muted/50 text-muted-foreground font-medium active:scale-[0.98] transition-transform"
+                  onClick={() => setFilterSheetOpen(false)}
+                  className="p-1 text-muted-foreground hover:text-foreground active:scale-95 transition-all"
                 >
-                  Limpiar
-                </button>
-                <button
-                  onClick={applyFilters}
-                  className="flex-1 h-12 rounded-xl bg-primary text-primary-foreground font-medium active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
-                >
-                  {isPending ? (
-                    <div className="size-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                  ) : (
-                    "Aplicar"
-                  )}
+                  <X className="size-5" />
                 </button>
               </div>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto px-5 py-4 space-y-6">
+              {organizations.map(org => {
+                const orgCategories = availableCategories.filter(c => c.organizationId === org.id)
+                const orgCards = availableCards.filter(c => c.organizationId === org.id)
+                if (orgCategories.length === 0 && orgCards.length === 0) return null
+
+                return (
+                  <div key={org.id}>
+                    {/* Org header */}
+                    <div className="flex items-center gap-2 mb-3">
+                      <div
+                        className="size-6 rounded-lg flex items-center justify-center flex-shrink-0"
+                        style={{ backgroundColor: `${MAUVE}20` }}
+                      >
+                        {org.isPersonal
+                          ? <User className="size-3.5" style={{ color: MAUVE }} />
+                          : <Home className="size-3.5" style={{ color: MAUVE }} />
+                        }
+                      </div>
+                      <span className="text-sm font-bold uppercase tracking-wider" style={{ color: MAUVE }}>
+                        {org.name}
+                      </span>
+                    </div>
+
+                    {/* Categories */}
+                    {orgCategories.length > 0 && (
+                      <div className="mb-4">
+                        <p className="text-xs font-medium text-muted-foreground mb-2 pl-1">Categorías</p>
+                        <div className="space-y-1">
+                          {orgCategories.map(cat => {
+                            const isSelected = localCategoryIds.has(cat.id)
+                            return (
+                              <button
+                                key={cat.id}
+                                onClick={() => toggleCategory(cat.id)}
+                                className={cn(
+                                  "w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition-colors",
+                                  isSelected
+                                    ? "bg-primary/10 text-primary"
+                                    : "hover:bg-muted/60 text-foreground"
+                                )}
+                              >
+                                <span className="flex items-center gap-2.5">
+                                  {cat.icon && <span className="text-base leading-none">{cat.icon}</span>}
+                                  {cat.name}
+                                </span>
+                                {isSelected && <Check className="size-4 text-primary flex-shrink-0" />}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Cards */}
+                    {orgCards.length > 0 && (
+                      <div>
+                        <p className="text-xs font-medium text-muted-foreground mb-2 pl-1">Tarjetas</p>
+                        <div className="space-y-1">
+                          {orgCards.map(card => {
+                            const isSelected = localCardIds.has(card.id)
+                            return (
+                              <button
+                                key={card.id}
+                                onClick={() => toggleCard(card.id)}
+                                className={cn(
+                                  "w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition-colors",
+                                  isSelected
+                                    ? "bg-primary/10 text-primary"
+                                    : "hover:bg-muted/60 text-foreground"
+                                )}
+                              >
+                                <span className="flex items-center gap-2.5">
+                                  <CreditCard className="size-4" style={{ color: card.color || MAUVE }} />
+                                  {card.name}
+                                </span>
+                                {isSelected && <Check className="size-4 text-primary flex-shrink-0" />}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Actions */}
+            <div className="flex-shrink-0 flex gap-3 px-5 py-4 border-t border-border/50 pb-safe">
+              <button
+                onClick={clearAllFilters}
+                className="flex-1 h-12 rounded-xl bg-muted/50 text-muted-foreground font-medium active:scale-[0.98] transition-transform"
+              >
+                Limpiar
+              </button>
+              <button
+                onClick={applyFilters}
+                className="flex-1 h-12 rounded-xl bg-primary text-primary-foreground font-medium active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
+              >
+                {isPending ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  `Aplicar${localCategoryIds.size + localCardIds.size > 0 ? ` (${localCategoryIds.size + localCardIds.size})` : ""}`
+                )}
+              </button>
             </div>
           </div>
         </div>
