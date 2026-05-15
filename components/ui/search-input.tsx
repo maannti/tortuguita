@@ -1,8 +1,8 @@
 "use client"
 
-import { useEffect, useState, useRef } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
-import { Search, X } from "lucide-react"
+import { useState, useRef, useTransition, useEffect } from "react"
+import { useRouter, useSearchParams, usePathname } from "next/navigation"
+import { Search, X, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface SearchInputProps {
@@ -15,23 +15,30 @@ interface SearchInputProps {
 export function SearchInput({
   placeholder = "Buscar...",
   paramName = "search",
-  debounceMs = 300,
+  debounceMs = 400,
   className,
 }: SearchInputProps) {
   const router = useRouter()
+  const pathname = usePathname()
   const searchParams = useSearchParams()
-  const initialValue = searchParams.get(paramName) || ""
-  const [value, setValue] = useState(initialValue)
+  const [isPending, startTransition] = useTransition()
+
+  // Local state for immediate UI feedback
+  const [value, setValue] = useState(searchParams.get(paramName) || "")
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  // Sync with URL when it changes externally (e.g., browser back/forward)
+  // Track if we're the ones updating the URL (to avoid sync loop)
+  const isInternalUpdate = useRef(false)
+
+  // Sync with URL only for external changes (browser back/forward)
   useEffect(() => {
-    const urlValue = searchParams.get(paramName) || ""
-    if (urlValue !== value) {
-      setValue(urlValue)
+    if (isInternalUpdate.current) {
+      isInternalUpdate.current = false
+      return
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const urlValue = searchParams.get(paramName) || ""
+    setValue(urlValue)
   }, [searchParams, paramName])
 
   function updateURL(newValue: string) {
@@ -41,7 +48,11 @@ export function SearchInput({
     } else {
       params.delete(paramName)
     }
-    router.push(`?${params.toString()}`, { scroll: false })
+
+    isInternalUpdate.current = true
+    startTransition(() => {
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false })
+    })
   }
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -102,15 +113,19 @@ export function SearchInput({
           "transition-all"
         )}
       />
-      {value && (
-        <button
-          type="button"
-          onClick={handleClear}
-          className="absolute right-2 top-1/2 -translate-y-1/2 size-6 flex items-center justify-center rounded-full hover:bg-muted/50 active:scale-95 transition-all"
-        >
-          <X className="size-3.5 text-muted-foreground" />
-        </button>
-      )}
+      <div className="absolute right-2 top-1/2 -translate-y-1/2">
+        {isPending ? (
+          <Loader2 className="size-4 text-muted-foreground animate-spin" />
+        ) : value ? (
+          <button
+            type="button"
+            onClick={handleClear}
+            className="size-6 flex items-center justify-center rounded-full hover:bg-muted/50 active:scale-95 transition-all"
+          >
+            <X className="size-3.5 text-muted-foreground" />
+          </button>
+        ) : null}
+      </div>
     </div>
   )
 }
