@@ -209,46 +209,76 @@ export function HomeDashboard({ month, monthKey, availableMonths, spaces, curren
       {/* ── Content sections ── */}
       <div className="px-4 pt-3 space-y-5">
 
-        {/* Credit card groups — summary only, tappable → /cuotas */}
-        {creditCardGroups.map((group, i) => (
-          <section key={group.name} {...(i === 0 ? { "data-tour": "cc-groups" } : {})}>
-            <div className="flex items-center justify-between mb-2.5 px-1">
-              <div className="flex items-center gap-3">
-                <CardIcon
-                  bankId={BANKS.find(b => b.color === group.color)?.id ?? null}
-                  bankColor={group.color}
-                  bankName={group.name}
-                  network={isNetworkId(group.icon) ? group.icon as NetworkId : null}
-                  size="sm"
-                />
-                <h2 className="text-base font-medium text-foreground" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
-                  {group.name}
-                </h2>
-              </div>
-              <span className="text-sm font-medium text-muted-foreground">{formatARS(group.totalAmount)}</span>
+        {/* Credit cards — Apple Wallet style stack */}
+        {creditCardGroups.length > 0 && (
+          <section data-tour="cc-groups">
+            <div className="flex items-center justify-between mb-3 px-1">
+              <h2 className="text-base font-medium text-foreground" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
+                Tarjetas
+              </h2>
+              <span className="text-sm font-medium text-muted-foreground">
+                {formatARS(creditCardGroups.reduce((s, g) => s + g.totalAmount, 0))}
+              </span>
             </div>
-            {/* Tappable summary card → cuotas */}
-            <Link href="/cuotas" className="block glass rounded-2xl overflow-hidden active:opacity-80 transition-opacity">
-              {group.memberAmounts.length > 1 ? (
-                <div className="grid" style={{ gridTemplateColumns: `repeat(${group.memberAmounts.length}, 1fr)` }}>
-                  {group.memberAmounts.map((m) => (
-                    <div key={m.name} className="px-4 py-3.5 text-center border-r border-white/50 last:border-r-0">
-                      <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">{m.name.split(" ")[0]}</p>
-                      <p className="text-base font-medium mt-0.5" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
-                        {formatARS(m.amount)}
-                      </p>
+            <Link href="/cuotas" className="block">
+              <div
+                className="relative"
+                style={{ height: `${Math.min(creditCardGroups.length * 56 + 80, 220)}px` }}
+              >
+                {creditCardGroups.map((card, index) => (
+                  <div
+                    key={card.name}
+                    className="absolute left-0 right-0 rounded-2xl shadow-lg overflow-hidden transition-transform active:scale-[0.98]"
+                    style={{
+                      top: `${index * 56}px`,
+                      zIndex: creditCardGroups.length - index,
+                      background: `linear-gradient(135deg, ${card.color} 0%, ${card.color}cc 100%)`,
+                    }}
+                  >
+                    <div className="px-4 py-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-white/80 text-[11px] font-semibold uppercase tracking-wider truncate">
+                            {card.name}
+                          </p>
+                          <p
+                            className="text-white text-xl font-medium mt-0.5"
+                            style={{ fontFamily: "var(--font-fraunces, serif)" }}
+                          >
+                            {formatARS(card.totalAmount)}
+                          </p>
+                        </div>
+                        {/* Network icon */}
+                        {card.icon && isNetworkId(card.icon) && (
+                          <div className="opacity-90">
+                            <CardIcon
+                              bankId={null}
+                              bankColor="#ffffff"
+                              bankName={card.name}
+                              network={card.icon as NetworkId}
+                              size="sm"
+                            />
+                          </div>
+                        )}
+                      </div>
+                      {/* Member split if shared */}
+                      {card.memberAmounts.length > 1 && (
+                        <div className="flex gap-4 mt-2 pt-2 border-t border-white/20">
+                          {card.memberAmounts.map((m) => (
+                            <div key={m.name} className="text-white/90">
+                              <p className="text-[10px] font-medium opacity-70">{m.name.split(" ")[0]}</p>
+                              <p className="text-sm font-medium">{formatARS(m.amount)}</p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="flex items-center justify-between px-4 py-3.5">
-                  <span className="text-sm text-muted-foreground">Ver cuotas</span>
-                  <ChevronRight className="size-4 text-muted-foreground" />
-                </div>
-              )}
+                  </div>
+                ))}
+              </div>
             </Link>
           </section>
-        ))}
+        )}
 
         {/* Recent expenses — all bills (CC + non-CC) */}
         {recentExpenses.length > 0 && (
