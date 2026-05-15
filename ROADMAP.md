@@ -108,7 +108,7 @@ Patrón: ActionBar + Bottom Sheet
 ### 3. Resumen de Cuotas en Dashboard
 - **Estado:** `[ ]` Pendiente
 - **Prioridad:** Alta
-- **Esfuerzo estimado:** 1 día
+- **Esfuerzo estimado:** 1-2 días
 - **Impacto:** Visibilidad de deuda total de TC
 
 #### Descripción
@@ -124,6 +124,17 @@ El usuario no ve claramente cuánto le queda por pagar de compras en cuotas. Agr
 - Veo deuda total de cuotas en dashboard
 - Sé cuántas cuotas me quedan por pagar
 - Puedo ver el desglose por tarjeta
+
+#### Ideas de diseño (15 Mayo 2025)
+```
+HERO ESTILO APPLE WALLET para tarjetas:
+- Stack de tarjetas apiladas (como Apple Wallet)
+- Cada tarjeta con branding del banco (colores, logo)
+- Mostrar: nombre TC, deuda actual, cuotas restantes
+- Tap en tarjeta → expande/detalle
+- Referencias: NaranjaX, ICBC, BBVA, Ualá, Galicia, Santander
+- Inspiración: Fintech card UI con balance + últimos 4 dígitos
+```
 
 ---
 
