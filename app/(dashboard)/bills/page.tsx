@@ -7,7 +7,7 @@ import { BillsView } from "@/components/bills/bills-view"
 import { getUserOrganizations } from "@/lib/organization-utils"
 
 interface PageProps {
-  searchParams: Promise<{ month?: string; search?: string; categoryId?: string; cardId?: string }>
+  searchParams: Promise<{ month?: string; search?: string; categoryIds?: string; cardIds?: string }>
 }
 
 export default async function BillsPage({ searchParams }: PageProps) {
@@ -31,8 +31,8 @@ export default async function BillsPage({ searchParams }: PageProps) {
   const monthStart = startOfMonth(targetDate)
   const monthEnd = endOfMonth(targetDate)
   const searchQuery = params.search?.trim() || ""
-  const categoryIdFilter = params.categoryId || ""
-  const cardIdFilter = params.cardId || ""
+  const categoryIdFilters = params.categoryIds ? params.categoryIds.split(",").filter(Boolean) : []
+  const cardIdFilters = params.cardIds ? params.cardIds.split(",").filter(Boolean) : []
 
   const [allBills, bills, allBillTypes] = await Promise.all([
     prisma.bill.findMany({
@@ -52,37 +52,40 @@ export default async function BillsPage({ searchParams }: PageProps) {
             { category: { name: { contains: searchQuery, mode: "insensitive" } } },
           ],
         }),
-        // Category filter (applies to category or billType for non-CC)
-        ...(categoryIdFilter && {
+        // Category filter (applies to category or billType for non-CC) - multi-select
+        ...(categoryIdFilters.length > 0 && {
           OR: [
-            { categoryId: categoryIdFilter },
-            { billTypeId: categoryIdFilter, billType: { isCreditCard: false } },
+            { categoryId: { in: categoryIdFilters } },
+            { billTypeId: { in: categoryIdFilters }, billType: { isCreditCard: false } },
           ],
         }),
-        // Card filter (only CC bills)
-        ...(cardIdFilter && {
-          billTypeId: cardIdFilter,
+        // Card filter (only CC bills) - multi-select
+        ...(cardIdFilters.length > 0 && {
+          billTypeId: { in: cardIdFilters },
           billType: { isCreditCard: true },
         }),
       },
       include: { billType: true, category: true },
       orderBy: { budgetDate: "asc" },
     }),
-    // Get all bill types for filter options
+    // Get all bill types for filter options (include organizationId for grouping)
     prisma.billType.findMany({
       where: { organizationId: { in: orgIds } },
-      select: { id: true, name: true, color: true, icon: true, isCreditCard: true },
+      select: { id: true, name: true, color: true, icon: true, isCreditCard: true, organizationId: true },
       orderBy: { name: "asc" },
     }),
   ])
 
-  // Separate categories and cards for filter UI
+  // Separate categories and cards for filter UI (include organizationId for grouping)
   const availableCategories = allBillTypes
     .filter(bt => !bt.isCreditCard)
-    .map(bt => ({ id: bt.id, name: bt.name, color: bt.color || undefined, icon: bt.icon }))
+    .map(bt => ({ id: bt.id, name: bt.name, color: bt.color || undefined, icon: bt.icon, organizationId: bt.organizationId }))
   const availableCards = allBillTypes
     .filter(bt => bt.isCreditCard)
-    .map(bt => ({ id: bt.id, name: bt.name, color: bt.color || undefined, icon: bt.icon }))
+    .map(bt => ({ id: bt.id, name: bt.name, color: bt.color || undefined, icon: bt.icon, organizationId: bt.organizationId }))
+
+  // Prepare organizations for filter UI
+  const organizations = userOrgs.map(o => ({ id: o.id, name: o.name, isPersonal: o.isPersonal }))
 
   const monthSet = new Set<string>()
   for (const b of allBills) monthSet.add(format(new Date(b.budgetDate), "yyyy-MM"))
@@ -148,9 +151,10 @@ export default async function BillsPage({ searchParams }: PageProps) {
       grandTotal={grandTotal}
       hasAnyUSD={hasAnyUSD}
       searchQuery={searchQuery}
-      activeFilters={{ categoryId: categoryIdFilter || undefined, cardId: cardIdFilter || undefined }}
+      activeFilters={{ categoryIds: categoryIdFilters, cardIds: cardIdFilters }}
       availableCategories={availableCategories}
       availableCards={availableCards}
+      organizations={organizations}
     />
   )
 }
