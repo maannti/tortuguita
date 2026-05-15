@@ -127,13 +127,37 @@ El usuario no ve claramente cuánto le queda por pagar de compras en cuotas. Agr
 
 #### Ideas de diseño (15 Mayo 2025)
 ```
-HERO ESTILO APPLE WALLET para tarjetas:
-- Stack de tarjetas apiladas (como Apple Wallet)
-- Cada tarjeta con branding del banco (colores, logo)
-- Mostrar: nombre TC, deuda actual, cuotas restantes
-- Tap en tarjeta → expande/detalle
-- Referencias: NaranjaX, ICBC, BBVA, Ualá, Galicia, Santander
-- Inspiración: Fintech card UI con balance + últimos 4 dígitos
+REDISEÑO COMPLETO DE /cards — ESTILO APPLE WALLET
+
+Vista Stack (múltiples tarjetas):
+- Tarjetas apiladas mostrando ~40-50px cada una
+- Header visible: logo banco + nombre tarjeta
+- Tap en tarjeta → expande
+
+Vista Expandida (tarjeta seleccionada):
+- Tarjeta visual completa:
+  - Logo banco (PNG) esquina sup-izq
+  - Logo red (Visa/MC) esquina inf-der
+  - Gradiente con color del banco
+- Stats debajo de la tarjeta:
+  - Total del período (cierre a cierre)
+  - Fecha de cierre / vencimiento
+- Lista de gastos:
+  - Gastos nuevos del período
+  - Cuotas activas (con barras de progreso existentes)
+
+Monto a mostrar:
+- Total consumido en período actual (entre cierres)
+- = gastos cargados + cuotas de compras anteriores
+
+Assets necesarios:
+- [ ] PNG logos bancos: ICBC, Santander, BBVA, Galicia, etc.
+- [x] SVG logos redes: Visa, Mastercard (ya existen en card-network.tsx)
+
+Referencias:
+- Apple Wallet (tarjeta ICBC expandida)
+- Apple Pay (Apple Card con stats + transactions)
+- Monzo, Plum (cards fintech)
 ```
 
 ---
