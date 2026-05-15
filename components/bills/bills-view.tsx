@@ -134,112 +134,116 @@ export function BillsView({ month, monthKey, availableMonths, categoryGroups, gr
   return (
     <div className="pb-28">
       {/* Gradient header card */}
-      <div className="px-4 pt-5 pb-2">
+      <div className="px-4 pt-5">
         <div
-          className="relative rounded-3xl overflow-hidden"
+          className="relative rounded-3xl overflow-hidden px-5 py-4"
           style={{ background: "linear-gradient(135deg, #D8E2DC 0%, #FFE5D9 55%, #FFCAD4 100%)" }}
         >
           <div className="absolute -top-6 -right-6 size-32 rounded-full bg-white/20 blur-2xl pointer-events-none" />
 
-          {/* Search icon button - top right */}
-          {!searchOpen && (
+          {/* Normal header content */}
+          <div className="relative flex items-center justify-between">
+            <button onClick={() => prevMonth && router.push(`/bills?month=${prevMonth}`)} disabled={!prevMonth}
+              className="size-8 flex items-center justify-center rounded-full bg-white/40 backdrop-blur-sm disabled:opacity-30 active:scale-95 transition-all">
+              <ChevronLeft className="size-4 text-[#6B5159]" />
+            </button>
+            <div className="text-center space-y-0.5">
+              <button
+                onClick={() => setShowPicker(true)}
+                className="font-medium text-[#6B5159] px-3 py-1 rounded-full hover:bg-white/30 transition-colors active:scale-95"
+                style={{ fontFamily: "var(--font-fraunces, serif)", fontSize: "1.05rem" }}
+              >
+                {capitalize(month)}
+              </button>
+              {grandTotal > 0 && (
+                <p
+                  className="text-2xl font-medium text-[#4A3540] leading-tight"
+                  style={{ fontFamily: "var(--font-fraunces, serif)" }}
+                >
+                  {showUSD && grandTotalUSD !== null ? formatUSD(grandTotalUSD) : formatARS(grandTotal)}
+                </p>
+              )}
+              {/* ARS / USD toggle — only shown when there are USD bills */}
+              {hasAnyUSD && (
+                <div className="flex items-center justify-center pt-1">
+                  <div className="flex rounded-full bg-white/40 backdrop-blur-sm p-0.5">
+                    <button
+                      onClick={() => setShowUSD(false)}
+                      className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-all ${!showUSD ? "bg-white/80 text-[#4A3540] shadow-sm" : "text-[#9D8189]"}`}
+                    >
+                      ARS
+                    </button>
+                    <button
+                      onClick={() => setShowUSD(true)}
+                      className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-all ${showUSD ? "bg-white/80 text-[#4A3540] shadow-sm" : "text-[#9D8189]"}`}
+                    >
+                      USD
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+            <button onClick={() => nextMonth && router.push(`/bills?month=${nextMonth}`)} disabled={!nextMonth}
+              className="size-8 flex items-center justify-center rounded-full bg-white/40 backdrop-blur-sm disabled:opacity-30 active:scale-95 transition-all">
+              <ChevronRight className="size-4 text-[#6B5159]" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Search bar - extension of hero */}
+      <div className="px-4 -mt-3">
+        <div
+          className={cn(
+            "relative rounded-2xl overflow-hidden transition-all duration-300 ease-out",
+            searchOpen ? "h-14" : "h-11"
+          )}
+          style={{ background: "linear-gradient(135deg, #FFE5D9 0%, #FFCAD4 100%)" }}
+        >
+          {searchOpen ? (
+            /* Expanded search */
+            <div className="flex items-center gap-2 h-full px-3">
+              <Search className="size-4 text-[#9D8189] flex-shrink-0" />
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={searchValue}
+                onChange={handleSearchChange}
+                onKeyDown={handleSearchKeyDown}
+                placeholder="Buscar gastos..."
+                className={cn(
+                  "flex-1 h-9 px-3 rounded-xl bg-white/60",
+                  "text-sm text-[#4A3540] placeholder:text-[#9D8189]",
+                  "focus:outline-none focus:bg-white/80",
+                  "transition-all"
+                )}
+              />
+              {isPending ? (
+                <div className="size-8 flex items-center justify-center">
+                  <div className="size-4 border-2 border-[#9D8189]/30 border-t-[#9D8189] rounded-full animate-spin" />
+                </div>
+              ) : (
+                <button
+                  onClick={handleSearchClear}
+                  className="size-8 flex items-center justify-center rounded-full bg-white/40 active:scale-95 transition-all"
+                >
+                  <X className="size-4 text-[#6B5159]" />
+                </button>
+              )}
+            </div>
+          ) : (
+            /* Collapsed - just icon */
             <button
               onClick={() => setSearchOpen(true)}
-              className="absolute top-3 right-3 z-10 size-8 flex items-center justify-center rounded-full bg-white/40 backdrop-blur-sm active:scale-95 transition-all"
+              className="w-full h-full flex items-center justify-center gap-2 active:bg-white/10 transition-colors"
             >
-              <Search className="size-4 text-[#6B5159]" />
+              <Search className="size-4 text-[#9D8189]" />
+              <span className="text-sm text-[#9D8189]">Buscar gastos</span>
               {searchQuery && (
-                <span className="absolute -top-0.5 -right-0.5 size-2.5 rounded-full bg-primary" />
+                <span className="size-2 rounded-full bg-primary" />
               )}
             </button>
           )}
-
-          {/* Header content - switches between normal and search mode */}
-          <div className="relative px-5 py-4">
-            {searchOpen ? (
-              /* Search mode */
-              <div className="flex items-center gap-3 animate-in fade-in duration-200">
-                <div className="flex-1 relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-[#9D8189] pointer-events-none" />
-                  <input
-                    ref={searchInputRef}
-                    type="text"
-                    value={searchValue}
-                    onChange={handleSearchChange}
-                    onKeyDown={handleSearchKeyDown}
-                    placeholder="Buscar gastos..."
-                    className={cn(
-                      "w-full h-10 pl-10 pr-4 rounded-xl",
-                      "bg-white/70 backdrop-blur-sm",
-                      "border border-white/80",
-                      "text-sm text-[#4A3540] placeholder:text-[#9D8189]",
-                      "focus:outline-none focus:ring-2 focus:ring-white/50",
-                      "transition-all"
-                    )}
-                  />
-                  {isPending && (
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                      <div className="size-4 border-2 border-[#9D8189]/30 border-t-[#9D8189] rounded-full animate-spin" />
-                    </div>
-                  )}
-                </div>
-                <button
-                  onClick={handleSearchClear}
-                  className="size-10 flex items-center justify-center rounded-xl bg-white/50 backdrop-blur-sm active:scale-95 transition-all"
-                >
-                  <X className="size-5 text-[#6B5159]" />
-                </button>
-              </div>
-            ) : (
-              /* Normal mode */
-              <div className="flex items-center justify-between">
-                <button onClick={() => prevMonth && router.push(`/bills?month=${prevMonth}`)} disabled={!prevMonth}
-                  className="size-8 flex items-center justify-center rounded-full bg-white/40 backdrop-blur-sm disabled:opacity-30 active:scale-95 transition-all">
-                  <ChevronLeft className="size-4 text-[#6B5159]" />
-                </button>
-                <div className="text-center space-y-0.5">
-                  <button
-                    onClick={() => setShowPicker(true)}
-                    className="font-medium text-[#6B5159] px-3 py-1 rounded-full hover:bg-white/30 transition-colors active:scale-95"
-                    style={{ fontFamily: "var(--font-fraunces, serif)", fontSize: "1.05rem" }}
-                  >
-                    {capitalize(month)}
-                  </button>
-                  {grandTotal > 0 && (
-                    <p
-                      className="text-2xl font-medium text-[#4A3540] leading-tight"
-                      style={{ fontFamily: "var(--font-fraunces, serif)" }}
-                    >
-                      {showUSD && grandTotalUSD !== null ? formatUSD(grandTotalUSD) : formatARS(grandTotal)}
-                    </p>
-                  )}
-                  {/* ARS / USD toggle — only shown when there are USD bills */}
-                  {hasAnyUSD && (
-                    <div className="flex items-center justify-center pt-1">
-                      <div className="flex rounded-full bg-white/40 backdrop-blur-sm p-0.5">
-                        <button
-                          onClick={() => setShowUSD(false)}
-                          className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-all ${!showUSD ? "bg-white/80 text-[#4A3540] shadow-sm" : "text-[#9D8189]"}`}
-                        >
-                          ARS
-                        </button>
-                        <button
-                          onClick={() => setShowUSD(true)}
-                          className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-all ${showUSD ? "bg-white/80 text-[#4A3540] shadow-sm" : "text-[#9D8189]"}`}
-                        >
-                          USD
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-                <button onClick={() => nextMonth && router.push(`/bills?month=${nextMonth}`)} disabled={!nextMonth}
-                  className="size-8 flex items-center justify-center rounded-full bg-white/40 backdrop-blur-sm disabled:opacity-30 active:scale-95 transition-all">
-                  <ChevronRight className="size-4 text-[#6B5159]" />
-                </button>
-              </div>
-            )}
-          </div>
         </div>
       </div>
 
