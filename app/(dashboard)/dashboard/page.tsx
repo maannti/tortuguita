@@ -43,9 +43,9 @@ export default async function DashboardPage({ searchParams }: PageProps) {
     orderBy: { joinedAt: "asc" },
   })
 
-  // Parallel: available months + per-org data + onboarding + checklist
+  // Parallel: available months + per-org data + onboarding + checklist + cuotas debt
   const allOrgIds = userOrgs.map(uo => uo.organization.id)
-  const [availableMonths, allOrgData, userRecord, checklistRaw] = await Promise.all([
+  const [availableMonths, allOrgData, userRecord, checklistRaw, pendingCuotas] = await Promise.all([
     getAvailableMonths(userId),
     Promise.all(userOrgs.map(uo => Promise.all([
       prisma.bill.findMany({
@@ -69,6 +69,16 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       prisma.billType.count({ where: { organizationId: { in: allOrgIds }, isCreditCard: true } }),
       prisma.bill.count({ where: { userId, externalRef: { not: null } } }),
     ]),
+    // Pending cuotas: future installment bills grouped by card
+    prisma.bill.findMany({
+      where: {
+        organizationId: { in: allOrgIds },
+        totalInstallments: { gt: 1 },
+        budgetDate: { gte: now },
+        billType: { isCreditCard: true },
+      },
+      include: { billType: { select: { id: true, name: true, color: true, icon: true } } },
+    }),
   ])
 
   // Build SpaceData per org
@@ -138,6 +148,25 @@ export default async function DashboardPage({ searchParams }: PageProps) {
     hasImportedBill: importedBillCount > 0,
   }
 
+  // Process pending cuotas into card debt summary
+  const cardDebtMap = new Map<string, { name: string; color: string; icon: string | null; totalDebt: number; remainingCuotas: number }>()
+  for (const bill of pendingCuotas) {
+    const cardId = bill.billType.id
+    if (!cardDebtMap.has(cardId)) {
+      cardDebtMap.set(cardId, {
+        name: bill.billType.name,
+        color: bill.billType.color || "#6b7280",
+        icon: bill.billType.icon,
+        totalDebt: 0,
+        remainingCuotas: 0,
+      })
+    }
+    const entry = cardDebtMap.get(cardId)!
+    entry.totalDebt += Number(bill.amount)
+    entry.remainingCuotas += 1
+  }
+  const cardDebtSummary = Array.from(cardDebtMap.values()).sort((a, b) => b.totalDebt - a.totalDebt)
+
   return (
     <HomeDashboard
       month={format(monthStart, "MMMM yyyy", { locale: es })}
@@ -147,6 +176,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       currentUserId={userId}
       showOnboarding={showOnboarding}
       checklistData={checklistData}
+      cardDebtSummary={cardDebtSummary}
     />
   )
 }
