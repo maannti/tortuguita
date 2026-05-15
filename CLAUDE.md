@@ -1,5 +1,15 @@
 # tortuguita-v2 — Referencia rápida para Claude
 
+## 🚀 Al iniciar cada sesión
+
+**Leer primero:** [`ROADMAP.md`](./ROADMAP.md) — contiene:
+- Checklist de mejoras con estado actual
+- Plan detallado de cada feature
+- Log de sesiones anteriores
+- Decisiones pendientes
+
+---
+
 ## Stack
 
 | Tecnología | Versión | Uso |
