@@ -14,12 +14,27 @@ interface BillItem {
 interface CategoryGroup {
   name: string; color: string; icon: string | null; total: number; totalUSD: number | null; bills: BillItem[]
 }
+interface FilterOption {
+  id: string
+  name: string
+  color?: string
+  icon?: string | null
+}
+
+interface ActiveFilters {
+  categoryId?: string
+  cardId?: string
+}
+
 interface Props {
   month: string; monthKey: string; availableMonths: string[]
   categoryGroups: CategoryGroup[]
   grandTotal: number
   hasAnyUSD: boolean
   searchQuery?: string
+  activeFilters?: ActiveFilters
+  availableCategories?: FilterOption[]
+  availableCards?: FilterOption[]
 }
 
 const arsFormatter = new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", minimumFractionDigits: 0, maximumFractionDigits: 2 })
@@ -28,7 +43,10 @@ function formatARS(n: number) { return arsFormatter.format(n) }
 function formatUSD(n: number) { return usdFormatter.format(n) }
 function capitalize(s: string) { return s.charAt(0).toUpperCase() + s.slice(1) }
 
-export function BillsView({ month, monthKey, availableMonths, categoryGroups, grandTotal, hasAnyUSD, searchQuery = "" }: Props) {
+export function BillsView({
+  month, monthKey, availableMonths, categoryGroups, grandTotal, hasAnyUSD,
+  searchQuery = "", activeFilters = {}, availableCategories = [], availableCards = []
+}: Props) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -39,60 +57,68 @@ export function BillsView({ month, monthKey, availableMonths, categoryGroups, gr
   const [usdRate, setUsdRate] = useState<number | null>(null)
   const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set())
 
-  // Search state
-  const [searchOpen, setSearchOpen] = useState(!!searchQuery)
-  const [searchValue, setSearchValue] = useState(searchQuery)
+  // Search & Filter sheet state
+  const [searchOpen, setSearchOpen] = useState(false)
+  const [localSearch, setLocalSearch] = useState(searchQuery)
+  const [localFilters, setLocalFilters] = useState<ActiveFilters>(activeFilters)
   const searchInputRef = useRef<HTMLInputElement>(null)
-  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
-  // Focus input when search opens
+  const hasActiveFilters = !!(activeFilters.categoryId || activeFilters.cardId)
+
+  // Sync local state when props change
+  useEffect(() => {
+    setLocalSearch(searchQuery)
+    setLocalFilters(activeFilters)
+  }, [searchQuery, activeFilters])
+
+  // Focus input when sheet opens
   useEffect(() => {
     if (searchOpen && searchInputRef.current) {
-      searchInputRef.current.focus()
+      setTimeout(() => searchInputRef.current?.focus(), 100)
     }
   }, [searchOpen])
 
-  // Sync search value with URL
-  useEffect(() => {
-    setSearchValue(searchQuery)
-    if (searchQuery) setSearchOpen(true)
-  }, [searchQuery])
-
-  function updateSearchURL(value: string) {
+  function applyFilters() {
     const params = new URLSearchParams(searchParams.toString())
-    if (value.trim()) {
-      params.set("search", value.trim())
+
+    // Search
+    if (localSearch.trim()) {
+      params.set("search", localSearch.trim())
     } else {
       params.delete("search")
     }
+
+    // Category filter
+    if (localFilters.categoryId) {
+      params.set("categoryId", localFilters.categoryId)
+    } else {
+      params.delete("categoryId")
+    }
+
+    // Card filter
+    if (localFilters.cardId) {
+      params.set("cardId", localFilters.cardId)
+    } else {
+      params.delete("cardId")
+    }
+
     startTransition(() => {
       router.replace(`${pathname}?${params.toString()}`, { scroll: false })
     })
-  }
-
-  function handleSearchChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const value = e.target.value
-    setSearchValue(value)
-
-    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current)
-    searchTimeoutRef.current = setTimeout(() => updateSearchURL(value), 400)
-  }
-
-  function handleSearchClear() {
-    setSearchValue("")
-    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current)
-    updateSearchURL("")
     setSearchOpen(false)
   }
 
-  function handleSearchKeyDown(e: React.KeyboardEvent) {
-    if (e.key === "Escape") {
-      if (searchValue) {
-        handleSearchClear()
-      } else {
-        setSearchOpen(false)
-      }
-    }
+  function clearAllFilters() {
+    setLocalSearch("")
+    setLocalFilters({})
+    const params = new URLSearchParams(searchParams.toString())
+    params.delete("search")
+    params.delete("categoryId")
+    params.delete("cardId")
+    startTransition(() => {
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false })
+    })
+    setSearchOpen(false)
   }
 
   const currentIndex = availableMonths.indexOf(monthKey)
@@ -191,60 +217,27 @@ export function BillsView({ month, monthKey, availableMonths, categoryGroups, gr
         </div>
       </div>
 
-      {/* Search bar - extension of hero */}
-      <div className="px-4 -mt-3">
-        <div
+      {/* Search & Filter button */}
+      <div className="px-4 pt-3 pb-1">
+        <button
+          onClick={() => setSearchOpen(true)}
           className={cn(
-            "relative rounded-2xl overflow-hidden transition-all duration-300 ease-out",
-            searchOpen ? "h-14" : "h-11"
+            "flex items-center gap-2 px-4 py-2.5 rounded-full",
+            "bg-white/60 backdrop-blur-sm border border-white/80",
+            "active:scale-[0.98] transition-all",
+            (searchQuery || hasActiveFilters) && "ring-2 ring-primary/20"
           )}
-          style={{ background: "linear-gradient(135deg, #FFE5D9 0%, #FFCAD4 100%)" }}
         >
-          {searchOpen ? (
-            /* Expanded search */
-            <div className="flex items-center gap-2 h-full px-3">
-              <Search className="size-4 text-[#9D8189] flex-shrink-0" />
-              <input
-                ref={searchInputRef}
-                type="text"
-                value={searchValue}
-                onChange={handleSearchChange}
-                onKeyDown={handleSearchKeyDown}
-                placeholder="Buscar gastos..."
-                className={cn(
-                  "flex-1 h-9 px-3 rounded-xl bg-white/60",
-                  "text-sm text-[#4A3540] placeholder:text-[#9D8189]",
-                  "focus:outline-none focus:bg-white/80",
-                  "transition-all"
-                )}
-              />
-              {isPending ? (
-                <div className="size-8 flex items-center justify-center">
-                  <div className="size-4 border-2 border-[#9D8189]/30 border-t-[#9D8189] rounded-full animate-spin" />
-                </div>
-              ) : (
-                <button
-                  onClick={handleSearchClear}
-                  className="size-8 flex items-center justify-center rounded-full bg-white/40 active:scale-95 transition-all"
-                >
-                  <X className="size-4 text-[#6B5159]" />
-                </button>
-              )}
-            </div>
+          <Search className="size-4 text-[#9D8189]" />
+          {searchQuery ? (
+            <span className="text-sm text-[#4A3540]">"{searchQuery}"</span>
           ) : (
-            /* Collapsed - just icon */
-            <button
-              onClick={() => setSearchOpen(true)}
-              className="w-full h-full flex items-center justify-center gap-2 active:bg-white/10 transition-colors"
-            >
-              <Search className="size-4 text-[#9D8189]" />
-              <span className="text-sm text-[#9D8189]">Buscar gastos</span>
-              {searchQuery && (
-                <span className="size-2 rounded-full bg-primary" />
-              )}
-            </button>
+            <span className="text-sm text-[#9D8189]">Buscar y filtrar</span>
           )}
-        </div>
+          {(searchQuery || hasActiveFilters) && (
+            <span className="size-2 rounded-full bg-primary ml-1" />
+          )}
+        </button>
       </div>
 
       <div className="px-4 pt-4 space-y-5">
@@ -336,13 +329,26 @@ export function BillsView({ month, monthKey, availableMonths, categoryGroups, gr
             )
           })
         ) : (
-          /* Empty state - different for search vs no bills */
+          /* Empty state - different for search/filters vs no bills */
           <div className="flex flex-col items-center justify-center py-16 text-center">
-            {searchQuery ? (
+            {searchQuery || hasActiveFilters ? (
               <>
                 <div className="text-5xl mb-4">🔍</div>
                 <p className="text-lg font-medium mb-1" style={{ fontFamily: "var(--font-fraunces, serif)" }}>Sin resultados</p>
-                <p className="text-sm text-muted-foreground">No encontramos gastos con "{searchQuery}"</p>
+                <p className="text-sm text-muted-foreground mb-4">
+                  {searchQuery && hasActiveFilters
+                    ? `No encontramos gastos con "${searchQuery}" y los filtros aplicados`
+                    : searchQuery
+                      ? `No encontramos gastos con "${searchQuery}"`
+                      : "No encontramos gastos con los filtros aplicados"
+                  }
+                </p>
+                <button
+                  onClick={clearAllFilters}
+                  className="text-sm text-primary font-medium active:scale-95 transition-transform"
+                >
+                  Limpiar filtros
+                </button>
               </>
             ) : (
               <>
@@ -370,6 +376,141 @@ export function BillsView({ month, monthKey, availableMonths, categoryGroups, gr
           onSelect={(key) => router.push(`/bills?month=${key}`)}
           onClose={() => setShowPicker(false)}
         />
+      )}
+
+      {/* Search & Filter Sheet */}
+      {searchOpen && (
+        <div className="fixed inset-0 z-50">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={() => setSearchOpen(false)}
+          />
+
+          {/* Sheet */}
+          <div className="absolute bottom-0 left-0 right-0 bg-background rounded-t-3xl shadow-xl animate-slide-up">
+            <div className="p-4 space-y-4">
+              {/* Handle */}
+              <div className="flex justify-center">
+                <div className="w-10 h-1 rounded-full bg-muted" />
+              </div>
+
+              {/* Title */}
+              <h2 className="text-lg font-medium" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
+                Buscar y filtrar
+              </h2>
+
+              {/* Search input */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  value={localSearch}
+                  onChange={(e) => setLocalSearch(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && applyFilters()}
+                  placeholder="Buscar por nombre, notas..."
+                  className={cn(
+                    "w-full h-12 pl-10 pr-4 rounded-xl",
+                    "bg-muted/50 border border-border",
+                    "text-sm placeholder:text-muted-foreground",
+                    "focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  )}
+                />
+              </div>
+
+              {/* Category filter */}
+              {availableCategories.length > 0 && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-muted-foreground">Categoría</label>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={() => setLocalFilters(f => ({ ...f, categoryId: undefined }))}
+                      className={cn(
+                        "px-3 py-1.5 rounded-full text-sm transition-all",
+                        !localFilters.categoryId
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted/50 text-muted-foreground hover:bg-muted"
+                      )}
+                    >
+                      Todas
+                    </button>
+                    {availableCategories.map(cat => (
+                      <button
+                        key={cat.id}
+                        onClick={() => setLocalFilters(f => ({ ...f, categoryId: cat.id }))}
+                        className={cn(
+                          "px-3 py-1.5 rounded-full text-sm transition-all flex items-center gap-1.5",
+                          localFilters.categoryId === cat.id
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-muted/50 text-muted-foreground hover:bg-muted"
+                        )}
+                      >
+                        {cat.icon && <span className="text-xs">{cat.icon}</span>}
+                        {cat.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Card filter */}
+              {availableCards.length > 0 && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-muted-foreground">Tarjeta</label>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={() => setLocalFilters(f => ({ ...f, cardId: undefined }))}
+                      className={cn(
+                        "px-3 py-1.5 rounded-full text-sm transition-all",
+                        !localFilters.cardId
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted/50 text-muted-foreground hover:bg-muted"
+                      )}
+                    >
+                      Todas
+                    </button>
+                    {availableCards.map(card => (
+                      <button
+                        key={card.id}
+                        onClick={() => setLocalFilters(f => ({ ...f, cardId: card.id }))}
+                        className={cn(
+                          "px-3 py-1.5 rounded-full text-sm transition-all flex items-center gap-1.5",
+                          localFilters.cardId === card.id
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-muted/50 text-muted-foreground hover:bg-muted"
+                        )}
+                      >
+                        <CreditCard className="size-3" />
+                        {card.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="flex gap-3 pt-2 pb-safe">
+                <button
+                  onClick={clearAllFilters}
+                  className="flex-1 h-12 rounded-xl bg-muted/50 text-muted-foreground font-medium active:scale-[0.98] transition-transform"
+                >
+                  Limpiar
+                </button>
+                <button
+                  onClick={applyFilters}
+                  className="flex-1 h-12 rounded-xl bg-primary text-primary-foreground font-medium active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
+                >
+                  {isPending ? (
+                    <div className="size-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                  ) : (
+                    "Aplicar"
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
