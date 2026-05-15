@@ -303,17 +303,15 @@ export function BillsView({
                 placeholder="Buscar gastos..."
                 className="flex-1 bg-transparent text-sm text-[#4A3540] placeholder:text-[#9D8189] focus:outline-none"
               />
-              {isPending ? (
-                <Loader2 className="size-4 text-[#9D8189] animate-spin flex-shrink-0" />
-              ) : localSearch ? (
-                <button onClick={clearSearch} className="p-1 rounded-full hover:bg-white/30 active:scale-95 transition-all">
-                  <X className="size-4 text-[#6B5159]" />
-                </button>
-              ) : (
-                <button onClick={() => setSearchExpanded(false)} className="p-1 rounded-full hover:bg-white/30 active:scale-95 transition-all">
-                  <X className="size-4 text-[#6B5159]" />
-                </button>
-              )}
+              <div className="size-6 flex items-center justify-center flex-shrink-0">
+                {isPending ? (
+                  <Loader2 className="size-4 text-[#9D8189] animate-spin" />
+                ) : (
+                  <button onClick={localSearch ? clearSearch : () => setSearchExpanded(false)} className="size-6 flex items-center justify-center rounded-full hover:bg-white/30 active:scale-95 transition-all">
+                    <X className="size-4 text-[#6B5159]" />
+                  </button>
+                )}
+              </div>
             </div>
           ) : (
             /* Collapsed ActionBar with two buttons */
