@@ -209,8 +209,8 @@ export function HomeDashboard({ month, monthKey, availableMonths, spaces, curren
       {/* ── Content sections ── */}
       <div className="px-4 pt-3 space-y-5">
 
-        {/* Credit cards — Apple Wallet style stack */}
-        {creditCardGroups.length > 0 && (
+        {/* Credit cards — Apple Wallet style stack (WIP - hidden for now) */}
+        {false && creditCardGroups.length > 0 && (
           <section data-tour="cc-groups">
             <div className="flex items-center justify-between mb-3 px-1">
               <h2 className="text-base font-medium text-foreground" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
