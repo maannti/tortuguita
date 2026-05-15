@@ -7,7 +7,7 @@ import { BillsView } from "@/components/bills/bills-view"
 import { getUserOrganizations } from "@/lib/organization-utils"
 
 interface PageProps {
-  searchParams: Promise<{ month?: string; search?: string }>
+  searchParams: Promise<{ month?: string; search?: string; categoryId?: string; cardId?: string }>
 }
 
 export default async function BillsPage({ searchParams }: PageProps) {
@@ -31,8 +31,10 @@ export default async function BillsPage({ searchParams }: PageProps) {
   const monthStart = startOfMonth(targetDate)
   const monthEnd = endOfMonth(targetDate)
   const searchQuery = params.search?.trim() || ""
+  const categoryIdFilter = params.categoryId || ""
+  const cardIdFilter = params.cardId || ""
 
-  const [allBills, bills] = await Promise.all([
+  const [allBills, bills, allBillTypes] = await Promise.all([
     prisma.bill.findMany({
       where: { organizationId: { in: orgIds } },
       select: { budgetDate: true },
@@ -41,6 +43,7 @@ export default async function BillsPage({ searchParams }: PageProps) {
       where: {
         organizationId: { in: orgIds },
         budgetDate: { gte: monthStart, lte: monthEnd },
+        // Search filter
         ...(searchQuery && {
           OR: [
             { label: { contains: searchQuery, mode: "insensitive" } },
@@ -49,11 +52,37 @@ export default async function BillsPage({ searchParams }: PageProps) {
             { category: { name: { contains: searchQuery, mode: "insensitive" } } },
           ],
         }),
+        // Category filter (applies to category or billType for non-CC)
+        ...(categoryIdFilter && {
+          OR: [
+            { categoryId: categoryIdFilter },
+            { billTypeId: categoryIdFilter, billType: { isCreditCard: false } },
+          ],
+        }),
+        // Card filter (only CC bills)
+        ...(cardIdFilter && {
+          billTypeId: cardIdFilter,
+          billType: { isCreditCard: true },
+        }),
       },
       include: { billType: true, category: true },
       orderBy: { budgetDate: "asc" },
     }),
+    // Get all bill types for filter options
+    prisma.billType.findMany({
+      where: { organizationId: { in: orgIds } },
+      select: { id: true, name: true, color: true, icon: true, isCreditCard: true },
+      orderBy: { name: "asc" },
+    }),
   ])
+
+  // Separate categories and cards for filter UI
+  const availableCategories = allBillTypes
+    .filter(bt => !bt.isCreditCard)
+    .map(bt => ({ id: bt.id, name: bt.name, color: bt.color || undefined, icon: bt.icon }))
+  const availableCards = allBillTypes
+    .filter(bt => bt.isCreditCard)
+    .map(bt => ({ id: bt.id, name: bt.name, color: bt.color || undefined, icon: bt.icon }))
 
   const monthSet = new Set<string>()
   for (const b of allBills) monthSet.add(format(new Date(b.budgetDate), "yyyy-MM"))
@@ -119,6 +148,9 @@ export default async function BillsPage({ searchParams }: PageProps) {
       grandTotal={grandTotal}
       hasAnyUSD={hasAnyUSD}
       searchQuery={searchQuery}
+      activeFilters={{ categoryId: categoryIdFilter || undefined, cardId: cardIdFilter || undefined }}
+      availableCategories={availableCategories}
+      availableCards={availableCards}
     />
   )
 }
