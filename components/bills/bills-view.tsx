@@ -236,7 +236,12 @@ export function BillsView({
 
           {/* Normal header content */}
           <div className="relative flex items-center justify-between">
-            <button onClick={() => prevMonth && router.push(`/bills?month=${prevMonth}`)} disabled={!prevMonth}
+            <button onClick={() => {
+              if (!prevMonth) return
+              const params = new URLSearchParams(searchParams.toString())
+              params.set("month", prevMonth)
+              router.push(`/bills?${params.toString()}`)
+            }} disabled={!prevMonth}
               className="size-8 flex items-center justify-center rounded-full bg-white/40 backdrop-blur-sm disabled:opacity-30 active:scale-95 transition-all">
               <ChevronLeft className="size-4 text-[#6B5159]" />
             </button>
@@ -276,7 +281,12 @@ export function BillsView({
                 </div>
               )}
             </div>
-            <button onClick={() => nextMonth && router.push(`/bills?month=${nextMonth}`)} disabled={!nextMonth}
+            <button onClick={() => {
+              if (!nextMonth) return
+              const params = new URLSearchParams(searchParams.toString())
+              params.set("month", nextMonth)
+              router.push(`/bills?${params.toString()}`)
+            }} disabled={!nextMonth}
               className="size-8 flex items-center justify-center rounded-full bg-white/40 backdrop-blur-sm disabled:opacity-30 active:scale-95 transition-all">
               <ChevronRight className="size-4 text-[#6B5159]" />
             </button>
@@ -484,7 +494,11 @@ export function BillsView({
       {showPicker && (
         <MonthPicker
           currentMonthKey={monthKey}
-          onSelect={(key) => router.push(`/bills?month=${key}`)}
+          onSelect={(key) => {
+            const params = new URLSearchParams(searchParams.toString())
+            params.set("month", key)
+            router.push(`/bills?${params.toString()}`)
+          }}
           onClose={() => setShowPicker(false)}
         />
       )}
