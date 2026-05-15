@@ -43,9 +43,6 @@ export default async function DashboardPage({ searchParams }: PageProps) {
     orderBy: { joinedAt: "asc" },
   })
 
-  const TEST_EMAILS = ["santimarcos8@gmail.com"]
-  const isTestUser = !!(session.user.email && TEST_EMAILS.includes(session.user.email))
-
   // Parallel: available months + per-org data + onboarding + checklist
   const allOrgIds = userOrgs.map(uo => uo.organization.id)
   const [availableMonths, allOrgData, userRecord, checklistRaw] = await Promise.all([
@@ -132,7 +129,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
     }
   })
 
-  const showOnboarding = isTestUser || !userRecord?.onboardingSeenAt
+  const showOnboarding = !userRecord?.onboardingSeenAt
   const [billCount, extraMemberCount, creditCardCount, importedBillCount] = checklistRaw
   const checklistData = {
     hasBills: billCount > 0,
