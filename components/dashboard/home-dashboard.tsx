@@ -223,26 +223,26 @@ export function HomeDashboard({ month, monthKey, availableMonths, spaces, curren
             <Link href="/cuotas" className="block">
               <div
                 className="relative"
-                style={{ height: `${Math.min(creditCardGroups.length * 56 + 80, 220)}px` }}
+                style={{ height: `${(creditCardGroups.length - 1) * 48 + 100}px` }}
               >
                 {creditCardGroups.map((card, index) => (
                   <div
                     key={card.name}
-                    className="absolute left-0 right-0 rounded-2xl shadow-lg overflow-hidden transition-transform active:scale-[0.98]"
+                    className="absolute left-0 right-0 rounded-2xl shadow-lg overflow-hidden"
                     style={{
-                      top: `${index * 56}px`,
+                      top: `${index * 48}px`,
                       zIndex: creditCardGroups.length - index,
-                      background: `linear-gradient(135deg, ${card.color} 0%, ${card.color}cc 100%)`,
+                      background: `linear-gradient(145deg, ${card.color} 0%, ${card.color}dd 100%)`,
                     }}
                   >
-                    <div className="px-4 py-4">
+                    <div className="px-4 py-3.5 min-h-[100px]">
                       <div className="flex items-start justify-between">
                         <div className="flex-1 min-w-0">
-                          <p className="text-white/80 text-[11px] font-semibold uppercase tracking-wider truncate">
+                          <p className="text-white/90 text-[11px] font-semibold uppercase tracking-wider truncate">
                             {card.name}
                           </p>
                           <p
-                            className="text-white text-xl font-medium mt-0.5"
+                            className="text-white text-2xl font-medium mt-1"
                             style={{ fontFamily: "var(--font-fraunces, serif)" }}
                           >
                             {formatARS(card.totalAmount)}
@@ -250,7 +250,7 @@ export function HomeDashboard({ month, monthKey, availableMonths, spaces, curren
                         </div>
                         {/* Network icon */}
                         {card.icon && isNetworkId(card.icon) && (
-                          <div className="opacity-90">
+                          <div className="opacity-80">
                             <CardIcon
                               bankId={null}
                               bankColor="#ffffff"
@@ -261,17 +261,6 @@ export function HomeDashboard({ month, monthKey, availableMonths, spaces, curren
                           </div>
                         )}
                       </div>
-                      {/* Member split if shared */}
-                      {card.memberAmounts.length > 1 && (
-                        <div className="flex gap-4 mt-2 pt-2 border-t border-white/20">
-                          {card.memberAmounts.map((m) => (
-                            <div key={m.name} className="text-white/90">
-                              <p className="text-[10px] font-medium opacity-70">{m.name.split(" ")[0]}</p>
-                              <p className="text-sm font-medium">{formatARS(m.amount)}</p>
-                            </div>
-                          ))}
-                        </div>
-                      )}
                     </div>
                   </div>
                 ))}
