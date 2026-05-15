@@ -9,7 +9,7 @@
 
 | Fase | Progreso | Próximo paso |
 |------|----------|--------------|
-| **Alta Prioridad** | 1/5 completados | Filtros en /bills |
+| **Alta Prioridad** | 2/5 completados | Resumen de Cuotas |
 | **Media Prioridad** | 0/7 completados | — |
 | **Baja Prioridad** | 0/6 completados | — |
 
@@ -59,38 +59,49 @@ Patrón usado: URL params + Server Component (Next.js App Router pattern)
 ---
 
 ### 2. Filtros en /bills
-- **Estado:** `[ ]` Pendiente
+- **Estado:** `[x]` ✅ Completado (15 Mayo 2025)
 - **Prioridad:** Alta
-- **Esfuerzo estimado:** 1-2 días
+- **Esfuerzo real:** ~1 hora
 - **Impacto:** Reduce fricción diaria
 
 #### Descripción
-Permitir filtrar gastos por: categoría, tarjeta de crédito, rango de monto, miembro asignado. Los filtros deben ser combinables.
+Permitir filtrar gastos por: categoría, tarjeta de crédito. Los filtros deben ser combinables (multi-select).
 
-#### Archivos a modificar/crear
-- `app/(dashboard)/bills/page.tsx` — UI de filtros
-- `components/bills/filter-sheet.tsx` — (nuevo) bottom sheet con filtros
-- `app/api/bills/route.ts` — agregar query params de filtro
-- `lib/validations/bill.ts` — schema para filtros
+#### Archivos modificados
+- `app/(dashboard)/bills/page.tsx` — query params `categoryIds`, `cardIds` (multi-select)
+- `components/bills/bills-view.tsx` — ActionBar + FilterSheet integrados
 
-#### Plan de implementación
-1. [ ] Diseñar UI de filtros (chips + bottom sheet para móvil)
-2. [ ] Agregar query params en API: `?categoryId=`, `?cardId=`, `?minAmount=`, `?maxAmount=`, `?memberId=`
-3. [ ] Crear `FilterSheet` component con Radix Sheet
-4. [ ] Chips de filtros activos debajo del mes
-5. [ ] "Limpiar filtros" action
-6. [ ] Persistir filtros en URL para compartir/bookmarks
+#### Implementación final
+1. [x] **ActionBar** debajo del hero con colores de gradiente
+2. [x] Botón "Buscar" que se expande inline con búsqueda en tiempo real
+3. [x] Botón "Filtros" que abre bottom sheet
+4. [x] **FilterSheet** con multi-select agrupado por espacio (Personal/Casa)
+5. [x] Categorías y Tarjetas separadas dentro de cada espacio
+6. [x] URL params `?categoryIds=a,b&cardIds=c,d` para multi-select
+7. [x] Botones Limpiar/Aplicar en el sheet
 
 #### Criterios de éxito
-- Puedo filtrar por categoría
-- Puedo filtrar por TC específica
-- Puedo combinar filtros (categoría + TC)
-- Los filtros persisten al navegar
+- ✅ Puedo filtrar por múltiples categorías
+- ✅ Puedo filtrar por múltiples TCs
+- ✅ Puedo combinar filtros (categorías + TCs)
+- ✅ Los filtros persisten en URL
+- ✅ El total del hero se actualiza en vivo con búsqueda
 
 #### Notas de implementación
 ```
-(agregar notas durante desarrollo)
+Patrón: ActionBar + Bottom Sheet
+- ActionBar usa mismos colores del hero (gradiente pastel)
+- Búsqueda se expande inline en la ActionBar (no abre sheet)
+- Búsqueda usa debounce 300ms + useTransition para updates no-blocking
+- FilterSheet agrupa por organización (como el resumen-importer)
+- Multi-select con checkmarks (Set<string> para tracking)
 ```
+
+#### Pendiente evaluar
+- [ ] **Secciones colapsables en FilterSheet**: Se discutió agregar flechitas para colapsar
+      categorías por espacio. Decisión: NO implementar por ahora. El filtro debe mostrar
+      todas las opciones de un vistazo. Evaluar después de unos días de uso si realmente
+      hace falta.
 
 ---
 
@@ -443,6 +454,17 @@ Permitir agregar gastos offline y sincronizar cuando vuelva la conexión.
 ---
 
 ## Log de Sesiones
+
+### Sesión: 15 Mayo 2025 (parte 3)
+- **Duración:** ~1 hora
+- **Trabajo realizado:**
+  - ✅ Implementado **2. Filtros en /bills** con ActionBar
+  - ActionBar con gradiente del hero (Buscar | Filtros)
+  - Búsqueda se expande inline con updates en tiempo real
+  - FilterSheet con multi-select agrupado por espacio
+  - Discusión sobre secciones colapsables → decisión: NO (evaluar después de uso)
+- **Archivos modificados:** `app/(dashboard)/bills/page.tsx`, `components/bills/bills-view.tsx`
+- **Próxima sesión:** **3. Resumen de Cuotas en Dashboard** o ajustes según feedback
 
 ### Sesión: 15 Mayo 2025 (parte 2)
 - **Duración:** ~30 minutos
