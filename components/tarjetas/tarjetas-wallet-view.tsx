@@ -233,6 +233,14 @@ function getBankColor(bankId: string | null): string | null {
   return BANK_COLORS[bankId.toLowerCase()] || null
 }
 
+function pastelify(hex: string, factor = 0.45): string {
+  const r = parseInt(hex.slice(1, 3), 16)
+  const g = parseInt(hex.slice(3, 5), 16)
+  const b = parseInt(hex.slice(5, 7), 16)
+  const mix = (c: number) => Math.round(c + (255 - c) * factor).toString(16).padStart(2, "0")
+  return `#${mix(r)}${mix(g)}${mix(b)}`
+}
+
 function needsWhiteLogo(bankId: string | null): boolean {
   if (!bankId) return false
   return BANKS_NEED_WHITE.includes(bankId.toLowerCase())
@@ -260,7 +268,7 @@ function CardVisual({ card, isExpanded, onClick, style }: {
   const networkLogo = getNetworkLogo(card.typeIcon)
   // Use bank reference color if available, otherwise keep original typeColor
   const bankRefColor = getBankColor(card.typeBank)
-  const cardColor = bankRefColor || card.typeColor
+  const cardColor = pastelify(bankRefColor || card.typeColor)
 
   // Darken color slightly for gradient end
   const darkerColor = cardColor + "cc"
@@ -413,6 +421,7 @@ export function TarjetasWalletView({ cards, monthLabel, monthKey, prevMonth, nex
       {/* Header */}
       <div className="px-4 pt-5 pb-2">
         <div
+          data-tour="tarjetas-header"
           className="relative rounded-3xl overflow-hidden px-5 py-4"
           style={{ background: "linear-gradient(135deg, #D8E2DC 0%, #FFE5D9 55%, #FFCAD4 100%)" }}
         >
