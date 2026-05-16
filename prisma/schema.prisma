@@ -130,7 +130,8 @@ model BillType {
   name               String
   description        String?
   color              String?
-  icon               String?
+  icon               String?      // Network: visa, mastercard, amex, cabal
+  bank               String?      // Bank ID: icbc, galicia, bbva, etc.
   isCreditCard       Boolean      @default(false)
   defaultAssignments Json?        // [{ userId: string, percentage: number }] — pre-filled when creating a bill
   currentClosingDate DateTime?    // Closing date for current billing period
