@@ -1,6 +1,6 @@
 # Tortuguita v2 — Roadmap de Mejoras
 
-> Última actualización: 15 Mayo 2025
+> Última actualización: 16 Mayo 2025
 > Este archivo sirve como planificación entre sesiones de desarrollo.
 
 ---
@@ -9,7 +9,7 @@
 
 | Fase | Progreso | Próximo paso |
 |------|----------|--------------|
-| **Alta Prioridad** | 2/5 completados | Resumen de Cuotas |
+| **Alta Prioridad** | 3/5 completados | Gastos Recurrentes |
 | **Media Prioridad** | 0/7 completados | — |
 | **Baja Prioridad** | 0/6 completados | — |
 
@@ -105,60 +105,41 @@ Patrón: ActionBar + Bottom Sheet
 
 ---
 
-### 3. Resumen de Cuotas en Dashboard
-- **Estado:** `[ ]` Pendiente
+### 3. Vista Wallet de Tarjetas (/tarjetas)
+- **Estado:** `[x]` ✅ Completado (16 Mayo 2025)
 - **Prioridad:** Alta
-- **Esfuerzo estimado:** 1-2 días
-- **Impacto:** Visibilidad de deuda total de TC
+- **Esfuerzo real:** ~2 sesiones
+- **Impacto:** Visibilidad de gastos y cuotas por tarjeta, reemplaza /cuotas
 
 #### Descripción
-El usuario no ve claramente cuánto le queda por pagar de compras en cuotas. Agregar un resumen en el dashboard que muestre deuda total de cuotas activas.
+Rediseño completo de /cuotas → nueva ruta /tarjetas con estilo Apple Wallet. Tarjetas visuales con logos de bancos y redes, gastos expandibles, barra de progreso de cuotas.
 
-#### Plan de implementación
-1. [ ] Calcular total de cuotas pendientes por tarjeta
-2. [ ] Mostrar widget en dashboard con deuda total
-3. [ ] Desglose por tarjeta (cuántas cuotas, monto restante)
-4. [ ] Link a /cuotas para ver detalle
+#### Implementación final
+1. [x] Nueva ruta `/tarjetas` y `/tarjetas/new`
+2. [x] Componente `TarjetasWalletView` con tarjetas estilo Apple Wallet
+3. [x] Logos de bancos reales (PNG/SVG) en `/public/banks/`
+4. [x] Logos de redes reales (PNG) en `/public/networks/`
+5. [x] Campo `bank` agregado a `BillType` (schema + API + form)
+6. [x] Colores de fondo por banco (`BANK_COLORS`)
+7. [x] Blanqueo de logos con `brightness-0 invert` para Santander y Ciudad
+8. [x] Badges de red en `CardIcon` usan imagen real (amex, cabal) en vez de letras
+9. [x] Bottom nav actualizado de /cuotas → /tarjetas
+10. [x] Rutas viejas `/cuotas` eliminadas
 
-#### Criterios de éxito
-- Veo deuda total de cuotas en dashboard
-- Sé cuántas cuotas me quedan por pagar
-- Puedo ver el desglose por tarjeta
+#### Archivos creados
+- `app/(dashboard)/tarjetas/page.tsx`
+- `app/(dashboard)/tarjetas/new/page.tsx`
+- `components/tarjetas/tarjetas-wallet-view.tsx`
+- `public/banks/` — 15 logos de bancos
+- `public/networks/` — 4 logos de redes
 
-#### Ideas de diseño (15 Mayo 2025)
-```
-REDISEÑO COMPLETO DE /cards — ESTILO APPLE WALLET
-
-Vista Stack (múltiples tarjetas):
-- Tarjetas apiladas mostrando ~40-50px cada una
-- Header visible: logo banco + nombre tarjeta
-- Tap en tarjeta → expande
-
-Vista Expandida (tarjeta seleccionada):
-- Tarjeta visual completa:
-  - Logo banco (PNG) esquina sup-izq
-  - Logo red (Visa/MC) esquina inf-der
-  - Gradiente con color del banco
-- Stats debajo de la tarjeta:
-  - Total del período (cierre a cierre)
-  - Fecha de cierre / vencimiento
-- Lista de gastos:
-  - Gastos nuevos del período
-  - Cuotas activas (con barras de progreso existentes)
-
-Monto a mostrar:
-- Total consumido en período actual (entre cierres)
-- = gastos cargados + cuotas de compras anteriores
-
-Assets necesarios:
-- [ ] PNG logos bancos: ICBC, Santander, BBVA, Galicia, etc.
-- [x] SVG logos redes: Visa, Mastercard (ya existen en card-network.tsx)
-
-Referencias:
-- Apple Wallet (tarjeta ICBC expandida)
-- Apple Pay (Apple Card con stats + transactions)
-- Monzo, Plum (cards fintech)
-```
+#### Archivos modificados
+- `prisma/schema.prisma` — campo `bank` en `BillType`
+- `lib/validations/bill-type.ts` — campo `bank` opcional
+- `components/cards/card-form.tsx` — guarda `bank`
+- `components/ui/card-network.tsx` — badges amex/cabal con imagen
+- `components/layout/bottom-nav.tsx` — link a /tarjetas
+- `components/cuotas/cuotas-view.tsx` — links internos a /tarjetas
 
 ---
 
@@ -489,6 +470,18 @@ Permitir agregar gastos offline y sincronizar cuando vuelva la conexión.
 ---
 
 ## Log de Sesiones
+
+### Sesión: 16 Mayo 2025
+- **Duración:** ~2 horas
+- **Trabajo realizado:**
+  - ✅ Implementado **3. Vista Wallet de Tarjetas** (`/tarjetas`)
+  - Rediseño completo de /cuotas → /tarjetas estilo Apple Wallet
+  - Logos de bancos y redes reales (PNG/SVG) — 15 bancos, 4 redes
+  - Campo `bank` en schema Prisma para identificar banco de cada tarjeta
+  - Badges de red con imágenes reales (amex, cabal) en lista de tarjetas
+  - Ajustes estéticos: tamaño uniforme de logos, alineación vertical de nombres
+  - Deploy a producción
+- **Próxima sesión:** **4. Gastos Recurrentes** o ajustes post-deploy
 
 ### Sesión: 15 Mayo 2025 (parte 3)
 - **Duración:** ~1 hora
