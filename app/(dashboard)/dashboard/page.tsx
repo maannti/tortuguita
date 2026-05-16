@@ -92,9 +92,9 @@ export default async function DashboardPage({ searchParams }: PageProps) {
     const members = Array.from(memberIncomeMap.entries()).map(([id, data]) => ({ id, name: data.name, expenses: memberExpenseMap.get(id) || 0, income: data.income, percentage: totalIncome > 0 ? (data.income / totalIncome) * 100 : 0 }))
     const totalAmount = bills.reduce((s, b) => s + Number(b.amount), 0)
 
-    const creditCardGroupMap = new Map<string, { name: string; color: string; icon: string | null; bills: typeof bills }>()
+    const creditCardGroupMap = new Map<string, { name: string; color: string; icon: string | null; bank: string | null; bills: typeof bills }>()
     for (const bill of bills.filter(b => b.billType.isCreditCard)) {
-      if (!creditCardGroupMap.has(bill.billTypeId)) creditCardGroupMap.set(bill.billTypeId, { name: bill.billType.name, color: bill.billType.color || "#f59e0b", icon: bill.billType.icon || null, bills: [] })
+      if (!creditCardGroupMap.has(bill.billTypeId)) creditCardGroupMap.set(bill.billTypeId, { name: bill.billType.name, color: bill.billType.color || "#f59e0b", icon: bill.billType.icon || null, bank: bill.billType.bank || null, bills: [] })
       creditCardGroupMap.get(bill.billTypeId)!.bills.push(bill)
     }
 
@@ -106,7 +106,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         if (bill.assignments.length === 0) { const share = amount / orgMembers.length; for (const member of orgMembers) { const m = memberAmountMap.get(member.userId)!; m.amount += share } }
         else for (const a of bill.assignments) { const share = (amount * Number(a.percentage)) / 100; const m = memberAmountMap.get(a.userId); if (m) m.amount += share }
       }
-      return { name: group.name, color: group.color, icon: group.icon, totalAmount: group.bills.reduce((s, b) => s + Number(b.amount), 0), memberAmounts: Array.from(memberAmountMap.values()).filter(m => m.amount > 0) }
+      return { name: group.name, color: group.color, icon: group.icon, bank: group.bank, totalAmount: group.bills.reduce((s, b) => s + Number(b.amount), 0), memberAmounts: Array.from(memberAmountMap.values()).filter(m => m.amount > 0) }
     })
 
     return {

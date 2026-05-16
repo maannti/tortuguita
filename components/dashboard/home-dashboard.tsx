@@ -11,6 +11,35 @@ import { OnboardingChecklist, ChecklistData } from "@/components/onboarding/onbo
 import { TourInviteCard } from "@/components/onboarding/tour-invite-card"
 import { startAppTour } from "@/components/onboarding/app-tour"
 
+const BANK_COLORS: Record<string, string> = {
+  bbva: "#004481", icbc: "#8C8C8C", santander: "#EC0000", galicia: "#E8302E",
+  ciudad: "#0066B3", provincia: "#46A857", patagonia: "#05D7C3", brubank: "#F7AFE0",
+  uala: "#E91E63", ualá: "#E91E63", naranjax: "#C4A77D", naranja: "#C4A77D",
+  supervielle: "#F49900", nacion: "#3EA5C8", macro: "#B69157",
+  mercadopago: "#00AEEF", mp: "#00AEEF", amex: "#B7DFBD", amexprop: "#B7DFBD",
+}
+const BANK_LOGOS: Record<string, string> = {
+  icbc: "/banks/icbc.png", galicia: "/banks/galicia.png", bbva: "/banks/bbva.png",
+  santander: "/banks/santander.png", ciudad: "/banks/ciudad.svg", macro: "/banks/macro.png",
+  nacion: "/banks/nacion.png", patagonia: "/banks/patagonia.png", provincia: "/banks/provincia.png",
+  brubank: "/banks/brubank.png", mercadopago: "/banks/mercadopago.png", mp: "/banks/mercadopago.png",
+  naranjax: "/banks/naranjax.png", naranja: "/banks/naranjax.png", supervielle: "/banks/supervielle.png",
+  amex: "/banks/amex.svg", amexprop: "/banks/amex.svg", uala: "/banks/uala.png", ualá: "/banks/uala.png",
+}
+const NETWORK_LOGOS: Record<string, string> = {
+  visa: "/networks/visa.png", mastercard: "/networks/mastercard.png",
+  master: "/networks/mastercard.png", amex: "/networks/amex.png", cabal: "/networks/cabal.jpg",
+}
+const BANKS_NEED_WHITE = ["ciudad", "santander"]
+function resolveCardColor(bank: string | null, fallback: string) {
+  const base = (bank && BANK_COLORS[bank.toLowerCase()]) || fallback
+  const r = parseInt(base.slice(1, 3), 16)
+  const g = parseInt(base.slice(3, 5), 16)
+  const b = parseInt(base.slice(5, 7), 16)
+  const mix = (c: number) => Math.round(c + (255 - c) * 0.45).toString(16).padStart(2, "0")
+  return `#${mix(r)}${mix(g)}${mix(b)}`
+}
+
 interface Member { id: string; name: string; expenses: number; income: number; percentage: number }
 interface RecentExpense {
   id: string
@@ -25,6 +54,7 @@ interface CreditCardGroup {
   name: string
   color: string
   icon: string | null
+  bank: string | null
   totalAmount: number
   memberAmounts: Array<{ name: string; amount: number }>
 }
@@ -209,65 +239,78 @@ export function HomeDashboard({ month, monthKey, availableMonths, spaces, curren
       {/* ── Content sections ── */}
       <div className="px-4 pt-3 space-y-5">
 
-        {/* Credit cards — Apple Wallet style stack (WIP - hidden for now) */}
-        {false && creditCardGroups.length > 0 && (
-          <section data-tour="cc-groups">
-            <div className="flex items-center justify-between mb-3 px-1">
-              <h2 className="text-base font-medium text-foreground" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
-                Tarjetas
-              </h2>
-              <span className="text-sm font-medium text-muted-foreground">
-                {formatARS(creditCardGroups.reduce((s, g) => s + g.totalAmount, 0))}
-              </span>
-            </div>
-            <Link href="/tarjetas" className="block">
-              <div
-                className="relative"
-                style={{ height: `${(creditCardGroups.length - 1) * 48 + 100}px` }}
-              >
-                {creditCardGroups.map((card, index) => (
-                  <div
-                    key={card.name}
-                    className="absolute left-0 right-0 rounded-2xl shadow-lg overflow-hidden"
-                    style={{
-                      top: `${index * 48}px`,
-                      zIndex: creditCardGroups.length - index,
-                      background: `linear-gradient(145deg, ${card.color} 0%, ${card.color}dd 100%)`,
-                    }}
-                  >
-                    <div className="px-4 py-3.5 min-h-[100px]">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1 min-w-0">
-                          <p className="text-white/90 text-[11px] font-semibold uppercase tracking-wider truncate">
-                            {card.name}
-                          </p>
-                          <p
-                            className="text-white text-2xl font-medium mt-1"
-                            style={{ fontFamily: "var(--font-fraunces, serif)" }}
-                          >
-                            {formatARS(card.totalAmount)}
-                          </p>
-                        </div>
-                        {/* Network icon */}
-                        {card.icon && isNetworkId(card.icon) && (
-                          <div className="opacity-80">
-                            <CardIcon
-                              bankId={null}
-                              bankColor="#ffffff"
-                              bankName={card.name}
-                              network={card.icon as NetworkId}
-                              size="sm"
-                            />
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
+        {/* Credit cards — Apple Wallet stack, top 3 by amount */}
+        {creditCardGroups.length > 0 && (() => {
+          const top3 = [...creditCardGroups].sort((a, b) => b.totalAmount - a.totalAmount).slice(0, 3)
+          const PEEK = 22
+          const CARD_H = 96
+          const containerH = (top3.length - 1) * PEEK + CARD_H
+          const backToFront = [...top3].reverse()
+          return (
+            <section data-tour="cc-groups">
+              <div className="flex items-center justify-between mb-3 px-1">
+                <h2 className="text-base font-medium text-foreground" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
+                  Tarjetas
+                </h2>
+                <Link href="/tarjetas" className="text-sm text-muted-foreground">
+                  Ver todas →
+                </Link>
               </div>
-            </Link>
-          </section>
-        )}
+              <Link href="/tarjetas" className="block active:scale-[0.99] transition-transform">
+                <div className="relative" style={{ height: containerH }}>
+                  {backToFront.map((card, ri) => {
+                    const isFront = ri === backToFront.length - 1
+                    const bg = resolveCardColor(card.bank, card.color)
+                    const bankLogo = card.bank ? BANK_LOGOS[card.bank.toLowerCase()] ?? null : null
+                    const networkLogo = card.icon ? NETWORK_LOGOS[card.icon.toLowerCase()] ?? null : null
+                    const needsInvert = card.bank ? BANKS_NEED_WHITE.includes(card.bank.toLowerCase()) : false
+                    return (
+                      <div
+                        key={card.name}
+                        className="absolute left-0 right-0 rounded-2xl overflow-hidden shadow-md"
+                        style={{
+                          top: ri * PEEK,
+                          height: CARD_H,
+                          zIndex: ri + 1,
+                          background: `linear-gradient(145deg, ${bg} 0%, ${bg}cc 100%)`,
+                        }}
+                      >
+                        <div className="px-4 py-3.5 h-full flex items-center">
+                          <div className="flex items-center justify-between gap-4 w-full">
+                            {/* Left: logo + name */}
+                            <div className="flex-1 min-w-0">
+                              <div className="h-7 w-[108px] mb-2 flex items-center">
+                                {bankLogo ? (
+                                  <img src={bankLogo} alt="" className={`w-full h-full object-contain object-left${needsInvert ? " brightness-0 invert" : ""}`} />
+                                ) : (
+                                  <span className="text-sm font-bold text-white/90 uppercase tracking-wider">
+                                    {card.name.split(" ")[0]}
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-white text-sm font-semibold truncate">{card.name}</p>
+                            </div>
+                            {/* Right: amount + network */}
+                            <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                              <p className="text-white text-xl font-medium leading-none" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
+                                {formatARS(card.totalAmount)}
+                              </p>
+                              {networkLogo && isFront && (
+                                <div className="h-6 w-[52px] flex items-center justify-end">
+                                  <img src={networkLogo} alt="" className="w-full h-full object-contain object-right" />
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </Link>
+            </section>
+          )
+        })()}
 
         {/* Recent expenses — all bills (CC + non-CC) */}
         {recentExpenses.length > 0 && (
