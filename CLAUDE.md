@@ -34,7 +34,7 @@ app/
     │   │   ├── page.tsx  # → /bills/[id]   (ver detalle)
     │   │   └── edit/     # → /bills/[id]/edit (formulario edición)
     │   └── new/          # → /bills/new (formulario creación)
-    ├── cuotas/           # resumen de cuotas activas
+    ├── tarjetas/         # vista de tarjetas estilo Apple Wallet
     ├── cards/            # administrar tarjetas/categorías CC
     ├── categories/       # tipos de gasto
     ├── incomes/          # ingresos
@@ -78,7 +78,7 @@ components/
 ├── dashboard/
 │   └── home-dashboard.tsx    # ⚠️ DISEÑO APROBADO — no modificar sin instrucción explícita
 ├── layout/
-│   └── bottom-nav.tsx        # nav inferior flotante (4 tabs: Inicio, Gastos, Cuotas, Perfil)
+│   └── bottom-nav.tsx        # nav inferior flotante (4 tabs: Inicio, Gastos, Tarjetas, Perfil)
 ├── ui/
 │   ├── card-network.tsx      # CardIcon, NetworkId, BANKS (logos de tarjetas)
 │   └── month-picker.tsx      # selector de mes
@@ -132,6 +132,13 @@ Si algo rompe el visual, el estado correcto usa: `CardIcon`/`MonthPicker`, tarje
 2. `/bills/[id]` → "Editar gasto" → `/bills/[id]/edit` (BillForm mode="edit")
 3. `/bills/[id]` → "Eliminar gasto" → Dialog confirmación → DELETE `/api/bills/[id]` → redirect `/bills`
 4. Dashboard → tap en gasto de CC → `/bills/[id]`
+
+## Usuario de test
+
+```
+Email: santimarcos8@hotmail.com
+Pass:  test1234
+```
 
 ## Comandos útiles
 
