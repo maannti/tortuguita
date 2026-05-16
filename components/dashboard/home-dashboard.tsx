@@ -220,7 +220,7 @@ export function HomeDashboard({ month, monthKey, availableMonths, spaces, curren
                 {formatARS(creditCardGroups.reduce((s, g) => s + g.totalAmount, 0))}
               </span>
             </div>
-            <Link href="/cuotas" className="block">
+            <Link href="/tarjetas" className="block">
               <div
                 className="relative"
                 style={{ height: `${(creditCardGroups.length - 1) * 48 + 100}px` }}
