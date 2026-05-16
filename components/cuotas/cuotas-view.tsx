@@ -184,7 +184,7 @@ export function CuotasView({ cards, monthLabel, monthKey, prevMonth, nextMonth, 
           <div className="absolute -top-6 -right-6 size-32 rounded-full bg-white/20 blur-2xl pointer-events-none" />
           <div className="flex items-center justify-between">
             <button
-              onClick={() => prevMonth && push(`/cuotas?month=${prevMonth}`)}
+              onClick={() => prevMonth && push(`/tarjetas?month=${prevMonth}`)}
               disabled={!prevMonth}
               className="size-8 flex items-center justify-center rounded-full bg-white/40 backdrop-blur-sm disabled:opacity-30 active:scale-95 transition-all"
             >
@@ -206,7 +206,7 @@ export function CuotasView({ cards, monthLabel, monthKey, prevMonth, nextMonth, 
               )}
             </div>
             <button
-              onClick={() => nextMonth && push(`/cuotas?month=${nextMonth}`)}
+              onClick={() => nextMonth && push(`/tarjetas?month=${nextMonth}`)}
               disabled={!nextMonth}
               className="size-8 flex items-center justify-center rounded-full bg-white/40 backdrop-blur-sm disabled:opacity-30 active:scale-95 transition-all"
             >
@@ -334,7 +334,7 @@ export function CuotasView({ cards, monthLabel, monthKey, prevMonth, nextMonth, 
         <FileText className="size-4 text-primary" />
         Importar gastos
       </Link>
-      <Link href="/cuotas/new"
+      <Link href="/tarjetas/new"
         className="fixed bottom-24 right-4 z-30 flex items-center justify-center size-14 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 active:scale-95 transition-transform">
         <Plus className="size-6" />
       </Link>
@@ -342,7 +342,7 @@ export function CuotasView({ cards, monthLabel, monthKey, prevMonth, nextMonth, 
       {showPicker && (
         <MonthPicker
           currentMonthKey={monthKey}
-          onSelect={(key) => push(`/cuotas?month=${key}`)}
+          onSelect={(key) => push(`/tarjetas?month=${key}`)}
           onClose={() => setShowPicker(false)}
         />
       )}

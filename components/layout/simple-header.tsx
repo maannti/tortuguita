@@ -9,7 +9,7 @@ import { useSpaces } from "@/lib/spaces-context"
 import { cn } from "@/lib/utils"
 
 // Pages where the global space selector should be hidden (form has its own)
-const HIDE_SELECTOR_PATHS = ["/bills/new", "/cuotas/new"]
+const HIDE_SELECTOR_PATHS = ["/bills/new", "/tarjetas/new"]
 function hideSelector(pathname: string) {
   return HIDE_SELECTOR_PATHS.some(p => pathname === p) ||
     /^\/bills\/[^/]+\/edit$/.test(pathname)
