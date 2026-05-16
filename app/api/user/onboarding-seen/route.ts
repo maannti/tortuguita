@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 
-const TEST_EMAILS = ["santimarcos8@gmail.com"]
+const TEST_EMAILS = ["test-cards@tortuguita.app"]
 
 export async function POST() {
   const session = await auth()
