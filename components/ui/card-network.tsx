@@ -157,23 +157,16 @@ function NetworkBadge({ network, size }: { network: NetworkId; size: number }) {
       <img src="/logos/networks/v-de-visa.png" alt="Visa" width={size} height={size} style={{ objectFit: "contain" }} />
     )
   }
-  const styles: Record<NetworkId, { color: string; label: string }> = {
-    visa:       { color: "#1A1F71", label: "V" },
-    mastercard: { color: "#EB001B", label: "M" },
-    amex:       { color: "#016FD0", label: "A" },
-    cabal:      { color: "#005BAA", label: "C" },
+  if (network === "amex") {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img src="/logos/networks/amex.png" alt="Amex" width={size} height={size} style={{ objectFit: "contain" }} />
+    )
   }
-  const s = styles[network]
-  return (
-    <span style={{
-      fontSize: size * 0.72,
-      fontWeight: 900,
-      color: s.color,
-      fontStyle: "normal",
-      fontFamily: "Arial, sans-serif",
-      lineHeight: 1,
-    }}>
-      {s.label}
-    </span>
-  )
+  if (network === "cabal") {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img src="/logos/networks/cabal.png" alt="Cabal" width={size} height={size} style={{ objectFit: "contain" }} />
+    )
+  }
 }
