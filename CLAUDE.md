@@ -122,6 +122,11 @@ Si algo rompe el visual, el estado correcto usa: `CardIcon`/`MonthPicker`, tarje
 - `git add [archivo específico]` — nunca `git add .`
 - Push al final cuando hay varios commits relacionados
 
+### Tour de la app (`components/onboarding/app-tour.ts`)
+- **Por cada feature nueva, evaluar si merece un paso en el tour**
+- Si la feature tiene una pantalla o elemento propio: agregar `data-tour="nombre"` al elemento y el paso correspondiente en `ALL_STEPS`
+- El tour filtra automáticamente pasos cuyo elemento no existe en el DOM — no rompe si el usuario está en otra pantalla
+
 ### Radix UI
 - **No anidar** `<Dialog>` dentro de `<DropdownMenu>` — no funciona en Radix
 - Patrón correcto: estado `useState<Item | null>` + `<Dialog>` fuera del `.map()`
