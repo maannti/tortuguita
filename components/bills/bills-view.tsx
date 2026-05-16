@@ -297,6 +297,7 @@ export function BillsView({
       {/* ActionBar - Search & Filter */}
       <div className="px-4 pt-3 pb-1">
         <div
+          data-tour="action-bar"
           className="rounded-2xl overflow-hidden"
           style={{ background: "linear-gradient(135deg, #D8E2DC 0%, #FFE5D9 55%, #FFCAD4 100%)" }}
         >

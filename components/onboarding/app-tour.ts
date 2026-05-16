@@ -22,8 +22,8 @@ const ALL_STEPS = [
   {
     element: "[data-tour='cc-groups']",
     popover: {
-      title: "Tus tarjetas de crédito",
-      description: "Resumen del total de cada tarjeta, desglosado por persona.",
+      title: "Tus tarjetas",
+      description: "Las 3 tarjetas con más gasto este mes. Tocá para ir al detalle completo.",
       side: "bottom" as const,
       align: "center" as const,
     },
@@ -56,11 +56,29 @@ const ALL_STEPS = [
     },
   },
   {
-    element: "[data-tour='nav-cuotas']",
+    element: "[data-tour='action-bar']",
+    popover: {
+      title: "Buscá y filtrá",
+      description: "Buscá por nombre o categoría, y filtrá por tarjeta o tipo de gasto. Los filtros se combinan.",
+      side: "bottom" as const,
+      align: "center" as const,
+    },
+  },
+  {
+    element: "[data-tour='nav-tarjetas']",
     popover: {
       title: "Tarjetas",
-      description: "El seguimiento de tus tarjetas y cuotas activas mes a mes.",
+      description: "Vista wallet de tus tarjetas: gastos del mes, cuotas activas con progreso y fechas de cierre.",
       side: "top" as const,
+      align: "center" as const,
+    },
+  },
+  {
+    element: "[data-tour='tarjetas-header']",
+    popover: {
+      title: "Navegá por mes",
+      description: "Tocá el mes para saltar a cualquier período, o usá las flechas para avanzar y retroceder.",
+      side: "bottom" as const,
       align: "center" as const,
     },
   },
