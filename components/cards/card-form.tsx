@@ -13,6 +13,7 @@ interface Props {
     name: string
     color: string | null
     icon: string | null
+    bank: string | null
     currentClosingDate?: string | null
     currentDueDate?: string | null
     nextClosingDate?: string | null
@@ -27,8 +28,9 @@ export function CardForm({ mode, initialData }: Props) {
 
   const initialNetwork = isNetworkId(initialData?.icon) ? initialData!.icon as NetworkId : null
   const [network, setNetwork] = useState<NetworkId | null>(initialNetwork)
+  // Use bank field directly, fallback to color detection for backwards compatibility
   const [bankId, setBankId] = useState<string | null>(
-    initialData?.color ? (BANKS.find(b => b.color === initialData!.color)?.id ?? null) : null
+    initialData?.bank || (initialData?.color ? (BANKS.find(b => b.color === initialData!.color)?.id ?? null) : null)
   )
   const [name, setName] = useState(initialData?.name || "")
 
@@ -84,7 +86,7 @@ export function CardForm({ mode, initialData }: Props) {
       const res = await fetch(url, {
         method: mode === "create" ? "POST" : "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), color, icon: network, isCreditCard: true }),
+        body: JSON.stringify({ name: name.trim(), color, icon: network, bank: bankId, isCreditCard: true }),
       })
       if (!res.ok) { const err = await res.json(); throw new Error(err.error || "Error al guardar") }
       const saved = await res.json()

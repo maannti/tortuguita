@@ -28,6 +28,7 @@ export default async function EditCardPage({ params }: { params: Promise<{ id: s
         name: card.name,
         color: card.color,
         icon: card.icon,
+        bank: card.bank,
         currentClosingDate: toDateInput(card.currentClosingDate),
         currentDueDate: toDateInput(card.currentDueDate),
         nextClosingDate: toDateInput(card.nextClosingDate),
