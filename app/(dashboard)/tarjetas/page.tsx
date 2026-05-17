@@ -31,7 +31,31 @@ export default async function CuotasPage({ searchParams }: PageProps) {
   const params = await searchParams
 
   const now = new Date()
-  const targetDate = params.month ? parse(params.month, "yyyy-MM", new Date()) : now
+
+  // Smart default: when no month param, show the month of the nearest upcoming dueDate.
+  // This reflects the user's mental model: "what will I pay next month?"
+  // We need creditCardTypes early, so fetch them first.
+  const creditCardTypesEarly = await prisma.billType.findMany({
+    where: { organizationId: { in: allOrgIds }, isCreditCard: true },
+    select: { currentDueDate: true },
+  })
+
+  let defaultDate = now
+  let cycleLabel: string | null = null // e.g. "junio 2026"
+
+  if (!params.month) {
+    const dueDates = creditCardTypesEarly
+      .map(ct => ct.currentDueDate ? new Date(ct.currentDueDate) : null)
+      .filter((d): d is Date => d !== null)
+    if (dueDates.length > 0) {
+      // Use the latest due date month among all cards (usually all in the same month)
+      const latestDue = new Date(Math.max(...dueDates.map(d => d.getTime())))
+      defaultDate = latestDue
+      cycleLabel = format(latestDue, "MMMM yyyy", { locale: es })
+    }
+  }
+
+  const targetDate = params.month ? parse(params.month, "yyyy-MM", new Date()) : defaultDate
   const monthStart = startOfMonth(targetDate)
   const monthEnd = endOfMonth(targetDate)
 
@@ -205,6 +229,7 @@ export default async function CuotasPage({ searchParams }: PageProps) {
       monthKey={monthKey}
       prevMonth={currentIndex > 0 ? availableMonths[currentIndex - 1] : null}
       nextMonth={currentIndex < availableMonths.length - 1 ? availableMonths[currentIndex + 1] : null}
+      cycleLabel={!params.month ? cycleLabel : null}
     />
   )
 }
