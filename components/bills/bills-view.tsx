@@ -3,7 +3,7 @@
 import { useRouter, useSearchParams, usePathname } from "next/navigation"
 import Link from "next/link"
 import { useState, useEffect, useRef, useTransition } from "react"
-import { ChevronLeft, ChevronRight, Plus, CreditCard, ChevronDown, Search, X, SlidersHorizontal, Check, User, Home, Loader2 } from "lucide-react"
+import { ChevronLeft, ChevronRight, Plus, CreditCard, ChevronDown, Search, X, SlidersHorizontal, Check, User, Home, Loader2, Repeat } from "lucide-react"
 import { MonthPicker } from "@/components/ui/month-picker"
 import { cn } from "@/lib/utils"
 
@@ -362,7 +362,10 @@ export function BillsView({
         </div>
       </div>
 
-      <div className="px-4 pt-4 space-y-5">
+      {/* RECURRENTES link — oculto hasta integrar con notificaciones push (ver ROADMAP ítem 10) */}
+      {/* <div className="px-4 pt-2 pb-0"><Link href="/bills/recurring">Gastos recurrentes →</Link></div> */}
+
+<div className="px-4 pt-4 space-y-5">
         {categoryGroups.length > 0 ? (
           categoryGroups.map((group) => {
             const usdLabel = groupUSDDisplay(group)
