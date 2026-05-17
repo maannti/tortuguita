@@ -41,6 +41,13 @@ function resolveCardColor(bank: string | null, fallback: string) {
   return `#${mix(r)}${mix(g)}${mix(b)}`
 }
 
+function isLightColor(hex: string): boolean {
+  const r = parseInt(hex.slice(1, 3), 16)
+  const g = parseInt(hex.slice(3, 5), 16)
+  const b = parseInt(hex.slice(5, 7), 16)
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.6
+}
+
 interface Member { id: string; name: string; expenses: number; income: number; percentage: number }
 interface RecentExpense {
   id: string
@@ -70,7 +77,7 @@ export interface SpaceData {
   creditCardGroups: CreditCardGroup[]
 }
 
-interface Props { month: string; monthKey: string; availableMonths: string[]; spaces: SpaceData[]; currentUserId: string; showOnboarding?: boolean; checklistData?: ChecklistData; insights?: InsightData }
+interface Props { month: string; monthKey: string; availableMonths: string[]; spaces: SpaceData[]; currentUserId: string; showOnboarding?: boolean; checklistData?: ChecklistData; insights?: { insights: string[] } }
 
 const arsFormatter = new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", minimumFractionDigits: 0, maximumFractionDigits: 2 })
 const arsFormatterFull = new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -140,7 +147,18 @@ export function HomeDashboard({ month, monthKey, availableMonths, spaces, curren
   // Show member split for the first active shared space (even if personal is also active)
   const sharedSpace = activeSpaces.find(sp => !sp.isPersonal && sp.members.length > 1)
   const members = sharedSpace ? sharedSpace.members : (activeSpaces.length === 1 ? activeSpaces[0].members : [])
-  const recentTotal = recentExpenses.reduce((s, e) => s + e.amount, 0)
+  // ── Category summary (top 5 non-CC, sorted by amount) ──
+  const categoryMap = new Map<string, { name: string; color: string; amount: number }>()
+  for (const e of recentExpenses) {
+    if (e.isCreditCard) continue
+    const cur = categoryMap.get(e.billTypeName) ?? { name: e.billTypeName, color: e.billTypeColor, amount: 0 }
+    categoryMap.set(e.billTypeName, { ...cur, amount: cur.amount + e.amount })
+  }
+  const topCategories = [...categoryMap.values()].sort((a, b) => b.amount - a.amount).slice(0, 5)
+  // ── Biggest single expense of the month (any type) ──
+  const biggestExpense = recentExpenses.length > 0
+    ? recentExpenses.reduce((max, e) => e.amount > max.amount ? e : max, recentExpenses[0])
+    : null
 
   return (
     <div className="pb-28">
@@ -243,7 +261,7 @@ export function HomeDashboard({ month, monthKey, availableMonths, spaces, curren
         {/* Credit cards — Apple Wallet stack, top 3 by amount */}
         {creditCardGroups.length > 0 && (() => {
           const top3 = [...creditCardGroups].sort((a, b) => b.totalAmount - a.totalAmount).slice(0, 3)
-          const PEEK = 30
+          const PEEK = 35
           const CARD_H = 96
           const containerH = (top3.length - 1) * PEEK + CARD_H
           const backToFront = [...top3].reverse()
@@ -265,6 +283,9 @@ export function HomeDashboard({ month, monthKey, availableMonths, spaces, curren
                     const bankLogo = card.bank ? BANK_LOGOS[card.bank.toLowerCase()] ?? null : null
                     const networkLogo = card.icon ? NETWORK_LOGOS[card.icon.toLowerCase()] ?? null : null
                     const needsInvert = card.bank ? BANKS_NEED_WHITE.includes(card.bank.toLowerCase()) : false
+                    const light = isLightColor(bg)
+                    const txtPrimary = light ? "#2A1F24" : "white"
+                    const txtSecondary = light ? "#4A3540" : "rgba(255,255,255,0.9)"
                     return (
                       <div
                         key={card.name}
@@ -277,45 +298,50 @@ export function HomeDashboard({ month, monthKey, availableMonths, spaces, curren
                         }}
                       >
                         {isFront ? (
-                          /* ── Front card: full original layout ── */
-                          <div className="px-4 py-3.5 h-full flex items-center">
-                            <div className="flex items-center justify-between gap-4 w-full">
-                              <div className="flex-1 min-w-0">
-                                <div className="h-7 w-[108px] mb-2 flex items-center">
-                                  {bankLogo ? (
-                                    <img src={bankLogo} alt="" className={`w-full h-full object-contain object-left${needsInvert ? " brightness-0 invert" : ""}`} />
-                                  ) : (
-                                    <span className="text-sm font-bold text-white/90 uppercase tracking-wider">
-                                      {card.name.split(" ")[0]}
-                                    </span>
-                                  )}
-                                </div>
-                                <p className="text-white text-sm font-semibold truncate">{card.name}</p>
-                              </div>
-                              <div className="flex flex-col items-end gap-2 flex-shrink-0">
-                                <p className="text-white text-xl font-medium leading-none" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
-                                  {formatARS(card.totalAmount)}
-                                </p>
-                                {networkLogo && (
-                                  <div className="h-6 w-[52px] flex items-center justify-end">
-                                    <img src={networkLogo} alt="" className="w-full h-full object-contain object-right" />
-                                  </div>
+                          /* ── Front card: bank logo + network logo same row (top), name + amount (bottom) ── */
+                          <div className="px-4 py-3.5 h-full flex flex-col justify-between">
+                            {/* Top row: bank logo ←→ network logo */}
+                            <div className="flex items-center justify-between">
+                              <div className="h-7 w-[108px] flex items-center">
+                                {bankLogo ? (
+                                  <img src={bankLogo} alt="" className={`w-full h-full object-contain object-left${needsInvert ? " brightness-0 invert" : ""}`} />
+                                ) : (
+                                  <span className="text-sm font-bold uppercase tracking-wider" style={{ color: txtSecondary }}>
+                                    {card.name.split(" ")[0]}
+                                  </span>
                                 )}
                               </div>
+                              {networkLogo && (
+                                <div className="h-7 w-[52px] flex items-center justify-end">
+                                  <img src={networkLogo} alt="" className="w-full h-full object-contain object-right" />
+                                </div>
+                              )}
+                            </div>
+                            {/* Bottom row: card name ←→ amount */}
+                            <div className="flex items-end justify-between">
+                              <p className="text-sm font-semibold truncate" style={{ color: txtSecondary }}>{card.name}</p>
+                              <p className="text-xl font-medium leading-none" style={{ color: txtPrimary, fontFamily: "var(--font-fraunces, serif)" }}>
+                                {formatARS(card.totalAmount)}
+                              </p>
                             </div>
                           </div>
                         ) : (
-                          /* ── Back cards: solo logo/nombre del banco ── */
-                          <div className="flex items-center px-4" style={{ height: PEEK }}>
-                            <div className="h-5 w-[108px] flex items-center">
+                          /* ── Back cards: banco + red en la misma fila ── */
+                          <div className="flex items-center justify-between px-4" style={{ height: PEEK }}>
+                            <div className="h-5 w-[90px] flex items-center">
                               {bankLogo ? (
                                 <img src={bankLogo} alt="" className={`w-full h-full object-contain object-left${needsInvert ? " brightness-0 invert" : ""}`} />
                               ) : (
-                                <span className="text-xs font-bold text-white/90 uppercase tracking-wider leading-none">
+                                <span className="text-xs font-bold uppercase tracking-wider leading-none" style={{ color: txtSecondary }}>
                                   {card.name.split(" ")[0]}
                                 </span>
                               )}
                             </div>
+                            {networkLogo && (
+                              <div className="h-5 w-[36px] flex items-center justify-end">
+                                <img src={networkLogo} alt="" className="w-full h-full object-contain object-right" />
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
@@ -330,36 +356,52 @@ export function HomeDashboard({ month, monthKey, availableMonths, spaces, curren
         {/* AI Insight widget */}
         {insights && <AiInsightWidget data={insights} />}
 
-        {/* Recent expenses — all bills (CC + non-CC) */}
-        {recentExpenses.length > 0 && (
+        {/* Category summary + biggest expense */}
+        {(topCategories.length > 0 || biggestExpense) && (
           <section data-tour="recent-expenses">
             <div className="flex items-center justify-between mb-2.5 px-1">
               <h2 className="text-base font-medium text-foreground" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
-                Gastos recientes
+                Por categoría
               </h2>
-              <span className="text-sm font-medium text-muted-foreground">{formatARS(recentTotal)}</span>
+              <Link href="/bills" className="text-sm text-muted-foreground">
+                Ver todos →
+              </Link>
             </div>
             <div className="glass rounded-2xl overflow-hidden divide-y divide-white/60">
-              {recentExpenses.map((expense) => (
-                <Link key={expense.id} href={`/bills/${expense.id}`} className="flex items-center justify-between px-4 py-3.5 active:bg-muted/50 transition-colors">
+              {/* Top categories */}
+              {topCategories.map((cat) => (
+                <div key={cat.name} className="flex items-center justify-between px-4 py-3">
                   <div className="flex items-center gap-3 min-w-0">
-                    <div
-                      className="size-2.5 rounded-full flex-shrink-0 shadow-sm"
-                      style={{ backgroundColor: expense.billTypeColor }}
-                    />
+                    <div className="size-2.5 rounded-full flex-shrink-0 shadow-sm" style={{ backgroundColor: cat.color }} />
+                    <p className="text-sm font-medium truncate text-foreground">{cat.name}</p>
+                  </div>
+                  <span className="text-sm font-medium tabular-nums text-foreground ml-3 flex-shrink-0" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
+                    {formatARS(cat.amount)}
+                  </span>
+                </div>
+              ))}
+
+              {/* Divider + biggest expense */}
+              {biggestExpense && (
+                <Link
+                  href={`/bills/${biggestExpense.id}`}
+                  className="flex items-center justify-between px-4 py-3 active:bg-muted/40 transition-colors"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="size-2.5 rounded-full flex-shrink-0 shadow-sm" style={{ backgroundColor: biggestExpense.billTypeColor }} />
                     <div className="min-w-0">
-                      <p className="text-sm font-medium truncate">{expense.label}</p>
-                      <p className="text-xs text-muted-foreground truncate">{expense.billTypeName}</p>
+                      <p className="text-xs text-muted-foreground">Gasto más grande</p>
+                      <p className="text-sm font-medium truncate text-foreground">{biggestExpense.label}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-1 ml-3 flex-shrink-0">
-                    <span className="text-base font-medium tabular-nums text-foreground" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
-                      {formatARS(expense.amount)}
+                    <span className="text-sm font-medium tabular-nums text-foreground" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
+                      {formatARS(biggestExpense.amount)}
                     </span>
                     <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
                   </div>
                 </Link>
-              ))}
+              )}
             </div>
           </section>
         )}
