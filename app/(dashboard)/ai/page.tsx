@@ -2,9 +2,9 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Card } from "@/components/ui/card";
-import { ChatMessage } from "@/components/ai/chat-message";
 import { ConversationSidebar } from "@/components/ai/conversation-sidebar";
-import { SendIcon, XIcon, PaperclipIcon } from "lucide-react";
+import { MarkdownRenderer } from "@/components/ai/markdown-renderer";
+import { XIcon, PaperclipIcon, ArrowUpIcon, ChevronLeftIcon, CheckCircleIcon, XCircleIcon } from "lucide-react";
 import { TurtleIcon } from "@/components/ai/turtle-icon";
 import { useTranslations, useLanguage } from "@/components/providers/language-provider";
 import useSWR from "swr";
@@ -160,6 +160,19 @@ export default function AIPage() {
         const file = JSON.parse(pending)
         sessionStorage.removeItem("pendingImport")
         autoSubmitImport(file)
+        return
+      } catch {}
+    }
+    // Pick up pre-filled question from AI widget
+    const pendingQuestion = sessionStorage.getItem("pendingQuestion")
+    if (pendingQuestion) {
+      try {
+        sessionStorage.removeItem("pendingQuestion")
+        setInput(pendingQuestion)
+        setTimeout(() => {
+          const form = document.querySelector("form")
+          form?.requestSubmit()
+        }, 100)
       } catch {}
     }
   }, []);
@@ -405,10 +418,137 @@ export default function AIPage() {
     createCategory: language === "es" ? "Crear una categoria llamada Restaurantes con icono 🍽️" : "Create a new category called Restaurants with 🍽️ icon",
   };
 
+  // Input bar — glass pill on gradient background
+  const InputBar = () => (
+    <div className="flex-shrink-0 px-4 pb-4 pt-2">
+      <form onSubmit={handleSubmit}>
+        <div
+          className="flex items-end gap-3 rounded-2xl px-4 py-3 min-h-[52px]"
+          style={{ background: "rgba(255,255,255,0.80)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", border: "1px solid rgba(255,255,255,0.6)" }}
+        >
+          <textarea
+            ref={textareaRef}
+            value={input}
+            onChange={(e) => {
+              setInput(e.target.value);
+              e.target.style.height = "auto";
+              e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
+            }}
+            onKeyDown={handleKeyDown}
+            placeholder="Preguntame algo..."
+            disabled={isLoading}
+            enterKeyHint="send"
+            autoComplete="off"
+            autoCorrect="on"
+            className="flex-1 min-w-0 min-h-[24px] max-h-[120px] resize-none overflow-y-auto bg-transparent border-none outline-none py-0 px-0 leading-6 text-[16px] text-[#2A1F24] placeholder:text-[#9D8189]/70"
+            rows={1}
+          />
+          <button
+            type="submit"
+            disabled={isLoading || (!input.trim() && !attachedFile)}
+            className="flex-shrink-0 size-9 rounded-full grid place-items-center self-end transition-all active:scale-90 disabled:opacity-30"
+            style={{ background: "#4A3540" }}
+          >
+            <ArrowUpIcon className="size-4 text-white" strokeWidth={2.5} />
+          </button>
+        </div>
+      </form>
+      {attachedFile && (
+        <div className="flex items-center gap-2 pt-2">
+          <div className="flex items-center gap-2 rounded-xl bg-white/60 border border-white/80 px-3 py-1.5 text-xs text-[#4A3540] font-medium max-w-full">
+            <PaperclipIcon className="size-3 flex-shrink-0" />
+            <span className="truncate">{attachedFile.name}</span>
+            <button type="button" onClick={() => setAttachedFile(null)} className="ml-1 opacity-50 hover:opacity-100">
+              <XIcon className="size-3" />
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  // Empty state — minimal: just icon + greeting
+  const EmptyState = () => (
+    <div className="flex flex-col items-center justify-center flex-1 px-4 py-12">
+      <div className="size-14 rounded-2xl flex items-center justify-center mb-4" style={{ background: "rgba(255,255,255,0.55)" }}>
+        <TurtleIcon className="size-8" />
+      </div>
+      <p className="text-[#4A3540] text-lg font-semibold" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
+        ¿En qué te ayudo?
+      </p>
+    </div>
+  );
+
+  // Messages list — user: dark bubble · AI: white frosted bubble
+  const MessagesList = () => (
+    <div className="px-4 py-4 space-y-3 flex-1">
+      {messages.map((msg, idx) => {
+        const isUser = msg.role === "user";
+        return (
+          <div key={idx} className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
+            {isUser ? (
+              /* User — dark mauve bubble, white text */
+              <div className="max-w-[78%] rounded-2xl rounded-br-sm px-4 py-2.5" style={{ background: "#4A3540" }}>
+                <p className="text-sm leading-relaxed text-white whitespace-pre-wrap">{msg.content}</p>
+              </div>
+            ) : (
+              /* AI — white frosted bubble */
+              <div
+                className="max-w-[85%] rounded-2xl rounded-bl-sm px-4 py-2.5"
+                style={{ background: "rgba(255,255,255,0.80)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.6)" }}
+              >
+                <div className="text-sm leading-relaxed text-[#2A1F24]">
+                  <MarkdownRenderer content={msg.content} />
+                </div>
+                {msg.toolCalls?.calls && (
+                  <div className="mt-2 space-y-1 border-t border-[#D8E2DC]/60 pt-2">
+                    {msg.toolCalls.calls.map((call: any, i: number) => (
+                      <div key={i} className="flex items-start gap-2 text-xs text-[#9D8189]">
+                        {call.result.success
+                          ? <CheckCircleIcon className="size-3 text-green-500 mt-0.5 flex-shrink-0" />
+                          : <XCircleIcon className="size-3 text-red-400 mt-0.5 flex-shrink-0" />}
+                        <span>
+                          {call.tool === "create_bill" && "Gasto creado"}
+                          {call.tool === "create_category" && "Categoría creada"}
+                          {call.tool === "get_analytics" && "Análisis obtenido"}
+                          {call.tool === "search_bills" && "Gastos encontrados"}
+                          {call.result.error && ` — ${call.result.error}`}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })}
+      {/* Thinking dots */}
+      {isLoading && messages.length > 0 && messages[messages.length - 1]?.role === "user" && (
+        <div className="flex justify-start">
+          <div
+            className="rounded-2xl rounded-bl-sm px-4 py-3"
+            style={{ background: "rgba(255,255,255,0.80)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.6)" }}
+          >
+            <div className="flex items-center gap-1.5">
+              {[0, 1, 2].map(i => (
+                <span key={i} className="block size-2 rounded-full bg-[#9D8189] animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+      <div ref={messagesEndRef} />
+    </div>
+  );
+
+  const GRADIENT = "linear-gradient(135deg, #D8E2DC 0%, #FFE5D9 55%, #FFCAD4 100%)"
+
   return (
-    <div className="flex h-full -m-4 md:-m-6">
+    <div className="flex h-full -m-4 md:-m-6" style={{ background: GRADIENT }}>
       <input ref={fileInputRef} type="file" accept=".pdf,.csv,.txt,image/*" onChange={handleFileChange} className="hidden" />
-      {/* Sidebar with conversation history - hidden on mobile */}
+
+      {/* Desktop sidebar */}
       <div className="hidden md:block p-4 md:p-6">
         <ConversationSidebar
           conversations={Array.isArray(conversations) ? conversations : []}
@@ -419,290 +559,60 @@ export default function AIPage() {
         />
       </div>
 
-      {/* Main chat area */}
+      {/* Main area */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Desktop: Same layout as mobile */}
+
+        {/* ── DESKTOP ── */}
         <div className="hidden md:flex flex-col flex-1 p-4 md:p-6 pl-0 overflow-hidden">
-          <Card className="flex-1 flex flex-col overflow-hidden">
-            {/* Desktop Messages area */}
-            <div className="flex-1 overflow-y-auto min-h-0">
-              {messages.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full text-center px-6 pb-4">
-                  <div className="space-y-8">
-                    {/* Turtle icon */}
-                    <div className="flex justify-center">
-                      <div className="size-20 rounded-full bg-primary/10 flex items-center justify-center">
-                        <TurtleIcon className="size-12 text-primary" />
-                      </div>
-                    </div>
-
-                    <div>
-                      <h2 className="text-2xl font-semibold mb-2">{t.ai.title}</h2>
-                      <p className="text-muted-foreground">{t.ai.subtitle}</p>
-                    </div>
-
-                    {/* Suggestion chips - vertical stack */}
-                    <div className="flex flex-col gap-2 w-full max-w-md mx-auto">
-                      <button
-                        onClick={() => handleSuggestionClick(suggestions.analytics)}
-                        className="w-full px-4 py-3.5 text-sm text-left rounded-2xl bg-muted/50 hover:bg-muted active:scale-[0.98] transition-all"
-                      >
-                        {t.ai.suggestions.viewAnalytics}
-                      </button>
-
-                      <button
-                        onClick={() => handleSuggestionClick(suggestions.createBill)}
-                        className="w-full px-4 py-3.5 text-sm text-left rounded-2xl bg-muted/50 hover:bg-muted active:scale-[0.98] transition-all"
-                      >
-                        {t.ai.suggestions.createBill}
-                      </button>
-
-                      <button
-                        onClick={() => handleSuggestionClick(suggestions.showBills)}
-                        className="w-full px-4 py-3.5 text-sm text-left rounded-2xl bg-muted/50 hover:bg-muted active:scale-[0.98] transition-all"
-                      >
-                        {t.ai.suggestions.showBills}
-                      </button>
-
-                      <button
-                        onClick={() => handleSuggestionClick(suggestions.createCategory)}
-                        className="w-full px-4 py-3.5 text-sm text-left rounded-2xl bg-muted/50 hover:bg-muted active:scale-[0.98] transition-all"
-                      >
-                        {t.ai.suggestions.createCategory}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="p-4 space-y-4">
-                  {messages.map((msg, idx) => <ChatMessage key={idx} message={msg} />)}
-                  {isLoading && messages.length > 0 && messages[messages.length - 1]?.role === "user" && (
-                    <div className="flex items-center gap-3 text-muted-foreground py-2">
-                      <div className="flex-shrink-0 size-10 rounded-full bg-primary flex items-center justify-center">
-                        <TurtleIcon className="size-6" isThinking />
-                      </div>
-                      <span className="text-sm">{t.ai.thinking}</span>
-                    </div>
-                  )}
-                  <div ref={messagesEndRef} />
-                </div>
-              )}
+          <Card className="flex-1 flex flex-col overflow-hidden" style={{ background: "rgba(255,255,255,0.35)", backdropFilter: "blur(12px)", border: "1px solid rgba(216,226,220,0.6)" }}>
+            <div className="flex-shrink-0 flex items-center justify-center px-5 pt-5 pb-3 border-b border-[#D8E2DC]/50">
+              <span className="text-base font-semibold text-[#4A3540]" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
+                Tortuguita IA
+              </span>
             </div>
-
-            {/* Desktop Input - Same style as mobile */}
-            <div className="flex-shrink-0 px-5 py-4">
-              <form onSubmit={handleSubmit}>
-                <div className="flex items-center gap-3 bg-muted rounded-3xl px-4 py-3 min-h-[56px]">
-                  <textarea
-                    ref={textareaRef}
-                    value={input}
-                    onChange={(e) => {
-                      setInput(e.target.value);
-                      // Auto-resize
-                      e.target.style.height = "auto";
-                      e.target.style.height = `${Math.min(e.target.scrollHeight, 200)}px`;
-                    }}
-                    onKeyDown={handleKeyDown}
-                    placeholder={t.ai.placeholder}
-                    disabled={isLoading}
-                    className="flex-1 min-h-[24px] max-h-[200px] resize-none overflow-y-auto bg-transparent border-none outline-none py-0 px-0 leading-6 text-[16px] placeholder:text-muted-foreground/70"
-                    rows={1}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="flex-shrink-0 size-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all grid place-items-center self-end"
-                  >
-                    <PaperclipIcon className="size-4" />
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isLoading || (!input.trim() && !attachedFile)}
-                    className="flex-shrink-0 size-9 rounded-full bg-primary text-primary-foreground disabled:opacity-40 transition-opacity grid place-items-center self-end"
-                  >
-                    <SendIcon className="size-4" />
-                  </button>
-                </div>
-              </form>
-              {attachedFile && (
-                <div className="flex items-center gap-2 px-1 pb-2">
-                  <div className="flex items-center gap-2 rounded-xl bg-primary/10 border border-primary/20 px-3 py-1.5 text-xs text-primary font-medium">
-                    <PaperclipIcon className="size-3 flex-shrink-0" />
-                    <span className="truncate max-w-[200px]">{attachedFile.name}</span>
-                    <button type="button" onClick={() => setAttachedFile(null)} className="ml-1 opacity-60 hover:opacity-100">
-                      <XIcon className="size-3" />
-                    </button>
-                  </div>
-                </div>
-              )}
+            <div className="flex-1 overflow-y-auto min-h-0 flex flex-col">
+              {messages.length === 0 ? <EmptyState /> : <MessagesList />}
             </div>
+            <InputBar />
           </Card>
         </div>
 
-        {/* Mobile sidebar drawer */}
+        {/* ── MOBILE ── */}
         <div
-          className={`md:hidden fixed inset-0 z-50 transition-opacity duration-300 ${
-            isMobileSidebarOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
-          }`}
-        >
-          {/* Backdrop */}
-          <div
-            className="absolute inset-0 bg-black/50"
-            onClick={() => setIsMobileSidebarOpen(false)}
-          />
-          {/* Sidebar panel */}
-          <div
-            className={`absolute left-0 top-0 h-full w-72 bg-background transform transition-transform duration-300 ease-out ${
-              isMobileSidebarOpen ? "translate-x-0" : "-translate-x-full"
-            }`}
-            onTouchStart={handleTouchStart}
-            onTouchEnd={handleTouchEnd}
-          >
-            <div className="flex items-center justify-between p-4 border-b">
-              <h2 className="font-semibold">{t.ai.history}</h2>
-              <button
-                onClick={() => setIsMobileSidebarOpen(false)}
-                className="p-2 -mr-2 rounded-full hover:bg-muted"
-              >
-                <XIcon className="size-5" />
-              </button>
-            </div>
-            <div className="p-3 h-[calc(100%-57px)] overflow-hidden">
-              <ConversationSidebar
-                conversations={Array.isArray(conversations) ? conversations : []}
-                currentConversationId={conversationId}
-                onSelectConversation={handleSelectConversation}
-                onNewConversation={handleNewConversation}
-                onDeleteConversation={handleDeleteConversation}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Mobile: Full-screen app-like layout */}
-        <div
-          className="flex md:hidden flex-col h-full bg-background pb-16"
+          className="flex md:hidden flex-col h-full"
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
         >
-          {/* Mobile scrollable messages area */}
-          <div className="flex-1 overflow-y-auto min-h-0">
-            {/* Mobile Messages area */}
-            <div>
-              {messages.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full text-center px-6 pb-4">
-                  <div className="space-y-8">
-                    {/* Turtle icon */}
-                    <div className="flex justify-center">
-                      <div className="size-16 rounded-full bg-primary/10 flex items-center justify-center">
-                        <TurtleIcon className="size-10 text-primary" />
-                      </div>
-                    </div>
+          {/* Header — gradient bg, proper touch targets */}
+          <div className="flex-shrink-0 flex items-center gap-0 px-4 pt-4 pb-3">
+            {/* Back button — 44px touch target */}
+            <button
+              onClick={() => window.history.back()}
+              className="flex items-center justify-center size-11 -ml-2 rounded-2xl text-[#4A3540] active:bg-white/30 active:scale-95 transition-all"
+            >
+              <ChevronLeftIcon className="size-6" strokeWidth={2} />
+            </button>
 
-                    <div>
-                      <h2 className="text-2xl font-semibold mb-2">{t.ai.title}</h2>
-                      <p className="text-muted-foreground text-sm">{t.ai.subtitle}</p>
-                    </div>
+            {/* Title centered between equal-width flanks */}
+            <span
+              className="flex-1 text-center text-[15px] font-semibold text-[#4A3540]"
+              style={{ fontFamily: "var(--font-fraunces, serif)" }}
+            >
+              Tortuguita IA
+            </span>
 
-                    {/* Suggestion chips - vertical stack on mobile */}
-                    <div className="flex flex-col gap-2 w-full max-w-xs mx-auto">
-                      <button
-                        onClick={() => handleSuggestionClick(suggestions.analytics)}
-                        className="w-full px-4 py-3 text-sm text-left rounded-2xl bg-muted/50 hover:bg-muted active:scale-[0.98] transition-all"
-                      >
-                        {t.ai.suggestions.viewAnalytics}
-                      </button>
+            {/* Right spacer same width as back button so title is truly centered */}
+            <div className="size-11 -mr-2" />
+          </div>
 
-                      <button
-                        onClick={() => handleSuggestionClick(suggestions.createBill)}
-                        className="w-full px-4 py-3 text-sm text-left rounded-2xl bg-muted/50 hover:bg-muted active:scale-[0.98] transition-all"
-                      >
-                        {t.ai.suggestions.createBill}
-                      </button>
+          {/* Messages / empty */}
+          <div className="flex-1 overflow-y-auto min-h-0 flex flex-col">
+            {messages.length === 0 ? <EmptyState /> : <MessagesList />}
+          </div>
 
-                      <button
-                        onClick={() => handleSuggestionClick(suggestions.showBills)}
-                        className="w-full px-4 py-3 text-sm text-left rounded-2xl bg-muted/50 hover:bg-muted active:scale-[0.98] transition-all"
-                      >
-                        {t.ai.suggestions.showBills}
-                      </button>
-
-                      <button
-                        onClick={() => handleSuggestionClick(suggestions.createCategory)}
-                        className="w-full px-4 py-3 text-sm text-left rounded-2xl bg-muted/50 hover:bg-muted active:scale-[0.98] transition-all"
-                      >
-                        {t.ai.suggestions.createCategory}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="p-4 space-y-4">
-                  {messages.map((msg, idx) => <ChatMessage key={idx} message={msg} isMobile />)}
-                  {isLoading && messages.length > 0 && messages[messages.length - 1]?.role === "user" && (
-                    <div className="flex items-center gap-3 text-muted-foreground py-2">
-                      <div className="flex-shrink-0 size-8 rounded-full bg-primary flex items-center justify-center">
-                        <TurtleIcon className="size-5" isThinking />
-                      </div>
-                      <span className="text-sm">{t.ai.thinking}</span>
-                    </div>
-                  )}
-                  <div ref={messagesEndRef} />
-                </div>
-              )}
-            </div>
-
-          </div>{/* end scroll */}
-
-          {/* Mobile Input - flex-shrink-0, always visible above BottomNav */}
-          <div className="flex-shrink-0 bg-background px-4 py-2">
-              <form onSubmit={handleSubmit}>
-                <div className="flex items-center gap-3 bg-muted rounded-3xl px-4 py-3">
-                  <textarea
-                    ref={textareaRef}
-                    value={input}
-                    onChange={(e) => {
-                      setInput(e.target.value);
-                      e.target.style.height = "auto";
-                      e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
-                    }}
-                    onKeyDown={handleKeyDown}
-                    placeholder={t.ai.placeholder}
-                    disabled={isLoading}
-                    enterKeyHint="send"
-                    autoComplete="off"
-                    autoCorrect="on"
-                    className="flex-1 min-w-0 min-h-[24px] max-h-[120px] resize-none overflow-y-auto bg-transparent border-none outline-none py-0 px-0 leading-6 text-[16px] placeholder:text-muted-foreground/70"
-                    rows={1}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="flex-shrink-0 size-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all grid place-items-center"
-                  >
-                    <PaperclipIcon className="size-4" />
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isLoading || (!input.trim() && !attachedFile)}
-                    className="flex-shrink-0 size-9 rounded-full bg-primary text-primary-foreground disabled:opacity-40 transition-opacity grid place-items-center"
-                  >
-                    <SendIcon className="size-4" />
-                  </button>
-                </div>
-              </form>
-              {/* File chip */}
-              {attachedFile && (
-                <div className="flex items-center gap-2 p-1">
-                  <div className="flex items-center gap-2 rounded-xl bg-primary/10 border border-primary/20 px-3 py-1.5 text-xs text-primary font-medium max-w-full">
-                    <PaperclipIcon className="size-3 flex-shrink-0" />
-                    <span className="truncate">{attachedFile.name}</span>
-                    <button type="button" onClick={() => setAttachedFile(null)} className="ml-1 opacity-60 hover:opacity-100">
-                      <XIcon className="size-3" />
-                    </button>
-                  </div>
-                </div>
-              )}
+          {/* Input above bottom nav (nav is ~64px) */}
+          <div className="flex-shrink-0 pb-16">
+            <InputBar />
           </div>
         </div>
       </div>
