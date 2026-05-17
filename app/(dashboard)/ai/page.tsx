@@ -418,85 +418,39 @@ export default function AIPage() {
     createCategory: language === "es" ? "Crear una categoria llamada Restaurantes con icono 🍽️" : "Create a new category called Restaurants with 🍽️ icon",
   };
 
-  // Input bar — glass pill on gradient background
-  const InputBar = () => (
-    <div className="flex-shrink-0 px-4 pb-4 pt-2">
-      <form onSubmit={handleSubmit}>
-        <div
-          className="flex items-end gap-3 rounded-2xl px-4 py-3 min-h-[52px]"
-          style={{ background: "rgba(255,255,255,0.80)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", border: "1px solid rgba(255,255,255,0.6)" }}
-        >
-          <textarea
-            ref={textareaRef}
-            value={input}
-            onChange={(e) => {
-              setInput(e.target.value);
-              e.target.style.height = "auto";
-              e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
-            }}
-            onKeyDown={handleKeyDown}
-            placeholder="Preguntame algo..."
-            disabled={isLoading}
-            enterKeyHint="send"
-            autoComplete="off"
-            autoCorrect="on"
-            className="flex-1 min-w-0 min-h-[24px] max-h-[120px] resize-none overflow-y-auto bg-transparent border-none outline-none py-0 px-0 leading-6 text-[16px] text-[#2A1F24] placeholder:text-[#9D8189]/70"
-            rows={1}
-          />
-          <button
-            type="submit"
-            disabled={isLoading || (!input.trim() && !attachedFile)}
-            className="flex-shrink-0 size-9 rounded-full grid place-items-center self-end transition-all active:scale-90 disabled:opacity-30"
-            style={{ background: "#4A3540" }}
-          >
-            <ArrowUpIcon className="size-4 text-white" strokeWidth={2.5} />
-          </button>
-        </div>
-      </form>
-      {attachedFile && (
-        <div className="flex items-center gap-2 pt-2">
-          <div className="flex items-center gap-2 rounded-xl bg-white/60 border border-white/80 px-3 py-1.5 text-xs text-[#4A3540] font-medium max-w-full">
-            <PaperclipIcon className="size-3 flex-shrink-0" />
-            <span className="truncate">{attachedFile.name}</span>
-            <button type="button" onClick={() => setAttachedFile(null)} className="ml-1 opacity-50 hover:opacity-100">
-              <XIcon className="size-3" />
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
+  // Shared bubble styles
+  const glassBubble = {
+    background: "rgba(255,255,255,0.82)",
+    backdropFilter: "blur(14px)",
+    WebkitBackdropFilter: "blur(14px)",
+    border: "1px solid rgba(255,255,255,0.65)",
+  } as React.CSSProperties;
 
-  // Empty state — minimal: just icon + greeting
-  const EmptyState = () => (
-    <div className="flex flex-col items-center justify-center flex-1 px-4 py-12">
-      <div className="size-14 rounded-2xl flex items-center justify-center mb-4" style={{ background: "rgba(255,255,255,0.55)" }}>
+  const GRADIENT = "linear-gradient(135deg, #D8E2DC 0%, #FFE5D9 55%, #FFCAD4 100%)"
+
+  // ── Messages JSX (variable, not component — prevents remount on re-render) ──
+  const messagesJsx = messages.length === 0 ? (
+    // Empty state — minimal
+    <div className="flex flex-col items-center justify-center flex-1 px-4">
+      <div className="size-14 rounded-2xl flex items-center justify-center mb-3" style={{ background: "rgba(255,255,255,0.55)" }}>
         <TurtleIcon className="size-8" />
       </div>
-      <p className="text-[#4A3540] text-lg font-semibold" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
+      <p className="text-[#6B5159] text-base font-medium tracking-tight">
         ¿En qué te ayudo?
       </p>
     </div>
-  );
-
-  // Messages list — user: dark bubble · AI: white frosted bubble
-  const MessagesList = () => (
-    <div className="px-4 py-4 space-y-3 flex-1">
+  ) : (
+    <div className="px-4 py-4 space-y-3">
       {messages.map((msg, idx) => {
         const isUser = msg.role === "user";
         return (
           <div key={idx} className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
             {isUser ? (
-              /* User — dark mauve bubble, white text */
               <div className="max-w-[78%] rounded-2xl rounded-br-sm px-4 py-2.5" style={{ background: "#4A3540" }}>
                 <p className="text-sm leading-relaxed text-white whitespace-pre-wrap">{msg.content}</p>
               </div>
             ) : (
-              /* AI — white frosted bubble */
-              <div
-                className="max-w-[85%] rounded-2xl rounded-bl-sm px-4 py-2.5"
-                style={{ background: "rgba(255,255,255,0.80)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.6)" }}
-              >
+              <div className="max-w-[85%] rounded-2xl rounded-bl-sm px-4 py-2.5" style={glassBubble}>
                 <div className="text-sm leading-relaxed text-[#2A1F24]">
                   <MarkdownRenderer content={msg.content} />
                 </div>
@@ -524,12 +478,9 @@ export default function AIPage() {
         );
       })}
       {/* Thinking dots */}
-      {isLoading && messages.length > 0 && messages[messages.length - 1]?.role === "user" && (
+      {isLoading && messages[messages.length - 1]?.role === "user" && (
         <div className="flex justify-start">
-          <div
-            className="rounded-2xl rounded-bl-sm px-4 py-3"
-            style={{ background: "rgba(255,255,255,0.80)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.6)" }}
-          >
+          <div className="rounded-2xl rounded-bl-sm px-4 py-3" style={glassBubble}>
             <div className="flex items-center gap-1.5">
               {[0, 1, 2].map(i => (
                 <span key={i} className="block size-2 rounded-full bg-[#9D8189] animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
@@ -541,8 +492,6 @@ export default function AIPage() {
       <div ref={messagesEndRef} />
     </div>
   );
-
-  const GRADIENT = "linear-gradient(135deg, #D8E2DC 0%, #FFE5D9 55%, #FFCAD4 100%)"
 
   return (
     <div className="flex h-full -m-4 md:-m-6" style={{ background: GRADIENT }}>
@@ -571,9 +520,29 @@ export default function AIPage() {
               </span>
             </div>
             <div className="flex-1 overflow-y-auto min-h-0 flex flex-col">
-              {messages.length === 0 ? <EmptyState /> : <MessagesList />}
+              {messagesJsx}
             </div>
-            <InputBar />
+            {/* Desktop input — inlined to preserve focus */}
+            <form onSubmit={handleSubmit} className="flex-shrink-0 px-4 pt-2 pb-4">
+              <div className="flex items-end gap-3 rounded-2xl px-4 py-3 min-h-[52px]" style={glassBubble}>
+                <textarea
+                  value={input}
+                  onChange={(e) => {
+                    setInput(e.target.value);
+                    e.target.style.height = "auto";
+                    e.target.style.height = `${Math.min(e.target.scrollHeight, 200)}px`;
+                  }}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Preguntame algo..."
+                  disabled={isLoading}
+                  className="flex-1 min-w-0 min-h-[24px] max-h-[200px] resize-none overflow-y-auto bg-transparent border-none outline-none py-0 px-0 leading-6 text-[16px] text-[#2A1F24] placeholder:text-[#9D8189]/70"
+                  rows={1}
+                />
+                <button type="submit" disabled={isLoading || (!input.trim() && !attachedFile)} className="flex-shrink-0 size-9 rounded-full grid place-items-center self-end transition-all active:scale-90 disabled:opacity-30" style={{ background: "#4A3540" }}>
+                  <ArrowUpIcon className="size-4 text-white" strokeWidth={2.5} />
+                </button>
+              </div>
+            </form>
           </Card>
         </div>
 
@@ -583,36 +552,67 @@ export default function AIPage() {
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
         >
-          {/* Header — gradient bg, proper touch targets */}
-          <div className="flex-shrink-0 flex items-center gap-0 px-4 pt-4 pb-3">
-            {/* Back button — 44px touch target */}
+          {/* Header */}
+          <div className="flex-shrink-0 flex items-center px-4 pt-4 pb-3">
             <button
               onClick={() => window.history.back()}
               className="flex items-center justify-center size-11 -ml-2 rounded-2xl text-[#4A3540] active:bg-white/30 active:scale-95 transition-all"
             >
               <ChevronLeftIcon className="size-6" strokeWidth={2} />
             </button>
-
-            {/* Title centered between equal-width flanks */}
-            <span
-              className="flex-1 text-center text-[15px] font-semibold text-[#4A3540]"
-              style={{ fontFamily: "var(--font-fraunces, serif)" }}
-            >
+            <span className="flex-1 text-center text-[15px] font-semibold text-[#4A3540]" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
               Tortuguita IA
             </span>
-
-            {/* Right spacer same width as back button so title is truly centered */}
             <div className="size-11 -mr-2" />
           </div>
 
-          {/* Messages / empty */}
+          {/* Messages */}
           <div className="flex-1 overflow-y-auto min-h-0 flex flex-col">
-            {messages.length === 0 ? <EmptyState /> : <MessagesList />}
+            {messagesJsx}
           </div>
 
-          {/* Input above bottom nav (nav is ~64px) */}
-          <div className="flex-shrink-0 pb-16">
-            <InputBar />
+          {/* Input — inlined so textarea never unmounts between renders */}
+          <div className="flex-shrink-0 pb-20">
+            <form onSubmit={handleSubmit} className="px-4 pt-2 pb-2">
+              <div className="flex items-end gap-3 rounded-2xl px-4 py-3 min-h-[52px]" style={glassBubble}>
+                <textarea
+                  ref={textareaRef}
+                  value={input}
+                  onChange={(e) => {
+                    setInput(e.target.value);
+                    e.target.style.height = "auto";
+                    e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
+                  }}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Preguntame algo..."
+                  disabled={isLoading}
+                  enterKeyHint="send"
+                  autoComplete="off"
+                  autoCorrect="on"
+                  className="flex-1 min-w-0 min-h-[24px] max-h-[120px] resize-none overflow-y-auto bg-transparent border-none outline-none py-0 px-0 leading-6 text-[16px] text-[#2A1F24] placeholder:text-[#9D8189]/70"
+                  rows={1}
+                />
+                <button
+                  type="submit"
+                  disabled={isLoading || (!input.trim() && !attachedFile)}
+                  className="flex-shrink-0 size-9 rounded-full grid place-items-center self-end transition-all active:scale-90 disabled:opacity-30"
+                  style={{ background: "#4A3540" }}
+                >
+                  <ArrowUpIcon className="size-4 text-white" strokeWidth={2.5} />
+                </button>
+              </div>
+              {attachedFile && (
+                <div className="flex items-center gap-2 pt-2">
+                  <div className="flex items-center gap-2 rounded-xl bg-white/60 border border-white/80 px-3 py-1.5 text-xs text-[#4A3540] font-medium max-w-full">
+                    <PaperclipIcon className="size-3 flex-shrink-0" />
+                    <span className="truncate">{attachedFile.name}</span>
+                    <button type="button" onClick={() => setAttachedFile(null)} className="ml-1 opacity-50 hover:opacity-100">
+                      <XIcon className="size-3" />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </form>
           </div>
         </div>
       </div>
