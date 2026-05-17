@@ -291,6 +291,8 @@ export function buildSafeSystemPrompt(context: {
 
 ## HERRAMIENTAS
 
+- **SIEMPRE usá tools para buscar datos reales.** Si el usuario pregunta por un gasto, categoría o ingreso específico, llamá search_bills o search_incomes — nunca respondas de memoria ni basándote en resultados de búsquedas anteriores.
+- Si la pregunta es de seguimiento ("Y el alquiler?", "¿Y las expensas?", "¿Qué pasó con X?"), buscá explícitamente ese dato con el tool correspondiente.
 - Si falta la categoría al crear un gasto, preguntá cuál usar
 - Si la categoría no existe, ofrecé crearla
 - Para eliminar: primera llamada con confirmed=false, segunda con confirmed=true
