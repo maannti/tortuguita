@@ -3,6 +3,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useSession } from "next-auth/react"
 import { cn } from "@/lib/utils"
+import { haptic } from "@/lib/haptics"
 
 function getInitials(name?: string | null) {
   return name ? name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2) : "?"
@@ -59,6 +60,7 @@ export function BottomNav() {
             <Link
               key={item.href}
               href={item.href}
+              onClick={() => haptic("selection")}
               {...(item.tourAttr ? { "data-tour": item.tourAttr } : {})}
               className={cn(
                 "flex flex-1 flex-col items-center justify-center gap-1 rounded-xl transition-all",
@@ -78,6 +80,7 @@ export function BottomNav() {
         {/* User avatar tab */}
         <Link
           href="/settings"
+          onClick={() => haptic("selection")}
           data-tour="nav-settings"
           className={cn(
             "flex flex-1 flex-col items-center justify-center gap-1 rounded-xl transition-all",
