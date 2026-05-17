@@ -6,6 +6,7 @@ import { useState, useEffect, useRef, useTransition } from "react"
 import { ChevronLeft, ChevronRight, Plus, CreditCard, ChevronDown, Search, X, SlidersHorizontal, Check, User, Home, Loader2, Repeat } from "lucide-react"
 import { MonthPicker } from "@/components/ui/month-picker"
 import { cn } from "@/lib/utils"
+import { haptic } from "@/lib/haptics"
 
 interface BillItem {
   id: string; label: string; amount: number; amountUSD: number | null; paymentDate: string
@@ -237,6 +238,7 @@ export function BillsView({
           {/* Normal header content */}
           <div className="relative flex items-center justify-between">
             <button onClick={() => {
+              haptic("selection")
               if (!prevMonth) return
               const params = new URLSearchParams(searchParams.toString())
               params.set("month", prevMonth)
@@ -247,7 +249,7 @@ export function BillsView({
             </button>
             <div className="text-center space-y-0.5">
               <button
-                onClick={() => setShowPicker(true)}
+                onClick={() => { haptic("selection"); setShowPicker(true) }}
                 className="font-medium text-[#6B5159] px-3 py-1 rounded-full hover:bg-white/30 transition-colors active:scale-95"
                 style={{ fontFamily: "var(--font-fraunces, serif)", fontSize: "1.05rem" }}
               >
@@ -266,13 +268,13 @@ export function BillsView({
                 <div className="flex items-center justify-center pt-1">
                   <div className="flex rounded-full bg-white/40 backdrop-blur-sm p-0.5">
                     <button
-                      onClick={() => setShowUSD(false)}
+                      onClick={() => { haptic("selection"); setShowUSD(false) }}
                       className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-all ${!showUSD ? "bg-white/80 text-[#4A3540] shadow-sm" : "text-[#9D8189]"}`}
                     >
                       ARS
                     </button>
                     <button
-                      onClick={() => setShowUSD(true)}
+                      onClick={() => { haptic("selection"); setShowUSD(true) }}
                       className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-all ${showUSD ? "bg-white/80 text-[#4A3540] shadow-sm" : "text-[#9D8189]"}`}
                     >
                       USD
@@ -282,6 +284,7 @@ export function BillsView({
               )}
             </div>
             <button onClick={() => {
+              haptic("selection")
               if (!nextMonth) return
               const params = new URLSearchParams(searchParams.toString())
               params.set("month", nextMonth)
@@ -318,7 +321,7 @@ export function BillsView({
                 {isPending ? (
                   <Loader2 className="size-4 text-[#9D8189] animate-spin" />
                 ) : (
-                  <button onClick={localSearch ? clearSearch : () => setSearchExpanded(false)} className="size-6 flex items-center justify-center rounded-full hover:bg-white/30 active:scale-95 transition-all">
+                  <button onClick={() => { haptic("light"); localSearch ? clearSearch() : setSearchExpanded(false) }} className="size-6 flex items-center justify-center rounded-full hover:bg-white/30 active:scale-95 transition-all">
                     <X className="size-4 text-[#6B5159]" />
                   </button>
                 )}
@@ -329,7 +332,7 @@ export function BillsView({
             <div className="flex items-center">
               {/* Search button */}
               <button
-                onClick={() => setSearchExpanded(true)}
+                onClick={() => { haptic("light"); setSearchExpanded(true) }}
                 className={cn(
                   "flex-1 flex items-center justify-center gap-2 py-3 transition-all active:bg-white/20",
                   searchQuery && "bg-white/30"
@@ -346,7 +349,7 @@ export function BillsView({
 
               {/* Filter button */}
               <button
-                onClick={() => setFilterSheetOpen(true)}
+                onClick={() => { haptic("light"); setFilterSheetOpen(true) }}
                 className={cn(
                   "flex-1 flex items-center justify-center gap-2 py-3 transition-all active:bg-white/20",
                   hasActiveFilters && "bg-white/30"
@@ -370,12 +373,12 @@ export function BillsView({
           categoryGroups.map((group) => {
             const usdLabel = groupUSDDisplay(group)
             const isCollapsed = collapsedCategories.has(group.name)
-            const toggleCollapse = () => setCollapsedCategories(prev => {
+            const toggleCollapse = () => { haptic("selection"); setCollapsedCategories(prev => {
               const next = new Set(prev)
               if (next.has(group.name)) next.delete(group.name)
               else next.add(group.name)
               return next
-            })
+            }) }
             return (
               <section key={group.name}>
                 {/* Category header */}
@@ -469,7 +472,7 @@ export function BillsView({
                   }
                 </p>
                 <button
-                  onClick={clearEverything}
+                  onClick={() => { haptic("light"); clearEverything() }}
                   className="text-sm text-primary font-medium active:scale-95 transition-transform"
                 >
                   Limpiar filtros
@@ -513,7 +516,7 @@ export function BillsView({
           {/* Backdrop */}
           <div
             className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-            onClick={() => setFilterSheetOpen(false)}
+            onClick={() => { haptic("light"); setFilterSheetOpen(false) }}
           />
 
           {/* Sheet */}
@@ -528,7 +531,7 @@ export function BillsView({
                   Filtros
                 </h2>
                 <button
-                  onClick={() => setFilterSheetOpen(false)}
+                  onClick={() => { haptic("light"); setFilterSheetOpen(false) }}
                   className="p-1 text-muted-foreground hover:text-foreground active:scale-95 transition-all"
                 >
                   <X className="size-5" />
@@ -571,7 +574,7 @@ export function BillsView({
                             return (
                               <button
                                 key={cat.id}
-                                onClick={() => toggleCategory(cat.id)}
+                                onClick={() => { haptic("selection"); toggleCategory(cat.id) }}
                                 className={cn(
                                   "w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition-colors",
                                   isSelected
@@ -601,7 +604,7 @@ export function BillsView({
                             return (
                               <button
                                 key={card.id}
-                                onClick={() => toggleCard(card.id)}
+                                onClick={() => { haptic("selection"); toggleCard(card.id) }}
                                 className={cn(
                                   "w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition-colors",
                                   isSelected
@@ -628,13 +631,13 @@ export function BillsView({
             {/* Actions */}
             <div className="flex-shrink-0 flex gap-3 px-5 py-4 border-t border-border/50 pb-safe">
               <button
-                onClick={clearAllFilters}
+                onClick={() => { haptic("light"); clearAllFilters() }}
                 className="flex-1 h-12 rounded-xl bg-muted/50 text-muted-foreground font-medium active:scale-[0.98] transition-transform"
               >
                 Limpiar
               </button>
               <button
-                onClick={applyFilters}
+                onClick={() => { haptic("medium"); applyFilters() }}
                 className="flex-1 h-12 rounded-xl bg-primary text-primary-foreground font-medium active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
               >
                 {isPending ? (

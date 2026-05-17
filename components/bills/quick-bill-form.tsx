@@ -3,6 +3,7 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { ChevronLeft, Check, CreditCard, Banknote, Wallet, Ellipsis, ChevronDown, Plus, User, Home, X, Repeat } from "lucide-react"
 import { CardIcon, isNetworkId, BANKS, NetworkId } from "@/components/ui/card-network"
+import { haptic } from "@/lib/haptics"
 
 interface DefaultAssignment { userId: string; percentage: number }
 interface Category {
@@ -226,6 +227,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!canSave) { setError("Completá todos los campos requeridos"); return }
+    haptic("medium")
     setError(null); setIsLoading(true)
     try {
       // ── Recurring bill path ──────────────────────────────────────────────
@@ -340,7 +342,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
     <form onSubmit={handleSubmit} className="flex flex-col min-h-[calc(100dvh-7rem)]">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b sticky top-0 z-10 bg-background/95 backdrop-blur-sm">
-        <button type="button" onClick={() => backHref ? push(backHref) : back()} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
+        <button type="button" onClick={() => { haptic("selection"); backHref ? push(backHref) : back() }} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
           <ChevronLeft className="size-4" />Volver
         </button>
         <h1 className="text-base font-semibold">{isEdit ? "Editar gasto" : "Nuevo gasto"}</h1>
@@ -367,7 +369,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
                     <button
                       key={org.id}
                       type="button"
-                      onClick={() => { setSelectedOrgId(org.id); setCategoryId(""); setCardId("") }}
+                      onClick={() => { haptic("selection"); setSelectedOrgId(org.id); setCategoryId(""); setCardId("") }}
                       className={`flex items-center gap-3 px-4 py-3.5 rounded-2xl border-2 text-sm font-medium transition-all active:scale-[0.97] ${
                         isSelected
                           ? "border-primary bg-primary/8 text-foreground shadow-sm"
@@ -451,7 +453,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
               {(() => {
                 const sel = allNormalCats.find(c => c.id === categoryId)
                 return (
-                  <button type="button" onClick={() => setCatSheetOpen(true)}
+                  <button type="button" onClick={() => { haptic("light"); setCatSheetOpen(true) }}
                     className="w-full flex items-center gap-2 rounded-xl border bg-background px-3 py-2.5 text-sm text-left transition-colors border-border hover:border-foreground/30">
                     {sel ? (
                       <>
@@ -480,6 +482,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
               {PAYMENT_METHODS.map((pm) => (
                 <button key={pm.value} type="button"
                   onClick={() => {
+                    haptic("selection")
                     setPaymentMethod(pm.value)
                     if (pm.value !== "credit") { setCardId(""); setInstallments(1); setCustomInstallments("") }
                     // categoryId se mantiene al cambiar medio de pago para no perder la selección
@@ -514,7 +517,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">¿Con qué tarjeta?</p>
               <div className="grid grid-cols-2 gap-2">
                 {ccCards.map((cat) => (
-                  <button key={cat.id} type="button" onClick={() => setCardId(cat.id)}
+                  <button key={cat.id} type="button" onClick={() => { haptic("selection"); setCardId(cat.id) }}
                     className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 text-sm text-left transition-colors ${cardId === cat.id ? "border-primary bg-primary/5 font-medium" : "border-border bg-background text-muted-foreground hover:border-foreground/30"}`}>
                     <CardIcon bankId={BANKS.find(b => b.color === cat.color)?.id ?? null} bankColor={cat.color || "#9D8189"} bankName={cat.name} network={isNetworkId(cat.icon) ? cat.icon as NetworkId : null} size="sm" />
                     <span className="truncate">{cat.name}</span>
@@ -535,7 +538,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
                 const sel = allNormalCats.find(c => c.id === categoryId)
                 return (
                   <div className="flex gap-2">
-                    <button type="button" onClick={() => setCatSheetOpen(true)}
+                    <button type="button" onClick={() => { haptic("light"); setCatSheetOpen(true) }}
                       className="flex-1 flex items-center gap-2 rounded-xl border bg-background px-3 py-2.5 text-sm text-left transition-colors border-border hover:border-foreground/30">
                       {sel ? (
                         <>
@@ -553,7 +556,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
                       <ChevronDown className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                     </button>
                     {categoryId && (
-                      <button type="button" onClick={() => setCategoryId("")}
+                      <button type="button" onClick={() => { haptic("light"); setCategoryId("") }}
                         className="w-11 rounded-xl border border-border bg-background flex items-center justify-center text-muted-foreground hover:border-foreground/30 transition-colors">
                         <X className="size-4" />
                       </button>
@@ -634,7 +637,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Cuotas</p>
               <div className="flex flex-wrap gap-2">
                 {INSTALLMENT_OPTIONS.map((n) => (
-                  <button key={n} type="button" onClick={() => { setInstallments(n); setCustomInstallments(""); if (n > 1) setIsRecurring(false) }}
+                  <button key={n} type="button" onClick={() => { haptic("selection"); setInstallments(n); setCustomInstallments(""); if (n > 1) setIsRecurring(false) }}
                     className={`px-4 py-2 rounded-xl border text-sm font-medium transition-colors ${installments === n && !customInstallments ? "border-primary bg-primary text-primary-foreground" : "border-border text-muted-foreground hover:border-foreground/30"}`}>
                     {n === 1 ? "1 pago" : `${n}x`}
                   </button>
@@ -676,7 +679,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
                   { value: "mine",   label: "Solo mío",     desc: "100% a mi cargo" },
                   ...otherMembers.map(m => ({ value: m.id, label: `Solo de ${m.name?.split(" ")[0]}`, desc: "100% a cargo de ellos" })),
                 ].map((opt) => (
-                  <button key={opt.value} type="button" onClick={() => setSplitMode(opt.value)}
+                  <button key={opt.value} type="button" onClick={() => { haptic("selection"); setSplitMode(opt.value) }}
                     className={`w-full flex items-center justify-between rounded-xl border px-4 py-3 text-left transition-colors ${splitMode === opt.value ? "border-primary bg-primary/5" : "border-border bg-background hover:border-foreground/30"}`}>
                     <div><p className="text-sm font-medium">{opt.label}</p><p className="text-xs text-muted-foreground">{opt.desc}</p></div>
                     {splitMode === opt.value && <Check className="size-4 text-primary flex-shrink-0" />}
@@ -740,7 +743,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
                       </div>
                     )}
                   </div>
-                  <button onClick={() => { setCatSheetOpen(false); setCatSpacePicker(false) }} className="text-muted-foreground active:scale-90 transition-all">
+                  <button onClick={() => { haptic("light"); setCatSheetOpen(false); setCatSpacePicker(false) }} className="text-muted-foreground active:scale-90 transition-all">
                     <X className="size-5" />
                   </button>
                 </div>
@@ -750,7 +753,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
                 {/* Sin categoría (only for CC bills) */}
                 {isCreditCard && (
                   <button type="button"
-                    onClick={() => { setCategoryId(""); setCatSheetOpen(false) }}
+                    onClick={() => { haptic("selection"); setCategoryId(""); setCatSheetOpen(false) }}
                     className={`w-full flex items-center px-3 py-2.5 rounded-xl text-sm transition-colors ${!categoryId ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-muted/60"}`}>
                     Sin categoría
                   </button>
@@ -784,6 +787,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
                           return (
                             <button key={cat.id} type="button"
                               onClick={() => {
+                                haptic("selection")
                                 setCategoryId(cat.id)
                                 setSelectedOrgId(cat.organizationId)
                                 setCatSheetOpen(false)

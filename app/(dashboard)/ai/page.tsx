@@ -8,6 +8,7 @@ import { XIcon, PaperclipIcon, ArrowUpIcon, ChevronLeftIcon, CheckCircleIcon, XC
 import { TurtleIcon } from "@/components/ai/turtle-icon";
 import { useTranslations, useLanguage } from "@/components/providers/language-provider";
 import useSWR from "swr";
+import { haptic } from "@/lib/haptics";
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -214,6 +215,7 @@ export default function AIPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if ((!input.trim() && !attachedFile) || isLoading) return;
+    haptic("medium");
 
     const displayContent = input || (attachedFile ? `📎 ${attachedFile.name}` : "");
     const userMessage: Message = {
@@ -400,6 +402,7 @@ export default function AIPage() {
 
   const handleSuggestionClick = (prompt: string) => {
     if (isLoading) return;
+    haptic("selection");
     setInput(prompt);
     // Use setTimeout to ensure state is updated before submitting
     setTimeout(() => {
@@ -555,7 +558,7 @@ export default function AIPage() {
           {/* Header */}
           <div className="flex-shrink-0 flex items-center px-4 pt-4 pb-3">
             <button
-              onClick={() => window.history.back()}
+              onClick={() => { haptic("selection"); window.history.back() }}
               className="flex items-center justify-center size-11 rounded-2xl text-[#4A3540] active:bg-white/30 active:scale-95 transition-all"
             >
               <ChevronLeftIcon className="size-6" strokeWidth={2} />
@@ -606,7 +609,7 @@ export default function AIPage() {
                   <div className="flex items-center gap-2 rounded-xl bg-white/60 border border-white/80 px-3 py-1.5 text-xs text-[#4A3540] font-medium max-w-full">
                     <PaperclipIcon className="size-3 flex-shrink-0" />
                     <span className="truncate">{attachedFile.name}</span>
-                    <button type="button" onClick={() => setAttachedFile(null)} className="ml-1 opacity-50 hover:opacity-100">
+                    <button type="button" onClick={() => { haptic("light"); setAttachedFile(null) }} className="ml-1 opacity-50 hover:opacity-100">
                       <XIcon className="size-3" />
                     </button>
                   </div>

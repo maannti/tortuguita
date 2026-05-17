@@ -11,6 +11,7 @@ import { OnboardingChecklist, ChecklistData } from "@/components/onboarding/onbo
 import { TourInviteCard } from "@/components/onboarding/tour-invite-card"
 import { startAppTour } from "@/components/onboarding/app-tour"
 import { AiInsightWidget, InsightData } from "@/components/dashboard/ai-insight-widget"
+import { haptic } from "@/lib/haptics"
 
 const BANK_COLORS: Record<string, string> = {
   bbva: "#004481", icbc: "#8C8C8C", santander: "#EC0000", galicia: "#E8302E",
@@ -178,21 +179,21 @@ export function HomeDashboard({ month, monthKey, availableMonths, spaces, curren
             {/* Month nav */}
             <div data-tour="month-nav" className="flex items-center justify-between">
               <button
-                onClick={() => prevMonth && router.push(`/dashboard?month=${prevMonth}`)}
+                onClick={() => { haptic("selection"); prevMonth && router.push(`/dashboard?month=${prevMonth}`) }}
                 disabled={!prevMonth}
                 className="size-8 flex items-center justify-center rounded-full bg-white/40 backdrop-blur-sm disabled:opacity-30 active:scale-95 transition-all"
               >
                 <ChevronLeft className="size-4 text-[#6B5159]" />
               </button>
               <button
-                onClick={() => setShowPicker(true)}
+                onClick={() => { haptic("selection"); setShowPicker(true) }}
                 className="text-sm font-medium text-[#6B5159] px-3 py-1 rounded-full hover:bg-white/30 transition-colors active:scale-95"
                 style={{ fontFamily: "var(--font-fraunces, serif)" }}
               >
                 {capitalize(month)}
               </button>
               <button
-                onClick={() => nextMonth && router.push(`/dashboard?month=${nextMonth}`)}
+                onClick={() => { haptic("selection"); nextMonth && router.push(`/dashboard?month=${nextMonth}`) }}
                 disabled={!nextMonth}
                 className="size-8 flex items-center justify-center rounded-full bg-white/40 backdrop-blur-sm disabled:opacity-30 active:scale-95 transition-all"
               >
@@ -212,7 +213,7 @@ export function HomeDashboard({ month, monthKey, availableMonths, spaces, curren
                 <div className="flex items-center justify-center pt-1">
                   <div className="flex rounded-full bg-white/40 backdrop-blur-sm p-0.5">
                     <button
-                      onClick={() => setShowMyPart(false)}
+                      onClick={() => { haptic("selection"); setShowMyPart(false) }}
                       className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-all ${
                         !showMyPart ? "bg-white/80 text-[#4A3540] shadow-sm" : "text-[#9D8189]"
                       }`}
@@ -220,7 +221,7 @@ export function HomeDashboard({ month, monthKey, availableMonths, spaces, curren
                       Total
                     </button>
                     <button
-                      onClick={() => setShowMyPart(true)}
+                      onClick={() => { haptic("selection"); setShowMyPart(true) }}
                       className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-all ${
                         showMyPart ? "bg-white/80 text-[#4A3540] shadow-sm" : "text-[#9D8189]"
                       }`}
@@ -427,7 +428,7 @@ export function HomeDashboard({ month, monthKey, availableMonths, spaces, curren
       {/* FAB */}
       <button
         data-tour="fab"
-        onClick={() => router.push("/bills/new")}
+        onClick={() => { haptic("medium"); router.push("/bills/new") }}
         className="fixed bottom-24 right-4 z-30 flex items-center justify-center size-14 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 active:scale-95 transition-transform"
       >
         <Plus className="size-6" />

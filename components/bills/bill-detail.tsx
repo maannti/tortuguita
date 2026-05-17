@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog"
 import { CategoryBadge } from "@/components/categories/category-badge"
 import { CardIcon, BANKS, isNetworkId, NetworkId } from "@/components/ui/card-network"
+import { haptic } from "@/lib/haptics"
 
 interface BillDetailProps {
   bill: {
@@ -90,7 +91,7 @@ export function BillDetail({ bill }: BillDetailProps) {
       <div className="flex items-center justify-between px-4 py-3 border-b sticky top-0 bg-background/95 backdrop-blur-sm z-10">
         <button
           type="button"
-          onClick={() => push("/bills")}
+          onClick={() => { haptic("selection"); push("/bills") }}
           className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           <ChevronLeft className="size-4" />
@@ -105,7 +106,7 @@ export function BillDetail({ bill }: BillDetailProps) {
           </Link>
           <button
             type="button"
-            onClick={() => setDeleteOpen(true)}
+            onClick={() => { haptic("light"); setDeleteOpen(true) }}
             className="size-9 flex items-center justify-center rounded-2xl bg-muted/80 text-muted-foreground hover:text-destructive active:scale-95 transition-all"
           >
             <Trash2 className="size-4" />
@@ -256,7 +257,7 @@ export function BillDetail({ bill }: BillDetailProps) {
           <div className="flex flex-col gap-2.5 pt-2">
             <button
               type="button"
-              onClick={handleDelete}
+              onClick={() => { haptic("heavy"); handleDelete() }}
               disabled={isDeleting}
               className="w-full rounded-full bg-destructive text-white py-3.5 text-sm font-semibold disabled:opacity-50 active:scale-[0.97] transition-all"
             >
@@ -264,7 +265,7 @@ export function BillDetail({ bill }: BillDetailProps) {
             </button>
             <button
               type="button"
-              onClick={() => { setDeleteOpen(false); setDeleteError(null) }}
+              onClick={() => { haptic("light"); setDeleteOpen(false); setDeleteError(null) }}
               disabled={isDeleting}
               className="w-full rounded-full bg-muted text-muted-foreground py-3.5 text-sm font-medium disabled:opacity-50 active:scale-[0.97] transition-all"
             >
