@@ -161,7 +161,7 @@ export function OnboardingChecklist({ data }: { data: ChecklistData }) {
       {allDone && (
         <div className="px-4 py-3 border-t border-border/40 text-center">
           <p className="text-xs text-muted-foreground">
-            Ya conocés todo lo que ofrece Tortuguita.{" "}
+            Ya conocés todo lo que ofrece tortuguita.{" "}
             <button onClick={handleDismiss} className="text-primary font-medium underline">
               Cerrar
             </button>
