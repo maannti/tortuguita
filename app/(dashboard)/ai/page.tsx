@@ -494,7 +494,7 @@ export default function AIPage() {
   );
 
   return (
-    <div className="flex h-full -m-4 md:-m-6" style={{ background: GRADIENT }}>
+    <div className="flex h-full" style={{ background: GRADIENT }}>
       <input ref={fileInputRef} type="file" accept=".pdf,.csv,.txt,image/*" onChange={handleFileChange} className="hidden" />
 
       {/* Desktop sidebar */}
@@ -516,7 +516,7 @@ export default function AIPage() {
           <Card className="flex-1 flex flex-col overflow-hidden" style={{ background: "rgba(255,255,255,0.35)", backdropFilter: "blur(12px)", border: "1px solid rgba(216,226,220,0.6)" }}>
             <div className="flex-shrink-0 flex items-center justify-center px-5 pt-5 pb-3 border-b border-[#D8E2DC]/50">
               <span className="text-base font-semibold text-[#4A3540]" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
-                Tortuguita IA
+                tortuguita IA
               </span>
             </div>
             <div className="flex-1 overflow-y-auto min-h-0 flex flex-col">
@@ -524,7 +524,7 @@ export default function AIPage() {
             </div>
             {/* Desktop input — inlined to preserve focus */}
             <form onSubmit={handleSubmit} className="flex-shrink-0 px-4 pt-2 pb-4">
-              <div className="flex items-end gap-3 rounded-2xl px-4 py-3 min-h-[52px]" style={glassBubble}>
+              <div className="flex items-center gap-3 rounded-2xl px-4 py-3 min-h-[52px]" style={glassBubble}>
                 <textarea
                   value={input}
                   onChange={(e) => {
@@ -538,7 +538,7 @@ export default function AIPage() {
                   className="flex-1 min-w-0 min-h-[24px] max-h-[200px] resize-none overflow-y-auto bg-transparent border-none outline-none py-0 px-0 leading-6 text-[16px] text-[#2A1F24] placeholder:text-[#9D8189]/70"
                   rows={1}
                 />
-                <button type="submit" disabled={isLoading || (!input.trim() && !attachedFile)} className="flex-shrink-0 size-9 rounded-full grid place-items-center self-end transition-all active:scale-90 disabled:opacity-30" style={{ background: "#4A3540" }}>
+                <button type="submit" disabled={isLoading || (!input.trim() && !attachedFile)} className="flex-shrink-0 size-9 rounded-full grid place-items-center transition-all active:scale-90 disabled:opacity-30" style={{ background: "#4A3540" }}>
                   <ArrowUpIcon className="size-4 text-white" strokeWidth={2.5} />
                 </button>
               </div>
@@ -556,14 +556,14 @@ export default function AIPage() {
           <div className="flex-shrink-0 flex items-center px-4 pt-4 pb-3">
             <button
               onClick={() => window.history.back()}
-              className="flex items-center justify-center size-11 -ml-2 rounded-2xl text-[#4A3540] active:bg-white/30 active:scale-95 transition-all"
+              className="flex items-center justify-center size-11 rounded-2xl text-[#4A3540] active:bg-white/30 active:scale-95 transition-all"
             >
               <ChevronLeftIcon className="size-6" strokeWidth={2} />
             </button>
             <span className="flex-1 text-center text-[15px] font-semibold text-[#4A3540]" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
-              Tortuguita IA
+              tortuguita IA
             </span>
-            <div className="size-11 -mr-2" />
+            <div className="size-11" />
           </div>
 
           {/* Messages */}
@@ -574,7 +574,7 @@ export default function AIPage() {
           {/* Input — inlined so textarea never unmounts between renders */}
           <div className="flex-shrink-0 pb-20">
             <form onSubmit={handleSubmit} className="px-4 pt-2 pb-2">
-              <div className="flex items-end gap-3 rounded-2xl px-4 py-3 min-h-[52px]" style={glassBubble}>
+              <div className="flex items-center gap-3 rounded-2xl px-4 py-3 min-h-[52px]" style={glassBubble}>
                 <textarea
                   ref={textareaRef}
                   value={input}
@@ -595,7 +595,7 @@ export default function AIPage() {
                 <button
                   type="submit"
                   disabled={isLoading || (!input.trim() && !attachedFile)}
-                  className="flex-shrink-0 size-9 rounded-full grid place-items-center self-end transition-all active:scale-90 disabled:opacity-30"
+                  className="flex-shrink-0 size-9 rounded-full grid place-items-center transition-all active:scale-90 disabled:opacity-30"
                   style={{ background: "#4A3540" }}
                 >
                   <ArrowUpIcon className="size-4 text-white" strokeWidth={2.5} />
