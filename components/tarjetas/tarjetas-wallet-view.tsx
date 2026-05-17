@@ -3,6 +3,7 @@ import { useState, useTransition, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { Plus, ChevronLeft, ChevronRight, ChevronDown, Check, X } from "lucide-react"
 import Link from "next/link"
+import { haptic } from "@/lib/haptics"
 import { cn } from "@/lib/utils"
 import { MonthPicker } from "@/components/ui/month-picker"
 
@@ -51,6 +52,7 @@ function PaidToggle({ billId, isPaid: initialIsPaid }: { billId: string; isPaid:
   const toggle = useCallback((e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
+    haptic("medium")
     startTransition(async () => {
       try {
         const res = await fetch(`/api/bills/${billId}/paid`, { method: "PATCH" })
@@ -99,7 +101,7 @@ function InstallmentGroupRow({ group, cardColor }: { group: InstallmentGroup; ca
     )}>
       <button
         className="w-full px-4 py-3 flex items-start gap-3 active:bg-black/5 transition-colors"
-        onClick={() => setExpanded(v => !v)}
+        onClick={() => { haptic("light"); setExpanded(v => !v) }}
       >
         <div className="flex-1 min-w-0 text-left">
           <p className="text-sm font-medium truncate">{group.label}</p>
@@ -399,7 +401,7 @@ function ExpandedCardContent({ card }: { card: CardData }) {
         {/* Installment groups */}
         {card.installmentGroups.length > 0 && (
           <button
-            onClick={() => setCuotasCollapsed(v => !v)}
+            onClick={() => { haptic("selection"); setCuotasCollapsed(v => !v) }}
             className="w-full px-4 py-2 bg-black/[0.02] flex items-center justify-between"
           >
             <p className="text-[10px] text-muted-foreground uppercase tracking-wide font-medium">Cuotas</p>
@@ -413,7 +415,7 @@ function ExpandedCardContent({ card }: { card: CardData }) {
         {/* Single bills */}
         {card.singleBills.length > 0 && (
           <button
-            onClick={() => setSinglesCollapsed(v => !v)}
+            onClick={() => { haptic("selection"); setSinglesCollapsed(v => !v) }}
             className="w-full px-4 py-2 bg-black/[0.02] flex items-center justify-between"
           >
             <p className="text-[10px] text-muted-foreground uppercase tracking-wide font-medium">Pagos únicos</p>
@@ -442,6 +444,7 @@ export function TarjetasWalletView({ cards, monthLabel, monthKey, prevMonth, nex
   const [showPicker, setShowPicker] = useState(false)
 
   const handleCardClick = (index: number) => {
+    haptic("light")
     setExpandedIndex(prev => prev === index ? null : index)
   }
 
@@ -463,7 +466,7 @@ export function TarjetasWalletView({ cards, monthLabel, monthKey, prevMonth, nex
           <div className="absolute -top-6 -right-6 size-32 rounded-full bg-white/20 blur-2xl pointer-events-none" />
           <div className="flex items-center justify-between">
             <button
-              onClick={() => prevMonth && push(`/tarjetas?month=${prevMonth}`)}
+              onClick={() => { if (prevMonth) { haptic("selection"); push(`/tarjetas?month=${prevMonth}`) } }}
               disabled={!prevMonth}
               className="size-8 flex items-center justify-center rounded-full bg-white/40 backdrop-blur-sm disabled:opacity-30 active:scale-95 transition-all"
             >
@@ -472,7 +475,7 @@ export function TarjetasWalletView({ cards, monthLabel, monthKey, prevMonth, nex
             <div className="text-center space-y-0.5">
               <p className="text-[11px] font-medium text-[#9D8189] uppercase tracking-wide">Tarjetas</p>
               <button
-                onClick={() => setShowPicker(true)}
+                onClick={() => { haptic("selection"); setShowPicker(true) }}
                 className="font-medium text-[#4A3540] px-3 py-1 rounded-full hover:bg-white/30 transition-colors active:scale-95"
                 style={{ fontFamily: "var(--font-fraunces, serif)", fontSize: "1.05rem" }}
               >
@@ -490,7 +493,7 @@ export function TarjetasWalletView({ cards, monthLabel, monthKey, prevMonth, nex
               )}
             </div>
             <button
-              onClick={() => nextMonth && push(`/tarjetas?month=${nextMonth}`)}
+              onClick={() => { if (nextMonth) { haptic("selection"); push(`/tarjetas?month=${nextMonth}`) } }}
               disabled={!nextMonth}
               className="size-8 flex items-center justify-center rounded-full bg-white/40 backdrop-blur-sm disabled:opacity-30 active:scale-95 transition-all"
             >
