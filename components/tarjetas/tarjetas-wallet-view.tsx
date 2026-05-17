@@ -36,6 +36,7 @@ interface Props {
   monthKey: string
   prevMonth: string | null
   nextMonth: string | null
+  cycleLabel?: string | null
 }
 
 const arsFormatter = new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", minimumFractionDigits: 0, maximumFractionDigits: 0 })
@@ -435,7 +436,7 @@ function ExpandedCardContent({ card }: { card: CardData }) {
 }
 
 // ─── Main view ────────────────────────────────────────────────────────────────
-export function TarjetasWalletView({ cards, monthLabel, monthKey, prevMonth, nextMonth }: Props) {
+export function TarjetasWalletView({ cards, monthLabel, monthKey, prevMonth, nextMonth, cycleLabel }: Props) {
   const { push } = useRouter()
   const [expandedIndex, setExpandedIndex] = useState<number | null>(cards.length > 0 ? 0 : null)
   const [showPicker, setShowPicker] = useState(false)
@@ -480,6 +481,11 @@ export function TarjetasWalletView({ cards, monthLabel, monthKey, prevMonth, nex
               {grandTotal > 0 && (
                 <p className="text-2xl font-medium text-[#4A3540] leading-tight" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
                   {formatARS(grandTotal)}
+                </p>
+              )}
+              {cycleLabel && (
+                <p className="text-[10px] text-[#9D8189] mt-0.5">
+                  Gastos que vencen en {cycleLabel}
                 </p>
               )}
             </div>
