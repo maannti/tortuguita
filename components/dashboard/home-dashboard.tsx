@@ -10,6 +10,7 @@ import { OnboardingSlides } from "@/components/onboarding/onboarding-slides"
 import { OnboardingChecklist, ChecklistData } from "@/components/onboarding/onboarding-checklist"
 import { TourInviteCard } from "@/components/onboarding/tour-invite-card"
 import { startAppTour } from "@/components/onboarding/app-tour"
+import { AiInsightWidget, InsightData } from "@/components/dashboard/ai-insight-widget"
 
 const BANK_COLORS: Record<string, string> = {
   bbva: "#004481", icbc: "#8C8C8C", santander: "#EC0000", galicia: "#E8302E",
@@ -69,7 +70,7 @@ export interface SpaceData {
   creditCardGroups: CreditCardGroup[]
 }
 
-interface Props { month: string; monthKey: string; availableMonths: string[]; spaces: SpaceData[]; currentUserId: string; showOnboarding?: boolean; checklistData?: ChecklistData }
+interface Props { month: string; monthKey: string; availableMonths: string[]; spaces: SpaceData[]; currentUserId: string; showOnboarding?: boolean; checklistData?: ChecklistData; insights?: InsightData }
 
 const arsFormatter = new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", minimumFractionDigits: 0, maximumFractionDigits: 2 })
 const arsFormatterFull = new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -92,7 +93,7 @@ function HeroAmount({ amount, className }: { amount: number; className?: string 
   )
 }
 
-export function HomeDashboard({ month, monthKey, availableMonths, spaces, currentUserId, showOnboarding = false, checklistData }: Props) {
+export function HomeDashboard({ month, monthKey, availableMonths, spaces, currentUserId, showOnboarding = false, checklistData, insights }: Props) {
   const router = useRouter()
   const [showPicker, setShowPicker] = useState(false)
   const [showMyPart, setShowMyPart] = useState(false)
@@ -242,7 +243,7 @@ export function HomeDashboard({ month, monthKey, availableMonths, spaces, curren
         {/* Credit cards — Apple Wallet stack, top 3 by amount */}
         {creditCardGroups.length > 0 && (() => {
           const top3 = [...creditCardGroups].sort((a, b) => b.totalAmount - a.totalAmount).slice(0, 3)
-          const PEEK = 22
+          const PEEK = 30
           const CARD_H = 96
           const containerH = (top3.length - 1) * PEEK + CARD_H
           const backToFront = [...top3].reverse()
@@ -275,34 +276,48 @@ export function HomeDashboard({ month, monthKey, availableMonths, spaces, curren
                           background: `linear-gradient(145deg, ${bg} 0%, ${bg}cc 100%)`,
                         }}
                       >
-                        <div className="px-4 py-3.5 h-full flex items-center">
-                          <div className="flex items-center justify-between gap-4 w-full">
-                            {/* Left: logo + name */}
-                            <div className="flex-1 min-w-0">
-                              <div className="h-7 w-[108px] mb-2 flex items-center">
-                                {bankLogo ? (
-                                  <img src={bankLogo} alt="" className={`w-full h-full object-contain object-left${needsInvert ? " brightness-0 invert" : ""}`} />
-                                ) : (
-                                  <span className="text-sm font-bold text-white/90 uppercase tracking-wider">
-                                    {card.name.split(" ")[0]}
-                                  </span>
+                        {isFront ? (
+                          /* ── Front card: full original layout ── */
+                          <div className="px-4 py-3.5 h-full flex items-center">
+                            <div className="flex items-center justify-between gap-4 w-full">
+                              <div className="flex-1 min-w-0">
+                                <div className="h-7 w-[108px] mb-2 flex items-center">
+                                  {bankLogo ? (
+                                    <img src={bankLogo} alt="" className={`w-full h-full object-contain object-left${needsInvert ? " brightness-0 invert" : ""}`} />
+                                  ) : (
+                                    <span className="text-sm font-bold text-white/90 uppercase tracking-wider">
+                                      {card.name.split(" ")[0]}
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-white text-sm font-semibold truncate">{card.name}</p>
+                              </div>
+                              <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                                <p className="text-white text-xl font-medium leading-none" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
+                                  {formatARS(card.totalAmount)}
+                                </p>
+                                {networkLogo && (
+                                  <div className="h-6 w-[52px] flex items-center justify-end">
+                                    <img src={networkLogo} alt="" className="w-full h-full object-contain object-right" />
+                                  </div>
                                 )}
                               </div>
-                              <p className="text-white text-sm font-semibold truncate">{card.name}</p>
                             </div>
-                            {/* Right: amount + network */}
-                            <div className="flex flex-col items-end gap-2 flex-shrink-0">
-                              <p className="text-white text-xl font-medium leading-none" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
-                                {formatARS(card.totalAmount)}
-                              </p>
-                              {networkLogo && isFront && (
-                                <div className="h-6 w-[52px] flex items-center justify-end">
-                                  <img src={networkLogo} alt="" className="w-full h-full object-contain object-right" />
-                                </div>
+                          </div>
+                        ) : (
+                          /* ── Back cards: solo logo/nombre del banco ── */
+                          <div className="flex items-center px-4" style={{ height: PEEK }}>
+                            <div className="h-5 w-[108px] flex items-center">
+                              {bankLogo ? (
+                                <img src={bankLogo} alt="" className={`w-full h-full object-contain object-left${needsInvert ? " brightness-0 invert" : ""}`} />
+                              ) : (
+                                <span className="text-xs font-bold text-white/90 uppercase tracking-wider leading-none">
+                                  {card.name.split(" ")[0]}
+                                </span>
                               )}
                             </div>
                           </div>
-                        </div>
+                        )}
                       </div>
                     )
                   })}
@@ -311,6 +326,9 @@ export function HomeDashboard({ month, monthKey, availableMonths, spaces, curren
             </section>
           )
         })()}
+
+        {/* AI Insight widget */}
+        {insights && <AiInsightWidget data={insights} />}
 
         {/* Recent expenses — all bills (CC + non-CC) */}
         {recentExpenses.length > 0 && (

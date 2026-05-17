@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { unstable_cache } from "next/cache"
-import { startOfMonth, endOfMonth, format, parse } from "date-fns"
+import { startOfMonth, endOfMonth, subMonths, format, parse } from "date-fns"
 import { es } from "date-fns/locale"
 import { HomeDashboard, SpaceData } from "@/components/dashboard/home-dashboard"
 
@@ -43,14 +43,18 @@ export default async function DashboardPage({ searchParams }: PageProps) {
     orderBy: { joinedAt: "asc" },
   })
 
-  // Parallel: available months + per-org data + onboarding + checklist
+  // Last month range for insights
+  const lastMonthStart = startOfMonth(subMonths(targetDate, 1))
+  const lastMonthEnd = endOfMonth(subMonths(targetDate, 1))
+
+  // Parallel: available months + per-org data + onboarding + checklist + last month total
   const allOrgIds = userOrgs.map(uo => uo.organization.id)
-  const [availableMonths, allOrgData, userRecord, checklistRaw] = await Promise.all([
+  const [availableMonths, allOrgData, userRecord, checklistRaw, lastMonthBills] = await Promise.all([
     getAvailableMonths(userId),
     Promise.all(userOrgs.map(uo => Promise.all([
       prisma.bill.findMany({
         where: { organizationId: uo.organizationId, budgetDate: { gte: monthStart, lte: monthEnd } },
-        include: { billType: true, assignments: { include: { user: { select: { id: true, name: true } } } } },
+        include: { billType: true, category: { select: { name: true } }, assignments: { include: { user: { select: { id: true, name: true } } } } },
         orderBy: { createdAt: "desc" },
       }),
       prisma.income.findMany({
@@ -69,6 +73,10 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       prisma.billType.count({ where: { organizationId: { in: allOrgIds }, isCreditCard: true } }),
       prisma.bill.count({ where: { userId, externalRef: { not: null } } }),
     ]),
+    prisma.bill.findMany({
+      where: { organizationId: { in: allOrgIds }, budgetDate: { gte: lastMonthStart, lte: lastMonthEnd } },
+      select: { amount: true, billType: { select: { name: true } } },
+    }),
   ])
 
   // Build SpaceData per org
@@ -129,6 +137,26 @@ export default async function DashboardPage({ searchParams }: PageProps) {
     }
   })
 
+  // Insights data
+  const thisMonthTotal = spaces.reduce((s, sp) => s + sp.totalAmount, 0)
+  const lastMonthTotal = lastMonthBills.reduce((s, b) => s + Number(b.amount), 0)
+  const catTotals = new Map<string, { name: string; amount: number }>()
+  for (const [bills] of allOrgData) {
+    for (const bill of bills) {
+      // For CC bills: use expense category if available, else skip (avoid polluting with card names)
+      // For regular bills: use the bill type name
+      const name = bill.billType.isCreditCard
+        ? (bill.category?.name ?? null)
+        : bill.billType.name
+      if (!name) continue
+      const cur = catTotals.get(name) ?? { name, amount: 0 }
+      catTotals.set(name, { name, amount: cur.amount + Number(bill.amount) })
+    }
+  }
+  const topCategory = catTotals.size > 0
+    ? [...catTotals.values()].sort((a, b) => b.amount - a.amount)[0]
+    : null
+
   const showOnboarding = !userRecord?.onboardingSeenAt
   const [billCount, extraMemberCount, creditCardCount, importedBillCount] = checklistRaw
   const checklistData = {
@@ -147,6 +175,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       currentUserId={userId}
       showOnboarding={showOnboarding}
       checklistData={checklistData}
+      insights={{ thisMonthTotal, lastMonthTotal, topCategory, monthName: format(monthStart, "MMMM", { locale: es }) }}
     />
   )
 }

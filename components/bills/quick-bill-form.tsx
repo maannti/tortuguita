@@ -1,7 +1,7 @@
 "use client"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { ChevronLeft, Check, CreditCard, Banknote, Wallet, Ellipsis, ChevronDown, Plus, User, Home, X } from "lucide-react"
+import { ChevronLeft, Check, CreditCard, Banknote, Wallet, Ellipsis, ChevronDown, Plus, User, Home, X, Repeat } from "lucide-react"
 import { CardIcon, isNetworkId, BANKS, NetworkId } from "@/components/ui/card-network"
 
 interface DefaultAssignment { userId: string; percentage: number }
@@ -134,6 +134,8 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
   )
   const [catSheetOpen, setCatSheetOpen] = useState(false)
   const [catSpacePicker, setCatSpacePicker] = useState(false)
+  const [isRecurring, setIsRecurring] = useState(false)
+  const [recurringDay, setRecurringDay] = useState<number>(() => Math.min(new Date().getDate(), 28))
 
   // ── Draft persistence (create mode only) ────────────────────────────────
   const DRAFT_KEY = "new-bill-draft"
@@ -226,6 +228,30 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
     if (!canSave) { setError("Completá todos los campos requeridos"); return }
     setError(null); setIsLoading(true)
     try {
+      // ── Recurring bill path ──────────────────────────────────────────────
+      if (isRecurring && !isEdit) {
+        const res = await fetch("/api/recurring-bills", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            label: label.trim(),
+            amount,
+            amountUSD: amountUSDDisplay ? parseFloat(amountUSDDisplay.replace(",", ".")) || null : null,
+            billTypeId,
+            categoryId: isCreditCard ? (categoryId || null) : null,
+            organizationId: selectedOrgId,
+            dayOfMonth: recurringDay,
+            isActive: true,
+            assignments: buildAssignments(),
+            notes: notes.trim() || "",
+          }),
+        })
+        if (!res.ok) { const err = await res.json(); throw new Error(err.error || "Error al guardar") }
+        try { sessionStorage.removeItem(DRAFT_KEY) } catch {}
+        push("/bills/recurring"); refresh()
+        return
+      }
+      // ── Regular bill path ────────────────────────────────────────────────
       const url    = isEdit ? `/api/bills/${initialData!.id}` : "/api/bills"
       const method = isEdit ? "PATCH" : "POST"
       const res = await fetch(url, {
@@ -608,14 +634,14 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Cuotas</p>
               <div className="flex flex-wrap gap-2">
                 {INSTALLMENT_OPTIONS.map((n) => (
-                  <button key={n} type="button" onClick={() => { setInstallments(n); setCustomInstallments("") }}
+                  <button key={n} type="button" onClick={() => { setInstallments(n); setCustomInstallments(""); if (n > 1) setIsRecurring(false) }}
                     className={`px-4 py-2 rounded-xl border text-sm font-medium transition-colors ${installments === n && !customInstallments ? "border-primary bg-primary text-primary-foreground" : "border-border text-muted-foreground hover:border-foreground/30"}`}>
                     {n === 1 ? "1 pago" : `${n}x`}
                   </button>
                 ))}
                 <div className={`flex items-center gap-1 rounded-xl border px-3 py-2 text-sm transition-colors ${customInstallments ? "border-primary bg-primary/5" : "border-border"}`}>
                   <input type="text" inputMode="numeric" value={customInstallments}
-                    onChange={(e) => { const v = e.target.value.replace(/\D/g, ""); setCustomInstallments(v); const n = parseInt(v); if (n > 0) setInstallments(n) }}
+                    onChange={(e) => { const v = e.target.value.replace(/\D/g, ""); setCustomInstallments(v); const n = parseInt(v); if (n > 0) { setInstallments(n); if (n > 1) setIsRecurring(false) } }}
                     placeholder="otro" className="w-12 bg-transparent text-center focus:outline-none text-muted-foreground placeholder:text-muted-foreground/50" />
                   {customInstallments && <span className="text-muted-foreground text-xs">x</span>}
                 </div>
@@ -623,6 +649,9 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
               {installments > 1 && amount > 0 && <p className="text-xs text-muted-foreground pt-1">{formatARS(amountPerInstallment)} / mes por {installments} meses</p>}
             </div>
           )}
+
+          {/* RECURRENTES — oculto hasta integrar con notificaciones push (ver ROADMAP ítem 10) */}
+          {/* {!isEdit && !(isCreditCard && installments > 1) && ( ... toggle "Repetir mensualmente" ... )} */}
 
           {/* Detalle (notas opcionales) */}
           <div className="space-y-1.5">
