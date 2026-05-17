@@ -14,10 +14,12 @@ interface InstallmentBill {
 interface InstallmentGroup {
   groupId: string; label: string; totalInstallments: number; minInstallment: number
   bills: InstallmentBill[]; memberNames: string[]
+  categoryName: string | null; categoryColor: string | null; categoryIcon: string | null
 }
 interface SingleBill {
   id: string; label: string; amount: number; amountUSD: number | null
   budgetDate: string; isPaid: boolean
+  categoryName: string | null; categoryColor: string | null; categoryIcon: string | null
 }
 export interface CardData {
   typeName: string; typeColor: string; typeIcon: string | null; typeBank: string | null
@@ -100,6 +102,12 @@ function InstallmentGroupRow({ group, cardColor }: { group: InstallmentGroup; ca
       >
         <div className="flex-1 min-w-0 text-left">
           <p className="text-sm font-medium truncate">{group.label}</p>
+          {group.categoryName && (
+            <span className="inline-flex items-center gap-1 mt-0.5">
+              <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: group.categoryColor ?? "#9D8189" }} />
+              <span className="text-[10px] text-muted-foreground">{group.categoryName}</span>
+            </span>
+          )}
           <p className="text-[11px] text-muted-foreground mt-0.5">
             {paidCount}/{group.totalInstallments} cuotas
           </p>
@@ -161,6 +169,12 @@ function SingleBillRow({ bill }: { bill: SingleBill }) {
           <p className={cn("text-sm font-medium truncate", bill.isPaid && "text-muted-foreground line-through")}>
             {bill.label}
           </p>
+          {bill.categoryName && (
+            <span className="inline-flex items-center gap-1 mt-0.5">
+              <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: bill.categoryColor ?? "#9D8189" }} />
+              <span className="text-[10px] text-muted-foreground">{bill.categoryName}</span>
+            </span>
+          )}
         </div>
         <span className={cn("text-sm font-medium tabular-nums flex-shrink-0", bill.isPaid && "text-muted-foreground line-through")}
           style={{ fontFamily: "var(--font-fraunces, serif)" }}>
@@ -352,6 +366,9 @@ function CardVisual({ card, isExpanded, onClick, style }: {
 
 // ─── Expanded card content ────────────────────────────────────────────────────
 function ExpandedCardContent({ card }: { card: CardData }) {
+  const [cuotasCollapsed, setCuotasCollapsed] = useState(false)
+  const [singlesCollapsed, setSinglesCollapsed] = useState(false)
+
   return (
     <div className="mt-4 space-y-4">
       {/* Stats row */}
@@ -379,17 +396,30 @@ function ExpandedCardContent({ card }: { card: CardData }) {
       {/* Transactions */}
       <div className="glass rounded-2xl overflow-hidden divide-y divide-white/60">
         {/* Installment groups */}
-        {card.installmentGroups.map(group => (
+        {card.installmentGroups.length > 0 && (
+          <button
+            onClick={() => setCuotasCollapsed(v => !v)}
+            className="w-full px-4 py-2 bg-black/[0.02] flex items-center justify-between"
+          >
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wide font-medium">Cuotas</p>
+            <ChevronDown className={cn("h-3 w-3 text-muted-foreground transition-transform", cuotasCollapsed && "-rotate-90")} />
+          </button>
+        )}
+        {!cuotasCollapsed && card.installmentGroups.map(group => (
           <InstallmentGroupRow key={group.groupId} group={group} cardColor={card.typeColor} />
         ))}
 
         {/* Single bills */}
-        {card.singleBills.length > 0 && card.installmentGroups.length > 0 && (
-          <div className="px-4 py-2 bg-black/[0.02]">
+        {card.singleBills.length > 0 && (
+          <button
+            onClick={() => setSinglesCollapsed(v => !v)}
+            className="w-full px-4 py-2 bg-black/[0.02] flex items-center justify-between"
+          >
             <p className="text-[10px] text-muted-foreground uppercase tracking-wide font-medium">Pagos únicos</p>
-          </div>
+            <ChevronDown className={cn("h-3 w-3 text-muted-foreground transition-transform", singlesCollapsed && "-rotate-90")} />
+          </button>
         )}
-        {card.singleBills.map(bill => (
+        {!singlesCollapsed && card.singleBills.map(bill => (
           <SingleBillRow key={bill.id} bill={bill} />
         ))}
 

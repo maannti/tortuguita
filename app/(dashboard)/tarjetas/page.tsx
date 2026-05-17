@@ -11,6 +11,7 @@ type InstallmentBillSummary = {
 }
 type InstallmentGroup = {
   groupId: string; label: string; totalInstallments: number; minInstallment: number; bills: InstallmentBillSummary[]; memberNames: string[]
+  categoryName: string | null; categoryColor: string | null; categoryIcon: string | null
 }
 type CardEntry = CardData
 
@@ -52,6 +53,7 @@ export default async function CuotasPage({ searchParams }: PageProps) {
       },
       include: {
         billType: true,
+        category: true,
         assignments: { include: { user: { select: { id: true, name: true } } } },
       },
       orderBy: [{ installmentGroupId: "asc" }, { currentInstallment: "asc" }],
@@ -66,6 +68,7 @@ export default async function CuotasPage({ searchParams }: PageProps) {
       },
       include: {
         billType: true,
+        category: true,
         assignments: { include: { user: { select: { id: true, name: true } } } },
       },
       orderBy: { budgetDate: "asc" },
@@ -104,6 +107,9 @@ export default async function CuotasPage({ searchParams }: PageProps) {
         minInstallment: groupMinInstallment.get(gId) ?? 1,
         bills: [],
         memberNames: bill.assignments.map((a) => a.user.name || "").filter(Boolean),
+        categoryName: bill.category?.name ?? null,
+        categoryColor: bill.category?.color ?? null,
+        categoryIcon: bill.category?.icon ?? null,
       })
     }
   }
@@ -152,7 +158,7 @@ export default async function CuotasPage({ searchParams }: PageProps) {
   for (const bill of singleCCBills) {
     const cardData = byCard.get(bill.billTypeId)
     if (!cardData) continue
-    cardData.singleBills.push({ id: bill.id, label: bill.label, amount: Number(bill.amount), amountUSD: bill.amountUSD ? Number(bill.amountUSD) : null, budgetDate: format(new Date(bill.budgetDate), "MMMM yyyy", { locale: es }), isPaid: bill.isPaid })
+    cardData.singleBills.push({ id: bill.id, label: bill.label, amount: Number(bill.amount), amountUSD: bill.amountUSD ? Number(bill.amountUSD) : null, budgetDate: format(new Date(bill.budgetDate), "MMMM yyyy", { locale: es }), isPaid: bill.isPaid, categoryName: bill.category?.name ?? null, categoryColor: bill.category?.color ?? null, categoryIcon: bill.category?.icon ?? null })
     cardData.monthTotal += Number(bill.amount)
   }
 
