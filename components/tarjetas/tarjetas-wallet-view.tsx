@@ -241,6 +241,13 @@ function pastelify(hex: string, factor = 0.45): string {
   return `#${mix(r)}${mix(g)}${mix(b)}`
 }
 
+function isLightColor(hex: string): boolean {
+  const r = parseInt(hex.slice(1, 3), 16)
+  const g = parseInt(hex.slice(3, 5), 16)
+  const b = parseInt(hex.slice(5, 7), 16)
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.6
+}
+
 function needsWhiteLogo(bankId: string | null): boolean {
   if (!bankId) return false
   return BANKS_NEED_WHITE.includes(bankId.toLowerCase())
@@ -273,6 +280,11 @@ function CardVisual({ card, isExpanded, onClick, style }: {
   // Darken color slightly for gradient end
   const darkerColor = cardColor + "cc"
 
+  // Adaptive text color based on card background luminance
+  const light = isLightColor(cardColor)
+  const txtPrimary = light ? "#2A1F24" : "white"
+  const txtSecondary = light ? "#4A3540" : "rgba(255,255,255,0.9)"
+
   // Clean up card name: avoid "Amex Amex" -> just "American Express"
   let displayName = card.typeName
   if (card.typeBank === "amexprop" && card.typeIcon === "amex") {
@@ -292,54 +304,46 @@ function CardVisual({ card, isExpanded, onClick, style }: {
       }}
     >
       <div className={cn(
-        "px-4 transition-all duration-300 overflow-hidden",
+        "px-4 transition-all duration-300 overflow-hidden flex flex-col justify-between",
         isExpanded ? "py-5" : "py-3.5"
-      )}>
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex-1 min-w-0">
-            {/* Fixed box so every logo renders at the same visual size */}
-            <div className="h-7 w-[108px] mb-2 flex items-center">
-              {bankLogo ? (
-                <img
-                  src={bankLogo}
-                  alt=""
-                  className={cn("w-full h-full object-contain object-left", needsWhiteLogo(card.typeBank) && "brightness-0 invert")}
-                />
-              ) : (
-                <span className="text-sm font-bold text-white/90 uppercase tracking-wider">
-                  {card.typeName.split(" ")[0]}
-                </span>
-              )}
-            </div>
-            {/* Card name */}
-            <p className="text-white text-sm font-semibold truncate">
-              {displayName}
-            </p>
-          </div>
-
-          {/* Right side: Amount + Network */}
-          <div className="flex flex-col items-end gap-2 flex-shrink-0">
-            {/* Amount - always visible */}
-            <p
-              className={cn(
-                "text-white font-medium leading-none transition-all",
-                isExpanded ? "text-2xl" : "text-xl"
-              )}
-              style={{ fontFamily: "var(--font-fraunces, serif)" }}
-            >
-              {formatARS(card.monthTotal)}
-            </p>
-            {/* Network logo — fixed box so all networks render at the same size */}
-            {networkLogo && (
-              <div className="h-6 w-[52px] flex items-center justify-end">
-                <img
-                  src={networkLogo}
-                  alt=""
-                  className="w-full h-full object-contain object-right"
-                />
-              </div>
+      )} style={{ minHeight: isExpanded ? 80 : 64 }}>
+        {/* Top row: bank logo ←→ network logo */}
+        <div className="flex items-center justify-between">
+          <div className="h-7 w-[108px] flex items-center">
+            {bankLogo ? (
+              <img
+                src={bankLogo}
+                alt=""
+                className={cn("w-full h-full object-contain object-left", needsWhiteLogo(card.typeBank) && "brightness-0 invert")}
+              />
+            ) : (
+              <span className="text-sm font-bold uppercase tracking-wider" style={{ color: txtSecondary }}>
+                {card.typeName.split(" ")[0]}
+              </span>
             )}
           </div>
+          {networkLogo && (
+            <div className="h-7 w-[52px] flex items-center justify-end">
+              <img
+                src={networkLogo}
+                alt=""
+                className="w-full h-full object-contain object-right"
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Bottom row: card name ←→ amount */}
+        <div className="flex items-end justify-between mt-2">
+          <p className="text-sm font-semibold truncate" style={{ color: txtSecondary }}>
+            {displayName}
+          </p>
+          <p
+            className={cn("font-medium leading-none transition-all", isExpanded ? "text-2xl" : "text-xl")}
+            style={{ color: txtPrimary, fontFamily: "var(--font-fraunces, serif)" }}
+          >
+            {formatARS(card.monthTotal)}
+          </p>
         </div>
       </div>
     </button>
