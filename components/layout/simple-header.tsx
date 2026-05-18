@@ -104,12 +104,6 @@ export function SimpleHeader() {
               )}
             </button>
           )}
-          <NotificationTray
-            isOpen={trayOpen}
-            onClose={() => setTrayOpen(false)}
-            onRead={() => setUnreadCount(0)}
-          />
-
           {showSpaces && (
           <div ref={wrapperRef} className="relative">
             {/* Trigger: colored dots — active = solid mauve, inactive = ghost */}
