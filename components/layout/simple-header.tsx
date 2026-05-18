@@ -59,6 +59,7 @@ export function SimpleHeader() {
   }, [])
 
   return (
+    <>
     <header
       className="sticky top-0 z-30 px-4"
       style={{
@@ -189,5 +190,7 @@ export function SimpleHeader() {
         </div>
       </div>
     </header>
+    <NotificationTray isOpen={trayOpen} onClose={() => setTrayOpen(false)} onRead={() => setUnreadCount(0)} />
+    </>
   )
 }
