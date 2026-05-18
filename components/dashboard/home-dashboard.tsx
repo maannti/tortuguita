@@ -104,7 +104,7 @@ function HeroAmount({ amount, className }: { amount: number; className?: string 
 export function HomeDashboard({ month, monthKey, availableMonths, spaces, currentUserId, showOnboarding = false, checklistData, insights }: Props) {
   const router = useRouter()
   const [showPicker, setShowPicker] = useState(false)
-  const [showMyPart, setShowMyPart] = useState(false)
+  const [showMyPart, setShowMyPart] = useState(true)
   const [slidesVisible, setSlidesVisible] = useState(showOnboarding)
 
   const handleSlidesDone = useCallback(() => {
