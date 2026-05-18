@@ -232,7 +232,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
     setError(null); setIsLoading(true)
     try {
       // ── Recurring bill path ──────────────────────────────────────────────
-      if (isRecurring && !isEdit) {
+      if (isRecurring) {
         const res = await fetch("/api/recurring-bills", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
