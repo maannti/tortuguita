@@ -1,7 +1,7 @@
 "use client"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { ChevronLeft, Check, CreditCard, Banknote, Wallet, Ellipsis, ChevronDown, Plus, User, Home, X, Repeat } from "lucide-react"
+import { ChevronLeft, Check, CreditCard, Banknote, Wallet, Ellipsis, ChevronDown, Plus, User, Home, X, Repeat, Bell } from "lucide-react"
 import { CardIcon, isNetworkId, BANKS, NetworkId } from "@/components/ui/card-network"
 import { haptic } from "@/lib/haptics"
 
@@ -137,6 +137,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
   const [catSpacePicker, setCatSpacePicker] = useState(false)
   const [isRecurring, setIsRecurring] = useState(false)
   const [recurringDay, setRecurringDay] = useState<number>(() => Math.min(new Date().getDate(), 28))
+  const [notifyMembers, setNotifyMembers] = useState(false)
 
   // ── Draft persistence (create mode only) ────────────────────────────────
   const DRAFT_KEY = "new-bill-draft"
@@ -270,6 +271,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
           assignments: buildAssignments(),
           notes: notes.trim() || "",
           organizationId: selectedOrgId,
+          notifyMembers,
         }),
       })
       if (!res.ok) { const err = await res.json(); throw new Error(err.error || "Error al guardar") }
@@ -369,7 +371,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
                     <button
                       key={org.id}
                       type="button"
-                      onClick={() => { haptic("selection"); setSelectedOrgId(org.id); setCategoryId(""); setCardId("") }}
+                      onClick={() => { haptic("selection"); setSelectedOrgId(org.id); setCategoryId(""); setCardId(""); setNotifyMembers(false) }}
                       className={`flex items-center gap-3 px-4 py-3.5 rounded-2xl border-2 text-sm font-medium transition-all active:scale-[0.97] ${
                         isSelected
                           ? "border-primary bg-primary/8 text-foreground shadow-sm"
@@ -392,6 +394,36 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
               </div>
             </div>
           )}
+
+          {/* Notificar a los miembros — solo para orgs compartidas */}
+          {(() => {
+            const selectedOrg = organizations.find(o => o.id === selectedOrgId)
+            if (!selectedOrg || selectedOrg.isPersonal || isEdit) return null
+            return (
+              <button
+                type="button"
+                onClick={() => { haptic("selection"); setNotifyMembers(v => !v) }}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl bg-muted/50 active:scale-[0.98] transition-all text-left"
+              >
+                <Bell className={`size-5 flex-shrink-0 ${notifyMembers ? "text-primary" : "text-muted-foreground"}`} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium">Notificar a los miembros</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Avisá al resto del espacio sobre este gasto</p>
+                </div>
+                <div
+                  className={`w-11 h-6 rounded-full flex-shrink-0 transition-colors relative ${
+                    notifyMembers ? "bg-primary" : "bg-muted-foreground/20"
+                  }`}
+                >
+                  <div
+                    className={`absolute top-0.5 size-5 rounded-full bg-white shadow-sm transition-transform ${
+                      notifyMembers ? "translate-x-5" : "translate-x-0.5"
+                    }`}
+                  />
+                </div>
+              </button>
+            )
+          })()}
 
           {/* Título del gasto */}
           <div className="space-y-1.5">
