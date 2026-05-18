@@ -7,6 +7,7 @@ import { Prisma } from "@prisma/client"
 import { randomUUID } from "crypto"
 import { calculateBudgetDate, type BillingPeriod } from "@/lib/budget-date"
 import { getUserOrganizations } from "@/lib/organization-utils"
+import { sendPushNotification } from "@/lib/notifications"
 
 export async function GET(request: NextRequest) {
   try {
@@ -93,7 +94,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { organizationId: bodyOrgId, ...rest } = body
+    const { organizationId: bodyOrgId, notifyMembers, ...rest } = body
     const data = billSchema.parse(rest)
 
     // Validate organizationId from body
@@ -258,6 +259,54 @@ export async function POST(request: NextRequest) {
         },
       },
     })
+
+    // Notify other org members if requested
+    if (notifyMembers === true) {
+      try {
+        const orgMembers = await prisma.user.findMany({
+          where: {
+            notificationsEnabled: true,
+            fcmToken: { not: null },
+            id: { not: userId },
+            userOrganizations: { some: { organizationId } },
+          },
+          select: { id: true, fcmToken: true },
+        })
+
+        const creatorName = session.user.name ?? "Alguien"
+        const orgName = validOrg.name
+        const formattedAmount = new Intl.NumberFormat("es-AR", {
+          style: "currency",
+          currency: "ARS",
+          maximumFractionDigits: 0,
+        }).format(data.amount)
+
+        await Promise.all(
+          orgMembers.map(async (member) => {
+            if (!member.fcmToken) return
+            const ok = await sendPushNotification(
+              member.fcmToken,
+              {
+                title: `Nuevo gasto en ${orgName}`,
+                body: `${creatorName} agregó ${data.label} · ${formattedAmount}`,
+                type: "shared_expense",
+                url: "/bills",
+              },
+              member.id
+            )
+            if (!ok) {
+              await prisma.user.update({
+                where: { id: member.id },
+                data: { fcmToken: null, notificationsEnabled: false },
+              })
+            }
+          })
+        )
+      } catch (notifyErr) {
+        // Non-fatal — bill was already created
+        console.error("Error sending member notifications:", notifyErr)
+      }
+    }
 
     return NextResponse.json(bill, { status: 201 })
   } catch (error) {
