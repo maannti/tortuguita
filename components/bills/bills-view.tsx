@@ -38,6 +38,8 @@ interface Props {
   month: string; monthKey: string; availableMonths: string[]
   categoryGroups: CategoryGroup[]
   grandTotal: number
+  myTotal?: number
+  hasSharedBills?: boolean
   hasAnyUSD: boolean
   searchQuery?: string
   activeFilters?: ActiveFilters
@@ -56,7 +58,7 @@ function capitalize(s: string) { return s.charAt(0).toUpperCase() + s.slice(1) }
 const MAUVE = "#9D8189"
 
 export function BillsView({
-  month, monthKey, availableMonths, categoryGroups, grandTotal, hasAnyUSD,
+  month, monthKey, availableMonths, categoryGroups, grandTotal, myTotal, hasSharedBills = false, hasAnyUSD,
   searchQuery = "", activeFilters = { categoryIds: [], cardIds: [] },
   availableCategories = [], availableCards = [], organizations = [],
   currentUserId,
@@ -67,6 +69,7 @@ export function BillsView({
   const [isPending, startTransition] = useTransition()
 
   const [showPicker, setShowPicker] = useState(false)
+  const [showMyPart, setShowMyPart] = useState(true)
   const [showUSD, setShowUSD] = useState(false)
   const [usdRate, setUsdRate] = useState<number | null>(null)
   const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set())
@@ -263,24 +266,26 @@ export function BillsView({
                   className="text-2xl font-medium text-[#4A3540] leading-tight"
                   style={{ fontFamily: "var(--font-fraunces, serif)" }}
                 >
-                  {showUSD && grandTotalUSD !== null ? formatUSD(grandTotalUSD) : formatARS(grandTotal)}
+                  {showUSD && grandTotalUSD !== null
+                    ? formatUSD(grandTotalUSD)
+                    : formatARS(hasSharedBills && showMyPart && myTotal != null ? myTotal : grandTotal)}
                 </p>
               )}
-              {/* ARS / USD toggle — only shown when there are USD bills */}
-              {hasAnyUSD && (
+              {/* Mi parte / Total toggle — only shown when there are shared bills */}
+              {hasSharedBills && (
                 <div className="flex items-center justify-center pt-1">
                   <div className="flex rounded-full bg-white/40 backdrop-blur-sm p-0.5">
                     <button
-                      onClick={() => { haptic("selection"); setShowUSD(false) }}
-                      className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-all ${!showUSD ? "bg-white/80 text-[#4A3540] shadow-sm" : "text-[#9D8189]"}`}
+                      onClick={() => { haptic("selection"); setShowMyPart(true) }}
+                      className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-all ${showMyPart ? "bg-white/80 text-[#4A3540] shadow-sm" : "text-[#9D8189]"}`}
                     >
-                      ARS
+                      Mi parte
                     </button>
                     <button
-                      onClick={() => { haptic("selection"); setShowUSD(true) }}
-                      className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-all ${showUSD ? "bg-white/80 text-[#4A3540] shadow-sm" : "text-[#9D8189]"}`}
+                      onClick={() => { haptic("selection"); setShowMyPart(false) }}
+                      className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-all ${!showMyPart ? "bg-white/80 text-[#4A3540] shadow-sm" : "text-[#9D8189]"}`}
                     >
-                      USD
+                      Total
                     </button>
                   </div>
                 </div>
@@ -421,7 +426,7 @@ export function BillsView({
                   {group.bills.map((bill) => {
                     const usdBill = billUSDDisplay(bill)
                     const hasMyShare = bill.isShared && bill.myShare != null
-                    const displayBillAmount = hasMyShare ? bill.myShare! : bill.amount
+                    const displayBillAmount = (hasMyShare && showMyPart) ? bill.myShare! : bill.amount
                     return (
                       <Link
                         key={bill.id}
@@ -455,7 +460,7 @@ export function BillsView({
                               {showUSD && usdBill ? usdBill : formatARS(displayBillAmount)}
                             </p>
                             {/* Secondary: show full total when displaying user's share */}
-                            {hasMyShare && !showUSD && (
+                            {hasMyShare && showMyPart && !showUSD && (
                               <p className="text-[10px] text-muted-foreground">total {formatARS(bill.amount)}</p>
                             )}
                             {/* Secondary line: show ARS when in USD mode */}
@@ -560,6 +565,26 @@ export function BillsView({
 
             {/* Content */}
             <div className="flex-1 overflow-y-auto px-5 py-4 space-y-6">
+              {/* Currency toggle — only shown when there are USD bills */}
+              {hasAnyUSD && (
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground mb-2 pl-1">Moneda</p>
+                  <div className="flex rounded-xl bg-muted/40 p-0.5 gap-0.5">
+                    <button
+                      onClick={() => { haptic("selection"); setShowUSD(false) }}
+                      className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${!showUSD ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"}`}
+                    >
+                      ARS
+                    </button>
+                    <button
+                      onClick={() => { haptic("selection"); setShowUSD(true) }}
+                      className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${showUSD ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"}`}
+                    >
+                      USD
+                    </button>
+                  </div>
+                </div>
+              )}
               {organizations.map(org => {
                 const orgCategories = availableCategories.filter(c => c.organizationId === org.id)
                 const orgCards = availableCards.filter(c => c.organizationId === org.id)
