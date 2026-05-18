@@ -685,8 +685,41 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
             </div>
           )}
 
-          {/* RECURRENTES — oculto hasta integrar con notificaciones push (ver ROADMAP ítem 10) */}
-          {/* {!isEdit && !(isCreditCard && installments > 1) && ( ... toggle "Repetir mensualmente" ... )} */}
+          {!isEdit && !(isCreditCard && installments > 1) && (
+            <div className="space-y-3">
+              {/* Toggle "Repetir mensualmente" */}
+              <button
+                type="button"
+                onClick={() => setIsRecurring(v => !v)}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl bg-muted/50 active:scale-[0.98] transition-all text-left"
+              >
+                <Repeat className="size-5 text-muted-foreground flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium">Repetir mensualmente</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {isRecurring ? `Te avisamos cada mes el día ${recurringDay}` : "Recordatorio automático cada mes"}
+                  </p>
+                </div>
+                <div className={`w-11 h-6 rounded-full flex-shrink-0 transition-colors relative ${isRecurring ? "bg-primary" : "bg-muted-foreground/20"}`}>
+                  <div className={`absolute top-0.5 size-5 rounded-full bg-white shadow-sm transition-transform ${isRecurring ? "translate-x-5" : "translate-x-0.5"}`} />
+                </div>
+              </button>
+
+              {/* Day picker — only visible when isRecurring */}
+              {isRecurring && (
+                <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-muted/30">
+                  <p className="text-sm text-muted-foreground flex-1">Recordar el día</p>
+                  <div className="flex items-center gap-2">
+                    <button type="button" onClick={() => setRecurringDay(d => Math.max(1, d - 1))}
+                      className="size-7 rounded-full bg-background border flex items-center justify-center text-sm active:scale-90 transition-all">−</button>
+                    <span className="w-6 text-center text-sm font-semibold">{recurringDay}</span>
+                    <button type="button" onClick={() => setRecurringDay(d => Math.min(28, d + 1))}
+                      className="size-7 rounded-full bg-background border flex items-center justify-center text-sm active:scale-90 transition-all">+</button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Detalle (notas opcionales) */}
           <div className="space-y-1.5">
