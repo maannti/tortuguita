@@ -205,7 +205,9 @@ export default async function DashboardPage({ searchParams }: PageProps) {
     }
   }
 
-  const showOnboarding = !userRecord?.onboardingSeenAt
+  const TEST_EMAILS = ["test-cards@tortuguita.app"]
+  const isTestUser = !!(session.user.email && TEST_EMAILS.includes(session.user.email))
+  const showOnboarding = isTestUser || !userRecord?.onboardingSeenAt
   const [billCount, extraMemberCount, creditCardCount, importedBillCount] = checklistRaw
   const checklistData = {
     hasBills: billCount > 0,
