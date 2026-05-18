@@ -485,7 +485,7 @@ export function IncomeForm({ initialData, categories, members, memberIncomes = {
             />
 
             {/* Multi-home toggle - only show in create mode with multiple homes */}
-            {showMultiHomeOption && (
+            {showMultiHomeOption && mode === "create" && (
               <div className="space-y-4 pt-2">
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
