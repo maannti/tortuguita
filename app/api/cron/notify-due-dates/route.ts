@@ -71,9 +71,10 @@ export async function GET(request: NextRequest) {
           body: totalAmount > 0
             ? `Tu resumen vence el ${dueDateStr}. Total: ${arsFormatter.format(totalAmount)}`
             : `Tu resumen de ${cc.name} vence el ${dueDateStr}.`,
+          type: "due_date",
           url: "/tarjetas",
           data: { cardTypeId: cc.id, type: "due_date" },
-        })
+        }, user.id)
 
         if (!ok) {
           // Token expired — clear it
@@ -87,6 +88,11 @@ export async function GET(request: NextRequest) {
       }
     }
   }
+
+  // Delete notifications older than 7 days
+  await prisma.notification.deleteMany({
+    where: { createdAt: { lt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } },
+  })
 
   return NextResponse.json({ ok: true, notificationsSent })
 }
