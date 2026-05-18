@@ -67,6 +67,23 @@ export default function RootLayout({
       <body
         className={`${dmSans.variable} ${fraunces.variable} ${geistMono.variable} antialiased`}
       >
+        {/* PWA splash — pure CSS, no JS needed. Fades out automatically after ~1s. */}
+        <div
+          id="pwa-splash"
+          style={{
+            position: "fixed", inset: 0, zIndex: 9999,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            background: "linear-gradient(135deg, #D8E2DC 0%, #FFE5D9 55%, #FFCAD4 100%)",
+          }}
+        >
+          <span style={{
+            fontFamily: "var(--font-fraunces, Georgia, serif)",
+            fontSize: "2rem", fontWeight: 400,
+            color: "#4A3540", letterSpacing: "-0.01em",
+          }}>
+            tortuguita
+          </span>
+        </div>
         <ThemeProvider
           attribute="class"
           defaultTheme="light"

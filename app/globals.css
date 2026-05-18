@@ -1,6 +1,22 @@
 @import "tailwindcss";
 @import "driver.js/dist/driver.css";
 
+/* ── PWA splash screen ── */
+@keyframes pwa-text-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes pwa-splash-out {
+  0%   { opacity: 1; pointer-events: auto; }
+  100% { opacity: 0; pointer-events: none; visibility: hidden; }
+}
+#pwa-splash {
+  animation: pwa-splash-out 0.5s ease 0.9s forwards;
+}
+#pwa-splash span {
+  animation: pwa-text-in 0.55s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both;
+}
+
 /* ── driver.js tour — brand overrides ── */
 .driver-popover {
   background: rgba(255, 255, 255, 0.97) !important;
