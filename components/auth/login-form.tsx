@@ -3,18 +3,12 @@
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import * as z from "zod";
-import { Button } from "@/components/ui/button";
-import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
 import Link from "next/link";
-import { useTranslations } from "@/components/providers/language-provider";
-import { Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 
 function GoogleIcon() {
   return (
-    <svg viewBox="0 0 24 24" className="size-5" xmlns="http://www.w3.org/2000/svg">
+    <svg viewBox="0 0 24 24" className="size-5 flex-shrink-0" xmlns="http://www.w3.org/2000/svg">
       <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
       <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
       <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
@@ -23,13 +17,18 @@ function GoogleIcon() {
   );
 }
 
+const INPUT_CLASS = "w-full rounded-2xl border border-[#E8DDE0] bg-white/80 px-4 py-3.5 text-sm text-[#4A3540] placeholder:text-[#9D8189]/60 focus:outline-none focus:border-[#9D8189] transition-colors"
+const BTN_PRIMARY = "w-full flex items-center justify-center gap-2.5 rounded-full py-3.5 text-sm font-semibold transition-all active:scale-[0.98] disabled:opacity-60"
+
 export function LoginForm() {
   const { push, refresh } = useRouter();
+  const [step, setStep] = useState<"email" | "password">("email");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [showPassword, setShowPassword] = useState(false);
-  const t = useTranslations();
 
   async function handleGoogleSignIn() {
     setIsGoogleLoading(true);
@@ -37,51 +36,44 @@ export function LoginForm() {
     await signIn("google", { callbackUrl: "/dashboard" });
   }
 
-  const formSchema = z.object({
-    email: z.string().email(t.validation.invalidEmail),
-    password: z.string().min(1, t.auth.passwordRequired),
-  });
+  function handleContinue(e: React.FormEvent) {
+    e.preventDefault();
+    if (!email.trim() || !/\S+@\S+\.\S+/.test(email)) {
+      setError("Ingresá un email válido");
+      return;
+    }
+    setError(null);
+    setStep("password");
+  }
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-    },
-  });
-
-  async function onSubmit(values: z.infer<typeof formSchema>) {
+  async function handleSignIn(e: React.FormEvent) {
+    e.preventDefault();
+    if (!password) { setError("Ingresá tu contraseña"); return }
     setIsLoading(true);
     setError(null);
-
     try {
-      const result = await signIn("credentials", {
-        email: values.email,
-        password: values.password,
-        redirect: false,
-      });
-
+      const result = await signIn("credentials", { email, password, redirect: false });
       if (result?.error) {
-        setError(t.auth.invalidCredentials);
+        setError("Email o contraseña incorrectos. ¿No tenés cuenta? Registrate abajo.");
       } else {
         push("/dashboard");
         refresh();
       }
-    } catch (error) {
-      setError(t.auth.invalidCredentials);
+    } catch {
+      setError("Error de conexión. Intentá de nuevo.");
     } finally {
       setIsLoading(false);
     }
   }
 
   return (
-    <div className="space-y-6">
-      {/* Google sign-in */}
+    <div className="space-y-4">
+      {/* Google */}
       <button
         type="button"
         onClick={handleGoogleSignIn}
         disabled={isGoogleLoading || isLoading}
-        className="w-full flex items-center justify-center gap-3 bg-white text-gray-800 font-semibold py-3.5 px-4 rounded-full transition-all shadow-lg hover:bg-white/90 active:scale-[0.98] disabled:opacity-60"
+        className={`${BTN_PRIMARY} bg-white shadow-sm border border-[#E8DDE0] text-[#4A3540]`}
       >
         <GoogleIcon />
         {isGoogleLoading ? "Redirigiendo..." : "Continuar con Google"}
@@ -89,96 +81,91 @@ export function LoginForm() {
 
       {/* Divider */}
       <div className="flex items-center gap-3">
-        <div className="flex-1 h-px bg-white/20" />
-        <span className="text-xs text-white/40 font-medium">o con tu email</span>
-        <div className="flex-1 h-px bg-white/20" />
+        <div className="flex-1 h-px bg-[#4A3540]/10" />
+        <span className="text-xs font-medium" style={{ color: "#9D8189" }}>o con tu email</span>
+        <div className="flex-1 h-px bg-[#4A3540]/10" />
       </div>
 
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
-          {error && (
-            <div className="p-3 text-sm text-red-300 bg-red-500/20 border border-red-500/30 rounded-lg backdrop-blur-sm">
-              {error}
-            </div>
+      {/* Email / password steps */}
+      <form onSubmit={step === "email" ? handleContinue : handleSignIn} className="space-y-3">
+        {/* Email — always visible */}
+        <div className="relative">
+          <input
+            type="email"
+            value={email}
+            onChange={e => { setEmail(e.target.value); setError(null) }}
+            placeholder="tu@email.com"
+            autoComplete="email"
+            disabled={step === "password" || isLoading}
+            className={`${INPUT_CLASS} ${step === "password" ? "opacity-50 cursor-default" : ""}`}
+          />
+          {step === "password" && (
+            <button
+              type="button"
+              onClick={() => { setStep("email"); setPassword(""); setError(null) }}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium"
+              style={{ color: "#9D8189" }}
+            >
+              cambiar
+            </button>
           )}
+        </div>
 
-          <FormField
-            control={form.control}
-            name="email"
-            render={({ field }) => (
-              <FormItem>
-                <FormControl>
-                  <div className="relative">
-                    <input
-                      type="email"
-                      placeholder={t.common.email}
-                      autoComplete="email"
-                      disabled={isLoading}
-                      className="auth-input w-full bg-transparent border-0 border-b border-white/30 px-0 py-3 text-white placeholder:text-white/50 focus:border-white/60 focus:outline-none focus:ring-0 transition-colors pr-8"
-                      {...field}
-                    />
-                    <Mail className="absolute right-0 top-1/2 -translate-y-1/2 size-4 text-white/40" />
-                  </div>
-                </FormControl>
-                <FormMessage className="text-red-300" />
-              </FormItem>
-            )}
-          />
+        {/* Password — slides in */}
+        {step === "password" && (
+          <div className="relative animate-in fade-in slide-in-from-top-2 duration-200">
+            <input
+              type={showPassword ? "text" : "password"}
+              value={password}
+              onChange={e => { setPassword(e.target.value); setError(null) }}
+              placeholder="Contraseña"
+              autoComplete="current-password"
+              autoFocus
+              disabled={isLoading}
+              className={`${INPUT_CLASS} pr-12`}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(v => !v)}
+              className="absolute right-3 top-1/2 -translate-y-1/2"
+              style={{ color: "#9D8189" }}
+            >
+              {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+            </button>
+          </div>
+        )}
 
-          <FormField
-            control={form.control}
-            name="password"
-            render={({ field }) => (
-              <FormItem>
-                <FormControl>
-                  <div className="relative">
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      placeholder={t.common.password}
-                      autoComplete="current-password"
-                      disabled={isLoading}
-                      className="auth-input w-full bg-transparent border-0 border-b border-white/30 px-0 py-3 text-white placeholder:text-white/50 focus:border-white/60 focus:outline-none focus:ring-0 transition-colors pr-16"
-                      {...field}
-                    />
-                    <div className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="text-white/40 hover:text-white/60 transition-colors"
-                      >
-                        {showPassword ? (
-                          <EyeOff className="size-4" />
-                        ) : (
-                          <Eye className="size-4" />
-                        )}
-                      </button>
-                      <Lock className="size-4 text-white/40" />
-                    </div>
-                  </div>
-                </FormControl>
-                <FormMessage className="text-red-300" />
-              </FormItem>
-            )}
-          />
+        {/* Error */}
+        {error && (
+          <p className="text-xs text-red-500 px-1">{error}</p>
+        )}
 
-          <Button
-            type="submit"
-            disabled={isLoading}
-            className="w-full bg-white text-gray-900 hover:bg-white/90 font-semibold py-5 rounded-full transition-all shadow-lg hover:shadow-xl"
+        {/* CTA */}
+        <button
+          type="submit"
+          disabled={isLoading}
+          className={`${BTN_PRIMARY} mt-1 text-white`}
+          style={{ background: "#4A3540" }}
+        >
+          {isLoading ? "Ingresando..." : step === "email" ? "Continuar" : "Ingresar"}
+        </button>
+      </form>
+
+      {/* Footer links */}
+      <div className="flex flex-col items-center gap-1.5 pt-1">
+        {step === "password" && (
+          <Link
+            href="/forgot-password"
+            className="text-xs transition-colors"
+            style={{ color: "#9D8189" }}
           >
-            {isLoading ? t.auth.signingIn : t.auth.signIn}
-          </Button>
-        </form>
-      </Form>
-
-      <div className="flex flex-col items-center gap-2 text-sm text-white/60">
-        <Link href="/forgot-password" className="hover:text-white transition-colors">
-          {t.auth.forgotPassword}
-        </Link>
-        <p>
-          {t.auth.dontHaveAccount}{" "}
-          <Link href="/signup" className="text-white underline underline-offset-4 hover:text-white/80 transition-colors">
-            {t.auth.signUp}
+            ¿Olvidaste tu contraseña?
+          </Link>
+        )}
+        <p className="text-xs" style={{ color: "#9D8189" }}>
+          ¿No tenés cuenta?{" "}
+          <Link href="/signup" className="font-semibold underline underline-offset-4" style={{ color: "#6B5159" }}>
+            Registrate
           </Link>
         </p>
       </div>

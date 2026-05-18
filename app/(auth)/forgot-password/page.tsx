@@ -4,132 +4,118 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import Image from "next/image";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
-import { useTranslations } from "@/components/providers/language-provider";
-import { Mail, ArrowLeft, CheckCircle } from "lucide-react";
+import { LogoWordmark } from "@/components/ui/logo";
+import { CheckCircle } from "lucide-react";
+
+const INPUT_CLASS = "w-full rounded-2xl border border-[#E8DDE0] bg-white/80 px-4 py-3.5 text-sm text-[#4A3540] placeholder:text-[#9D8189]/60 focus:outline-none focus:border-[#9D8189] transition-colors"
+
+const formSchema = z.object({
+  email: z.string().email("Ingresá un email válido"),
+});
 
 export default function ForgotPasswordPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const t = useTranslations();
-
-  const formSchema = z.object({
-    email: z.string().email(t.validation.invalidEmail),
-  });
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      email: "",
-    },
+    defaultValues: { email: "" },
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
-
     try {
       await fetch("/api/auth/forgot-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: values.email }),
       });
-      setIsSubmitted(true);
-    } catch (error) {
-      // Still show success to prevent email enumeration
-      setIsSubmitted(true);
-    } finally {
-      setIsLoading(false);
-    }
+    } catch {}
+    // Always show success to prevent email enumeration
+    setIsSubmitted(true);
+    setIsLoading(false);
   }
 
   return (
-    <div className="relative p-8 rounded-2xl border border-white/20 bg-white/10 backdrop-blur-xl shadow-2xl">
-      <div className="absolute inset-0 rounded-2xl bg-gradient-to-b from-white/5 to-transparent pointer-events-none" />
+    <div className="space-y-8">
+      {/* Hero */}
+      <div className="flex flex-col items-center gap-2 text-center">
+        <p
+          className="text-sm font-medium"
+          style={{ color: "#9D8189", fontFamily: "var(--font-fraunces, serif)", fontStyle: "italic" }}
+        >
+          Restablecer contraseña en
+        </p>
+        <LogoWordmark size="lg" />
+      </div>
 
-      <div className="relative z-10 space-y-6">
-        {/* Logo */}
-        <div className="flex justify-center">
-          <Image
-            src="/logo.png"
-            alt="Logo"
-            width={64}
-            height={64}
-            className="drop-shadow-lg"
-          />
-        </div>
-
-        {/* Title */}
-        <div className="text-center space-y-1">
-          <h1 className="text-2xl font-bold text-white">{t.auth.forgotPasswordTitle}</h1>
-          <p className="text-sm text-white/60">{t.auth.forgotPasswordDescription}</p>
-        </div>
-
-        {isSubmitted ? (
-          <div className="space-y-6">
-            <div className="flex flex-col items-center justify-center py-4 space-y-3">
-              <CheckCircle className="size-12 text-green-400" />
-              <p className="text-center text-sm text-white/80">
-                {t.auth.resetLinkSent}
+      {isSubmitted ? (
+        <div className="space-y-5 text-center">
+          <div className="flex flex-col items-center gap-3">
+            <CheckCircle className="size-10" style={{ color: "#9D8189" }} />
+            <div>
+              <p className="font-medium text-sm" style={{ color: "#4A3540" }}>¡Listo! Revisá tu correo</p>
+              <p className="text-xs mt-1" style={{ color: "#9D8189" }}>
+                Si existe una cuenta con ese email, te enviamos un enlace para restablecer tu contraseña.
               </p>
             </div>
-            <Link href="/login">
-              <Button
-                variant="outline"
-                className="w-full bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white rounded-full py-5 backdrop-blur-sm transition-all"
-              >
-                <ArrowLeft className="mr-2 size-4" />
-                {t.auth.backToLogin}
-              </Button>
-            </Link>
           </div>
-        ) : (
+          <Link
+            href="/login"
+            className="block w-full text-center rounded-full py-3.5 text-sm font-semibold text-white transition-all active:scale-[0.98]"
+            style={{ background: "#4A3540" }}
+          >
+            Volver al inicio de sesión
+          </Link>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <p className="text-sm text-center" style={{ color: "#9D8189" }}>
+            Ingresá tu email y te enviaremos un enlace para restablecer tu contraseña.
+          </p>
+
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
               <FormField
                 control={form.control}
                 name="email"
                 render={({ field }) => (
                   <FormItem>
                     <FormControl>
-                      <div className="relative">
-                        <input
-                          type="email"
-                          placeholder={t.common.email}
-                          autoComplete="email"
-                          disabled={isLoading}
-                          className="w-full bg-transparent border-0 border-b border-white/30 px-0 py-3 text-white placeholder:text-white/50 focus:border-white/60 focus:outline-none focus:ring-0 transition-colors pr-8"
-                          {...field}
-                        />
-                        <Mail className="absolute right-0 top-1/2 -translate-y-1/2 size-4 text-white/40" />
-                      </div>
+                      <input
+                        type="email"
+                        placeholder="tu@email.com"
+                        autoComplete="email"
+                        disabled={isLoading}
+                        className={INPUT_CLASS}
+                        {...field}
+                      />
                     </FormControl>
-                    <FormMessage className="text-red-300" />
+                    <FormMessage className="text-xs text-red-500 px-1" />
                   </FormItem>
                 )}
               />
 
-              <Button
+              <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full bg-white text-gray-900 hover:bg-white/90 font-semibold py-5 rounded-full transition-all shadow-lg hover:shadow-xl"
+                className="w-full rounded-full py-3.5 text-sm font-semibold text-white transition-all active:scale-[0.98] disabled:opacity-60"
+                style={{ background: "#4A3540" }}
               >
-                {isLoading ? t.auth.sendingResetLink : t.auth.sendResetLink}
-              </Button>
+                {isLoading ? "Enviando..." : "Enviar enlace"}
+              </button>
             </form>
           </Form>
-        )}
 
-        {!isSubmitted && (
-          <p className="text-center text-sm text-white/60">
-            <Link href="/login" className="text-white underline underline-offset-4 hover:text-white/80 transition-colors">
-              {t.auth.backToLogin}
+          <p className="text-center text-xs" style={{ color: "#9D8189" }}>
+            <Link href="/login" className="font-semibold underline underline-offset-4" style={{ color: "#6B5159" }}>
+              Volver al inicio de sesión
             </Link>
           </p>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
