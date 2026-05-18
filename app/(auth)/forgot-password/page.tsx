@@ -9,7 +9,7 @@ import { Form, FormControl, FormField, FormItem, FormMessage } from "@/component
 import { LogoWordmark } from "@/components/ui/logo";
 import { CheckCircle } from "lucide-react";
 
-const INPUT_CLASS = "w-full rounded-2xl border border-[#E8DDE0] bg-white/80 px-4 py-3.5 text-sm text-[#4A3540] placeholder:text-[#9D8189]/60 focus:outline-none focus:border-[#9D8189] transition-colors"
+const INPUT_CLASS = "w-full rounded-full border border-[#E8DDE0] bg-white/80 px-4 py-3.5 text-sm text-[#4A3540] placeholder:text-[#9D8189]/60 focus:outline-none focus:border-[#9D8189] transition-colors"
 
 const formSchema = z.object({
   email: z.string().email("Ingresá un email válido"),
@@ -41,7 +41,7 @@ export default function ForgotPasswordPage() {
   return (
     <div className="space-y-8">
       {/* Hero */}
-      <div className="flex flex-col items-center gap-2 text-center">
+      <div className="flex flex-col items-center gap-0.5 text-center">
         <p
           className="text-sm font-medium"
           style={{ color: "#9D8189", fontFamily: "var(--font-fraunces, serif)", fontStyle: "italic" }}

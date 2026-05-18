@@ -50,12 +50,9 @@ export function TurtleLogo({ size = 36, className = "" }: { size?: number; class
 }
 
 export function LogoWordmark({ className = "", size = "sm" }: { className?: string; size?: "sm" | "lg" }) {
-  const turtleSize = size === "lg" ? 44 : 30
   const textSize = size === "lg" ? "1.75rem" : "1.2rem"
-  const gap = size === "lg" ? "gap-3" : "gap-2"
   return (
-    <div className={`flex items-center ${gap} ${className}`}>
-      <TurtleLogo size={turtleSize} />
+    <div className={`flex items-center ${className}`}>
       <span
         style={{ fontFamily: "var(--font-fraunces, serif)", letterSpacing: "-0.02em", fontSize: textSize }}
         className="font-medium leading-none"

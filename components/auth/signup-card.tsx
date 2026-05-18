@@ -28,7 +28,7 @@ export function SignupCard() {
   return (
     <div className="space-y-7">
       {/* Hero */}
-      <div className="flex flex-col items-center gap-2 text-center">
+      <div className="flex flex-col items-center gap-0.5 text-center">
         <p
           className="text-sm font-medium"
           style={{ color: "#9D8189", fontFamily: "var(--font-fraunces, serif)", fontStyle: "italic" }}

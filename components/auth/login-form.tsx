@@ -17,7 +17,7 @@ function GoogleIcon() {
   );
 }
 
-const INPUT_CLASS = "w-full rounded-2xl border border-[#E8DDE0] bg-white/80 px-4 py-3.5 text-sm text-[#4A3540] placeholder:text-[#9D8189]/60 focus:outline-none focus:border-[#9D8189] transition-colors"
+const INPUT_CLASS = "w-full rounded-full border border-[#E8DDE0] bg-white/80 px-4 py-3.5 text-sm text-[#4A3540] placeholder:text-[#9D8189]/60 focus:outline-none focus:border-[#9D8189] transition-colors"
 const BTN_PRIMARY = "w-full flex items-center justify-center gap-2.5 rounded-full py-3.5 text-sm font-semibold transition-all active:scale-[0.98] disabled:opacity-60"
 
 export function LoginForm() {
