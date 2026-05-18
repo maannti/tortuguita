@@ -11,6 +11,7 @@ import { haptic } from "@/lib/haptics"
 interface BillItem {
   id: string; label: string; amount: number; amountUSD: number | null; paymentDate: string
   cardName: string | null; currentInstallment: number | null; totalInstallments: number | null
+  myShare?: number | null; isShared?: boolean
 }
 interface CategoryGroup {
   name: string; color: string; icon: string | null; total: number; totalUSD: number | null; bills: BillItem[]
@@ -43,6 +44,7 @@ interface Props {
   availableCategories?: FilterOption[]
   availableCards?: FilterOption[]
   organizations?: Organization[]
+  currentUserId?: string
 }
 
 const arsFormatter = new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", minimumFractionDigits: 0, maximumFractionDigits: 2 })
@@ -56,7 +58,8 @@ const MAUVE = "#9D8189"
 export function BillsView({
   month, monthKey, availableMonths, categoryGroups, grandTotal, hasAnyUSD,
   searchQuery = "", activeFilters = { categoryIds: [], cardIds: [] },
-  availableCategories = [], availableCards = [], organizations = []
+  availableCategories = [], availableCards = [], organizations = [],
+  currentUserId,
 }: Props) {
   const router = useRouter()
   const pathname = usePathname()
@@ -417,6 +420,8 @@ export function BillsView({
                 {!isCollapsed && <div className="glass rounded-2xl overflow-hidden divide-y divide-white/60">
                   {group.bills.map((bill) => {
                     const usdBill = billUSDDisplay(bill)
+                    const hasMyShare = bill.isShared && bill.myShare != null
+                    const displayBillAmount = hasMyShare ? bill.myShare! : bill.amount
                     return (
                       <Link
                         key={bill.id}
@@ -437,18 +442,27 @@ export function BillsView({
                                 <CreditCard className="h-2.5 w-2.5" />{bill.cardName}
                               </span>
                             )}
+                            {bill.isShared && (
+                              <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full" style={{ backgroundColor: "#F4ACB720", color: "#9D8189" }}>
+                                compartido
+                              </span>
+                            )}
                           </div>
                         </div>
                         <div className="flex items-center gap-1 ml-3 flex-shrink-0">
                           <div className="text-right">
                             <p className="text-base font-medium tabular-nums text-foreground" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
-                              {showUSD && usdBill ? usdBill : formatARS(bill.amount)}
+                              {showUSD && usdBill ? usdBill : formatARS(displayBillAmount)}
                             </p>
-                            {/* Secondary line: show ARS when in USD mode (or vice versa) */}
-                            {showUSD && usdBill && (
-                              <p className="text-[10px] text-muted-foreground">{formatARS(bill.amount)}</p>
+                            {/* Secondary: show full total when displaying user's share */}
+                            {hasMyShare && !showUSD && (
+                              <p className="text-[10px] text-muted-foreground">total {formatARS(bill.amount)}</p>
                             )}
-                            {!showUSD && bill.amountUSD && (
+                            {/* Secondary line: show ARS when in USD mode */}
+                            {showUSD && usdBill && (
+                              <p className="text-[10px] text-muted-foreground">{formatARS(displayBillAmount)}</p>
+                            )}
+                            {!showUSD && !hasMyShare && bill.amountUSD && (
                               <p className="text-[10px] text-muted-foreground">{formatUSD(bill.amountUSD)}</p>
                             )}
                           </div>
