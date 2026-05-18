@@ -3,10 +3,12 @@ import { signOut, useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { useTheme } from "next-themes"
 import { useEffect, useState } from "react"
-import { ChevronRight, Sun, Moon, LogOut, User, Home, Check, CreditCard, Tag, Plus, X, Copy, Trash2, Settings2, UserMinus } from "lucide-react"
+import { ChevronRight, Sun, Moon, LogOut, User, Home, Check, CreditCard, Tag, Plus, X, Copy, Trash2, Settings2, UserMinus, Smartphone } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { useSpaces } from "@/lib/spaces-context"
 import { NotificationToggle } from "@/components/settings/notification-toggle"
+import { usePwaInstall } from "@/hooks/use-pwa-install"
+import { PwaInstallSheet } from "@/components/pwa/pwa-install-sheet"
 
 interface Organization {
   id: string
@@ -29,6 +31,8 @@ export function SettingsHub({ creditCards, categories }: Props) {
   const { activeSpaceIds, toggleSpace } = useSpaces()
   const [mounted, setMounted] = useState(false)
   const [organizations, setOrganizations] = useState<Organization[]>([])
+  const [installSheetOpen, setInstallSheetOpen] = useState(false)
+  const { canInstall, isIOS, isInstalled, install } = usePwaInstall()
 
   // Create / join space
   const [showNewSpace, setShowNewSpace] = useState(false)
@@ -385,6 +389,27 @@ export function SettingsHub({ creditCards, categories }: Props) {
             })()}
           </div>
         </section>
+
+        {/* ── Instalar app ── */}
+        {!isInstalled && (canInstall || isIOS) && (
+          <section>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2 px-1">Instalar app</p>
+            <button
+              onClick={() => setInstallSheetOpen(true)}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl bg-muted/50 active:scale-[0.98] transition-all text-left"
+            >
+              <Smartphone className="size-5 text-muted-foreground flex-shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium">Agregar a pantalla de inicio</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {canInstall ? "Instalá la app nativa en tu dispositivo" : "Seguí los pasos para guardarla en Safari"}
+                </p>
+              </div>
+              <ChevronRight className="size-4 text-muted-foreground flex-shrink-0" />
+            </button>
+          </section>
+        )}
+        <PwaInstallSheet isOpen={installSheetOpen} onClose={() => setInstallSheetOpen(false)} isIOS={isIOS} install={install} />
 
         {/* ── Notificaciones ── */}
         <section>
