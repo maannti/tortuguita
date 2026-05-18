@@ -6,6 +6,7 @@ import { useEffect, useState } from "react"
 import { ChevronRight, Sun, Moon, LogOut, User, Home, Check, CreditCard, Tag, Plus, X, Copy, Trash2, Settings2, UserMinus } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { useSpaces } from "@/lib/spaces-context"
+import { NotificationToggle } from "@/components/settings/notification-toggle"
 
 interface Organization {
   id: string
@@ -383,6 +384,12 @@ export function SettingsHub({ creditCards, categories }: Props) {
               ))
             })()}
           </div>
+        </section>
+
+        {/* ── Notificaciones ── */}
+        <section>
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2 px-1">Notificaciones</p>
+          <NotificationToggle />
         </section>
 
         {/* ── Preferencias + Cerrar sesión ── */}
