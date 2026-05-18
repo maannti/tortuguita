@@ -128,7 +128,7 @@ export default async function BillsPage({ searchParams }: PageProps) {
     g.total += Number(bill.amount)
     if (billUSD !== null) g.totalUSD = (g.totalUSD ?? 0) + billUSD
     const myAssignment = bill.assignments.find(a => a.userId === session.user.id!)
-    const isShared = bill.assignments.length > 0
+    const isShared = bill.assignments.some(a => a.userId !== session.user.id!)
     const myShare = myAssignment ? Number(bill.amount) * (Number(myAssignment.percentage) / 100) : null
     g.bills.push({
       id: bill.id,
