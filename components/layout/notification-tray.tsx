@@ -135,42 +135,34 @@ export function NotificationTray({ isOpen, onClose, onRead }: NotificationTrayPr
 
   return (
     <>
-      {/* Backdrop */}
+      {/* Backdrop — transparent, just catches outside clicks */}
       <div
-        className="fixed inset-0 z-40 transition-opacity duration-300"
-        style={{
-          backgroundColor: "rgba(74,53,64,0.18)",
-          opacity: isOpen ? 1 : 0,
-          pointerEvents: isOpen ? "auto" : "none",
-        }}
+        className="fixed inset-0 z-40"
+        style={{ pointerEvents: isOpen ? "auto" : "none" }}
         onClick={onClose}
         aria-hidden="true"
       />
 
-      {/* Bottom sheet */}
+      {/* Top sheet — slides down from header */}
       <div
-        className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl transition-transform duration-300 ease-out"
+        className="fixed top-14 right-3 z-50 rounded-2xl transition-all duration-300 ease-out"
         style={{
           background: "rgba(255,255,255,0.97)",
           backdropFilter: "blur(24px)",
           WebkitBackdropFilter: "blur(24px)",
-          boxShadow: "0 -8px 40px rgba(157,129,137,0.18), 0 -2px 12px rgba(157,129,137,0.10)",
+          boxShadow: "0 8px 32px rgba(157,129,137,0.18), 0 2px 12px rgba(157,129,137,0.10)",
+          border: "1px solid rgba(255,255,255,0.8)",
+          width: "min(340px, calc(100vw - 24px))",
           maxHeight: "70dvh",
-          transform: isOpen ? "translateY(0)" : "translateY(100%)",
+          transform: isOpen ? "translateY(0) scale(1)" : "translateY(-8px) scale(0.97)",
+          opacity: isOpen ? 1 : 0,
+          pointerEvents: isOpen ? "auto" : "none",
         }}
       >
-        {/* Handle bar */}
-        <div className="flex justify-center pt-3 pb-1">
-          <div
-            className="w-9 h-1 rounded-full"
-            style={{ backgroundColor: `${MAUVE}30` }}
-          />
-        </div>
-
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3">
+        <div className="flex items-center justify-between px-4 pt-4 pb-2">
           <h2
-            className="text-base font-semibold"
+            className="text-sm font-semibold"
             style={{ color: MAUVE_DARK }}
           >
             Notificaciones
@@ -178,7 +170,7 @@ export function NotificationTray({ isOpen, onClose, onRead }: NotificationTrayPr
         </div>
 
         {/* Scrollable content */}
-        <div className="overflow-y-auto" style={{ maxHeight: "calc(70dvh - 120px)" }}>
+        <div className="overflow-y-auto" style={{ maxHeight: "calc(70dvh - 80px)" }}>
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <div
