@@ -3,9 +3,10 @@
 import Link from "next/link"
 import { useRouter, usePathname } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
-import { User, Home, Check } from "lucide-react"
+import { User, Home, Check, Bell } from "lucide-react"
 import { LogoWordmark } from "@/components/ui/logo"
 import { useSpaces } from "@/lib/spaces-context"
+import { usePushNotifications } from "@/hooks/use-push-notifications"
 import { cn } from "@/lib/utils"
 
 // Pages where the global space selector should be hidden (form has its own)
@@ -42,6 +43,7 @@ export function SimpleHeader() {
   }
 
   const showSpaces = spaces.length > 1 && isHydrated && !hideSelector(pathname)
+  const { isEnabled: notifEnabled, isSupported: notifSupported } = usePushNotifications()
 
   return (
     <header
@@ -58,7 +60,30 @@ export function SimpleHeader() {
           <LogoWordmark />
         </Link>
 
-        {showSpaces && (
+        <div className="flex items-center gap-2">
+          {/* Notification bell */}
+          {notifSupported && (
+            <Link
+              href="/settings"
+              className="relative flex items-center justify-center size-9 rounded-full transition-all active:scale-90"
+              style={{ backgroundColor: notifEnabled ? `${MAUVE}15` : `${MAUVE}08` }}
+            >
+              <Bell
+                className="size-4.5"
+                style={{ color: notifEnabled ? MAUVE : `${MAUVE}60` }}
+                fill={notifEnabled ? MAUVE : "none"}
+                strokeWidth={notifEnabled ? 0 : 1.8}
+              />
+              {!notifEnabled && (
+                <span
+                  className="absolute top-1.5 right-1.5 size-1.5 rounded-full"
+                  style={{ backgroundColor: "#F4ACB7" }}
+                />
+              )}
+            </Link>
+          )}
+
+          {showSpaces && (
           <div ref={wrapperRef} className="relative">
             {/* Trigger: colored dots — active = solid mauve, inactive = ghost */}
             <button
@@ -134,7 +159,8 @@ export function SimpleHeader() {
               </div>
             )}
           </div>
-        )}
+          )}
+        </div>
       </div>
     </header>
   )
