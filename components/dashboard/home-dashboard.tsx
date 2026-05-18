@@ -359,7 +359,7 @@ export function HomeDashboard({ month, monthKey, availableMonths, spaces, curren
 
         {/* Category summary + biggest expense */}
         {(topCategories.length > 0 || biggestExpense) && (
-          <section data-tour="recent-expenses">
+          <section data-tour="categories">
             <div className="flex items-center justify-between mb-2.5 px-1">
               <h2 className="text-base font-medium text-foreground" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
                 Por categoría

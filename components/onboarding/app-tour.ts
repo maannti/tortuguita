@@ -29,10 +29,10 @@ const ALL_STEPS = [
     },
   },
   {
-    element: "[data-tour='recent-expenses']",
+    element: "[data-tour='categories']",
     popover: {
-      title: "Gastos recientes",
-      description: "Todos los gastos del mes. Tocá uno para ver el detalle o editarlo.",
+      title: "Por categoría",
+      description: "El desglose de gastos del mes por categoría, con el gasto más grande del período.",
       side: "top" as const,
       align: "center" as const,
     },
