@@ -203,7 +203,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
   const billTypeId = isCreditCard ? cardId : categoryId
 
   const canSave = !!label.trim() && amount > 0 && !!paymentMethod &&
-    (isCreditCard ? !!cardId : !!categoryId)
+    (isCreditCard ? (!!cardId && !!categoryId) : !!categoryId)
 
   function buildAssignments(): Array<{ userId: string; percentage: number }> {
     if (splitMode === "mine") return [{ userId: currentUserId, percentage: 100 }]
@@ -336,6 +336,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
     if (amount <= 0) return "Ingresá el monto para guardar"
     if (!paymentMethod) return "Seleccioná un medio de pago"
     if (isCreditCard && !cardId) return "Seleccioná una tarjeta"
+    if (isCreditCard && !categoryId) return "Seleccioná una categoría para el gasto"
     if (!isCreditCard && !categoryId) return "Seleccioná una categoría"
     return null
   })()
@@ -564,7 +565,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
           {isCreditCard && (
             <div className="space-y-1.5">
               <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Categoría <span className="normal-case font-normal">(opcional)</span>
+                Categoría
               </label>
               {(() => {
                 const sel = allNormalCats.find(c => c.id === categoryId)
