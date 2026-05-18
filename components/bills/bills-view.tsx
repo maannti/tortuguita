@@ -365,8 +365,13 @@ export function BillsView({
         </div>
       </div>
 
-      {/* RECURRENTES link — oculto hasta integrar con notificaciones push (ver ROADMAP ítem 10) */}
-      {/* <div className="px-4 pt-2 pb-0"><Link href="/bills/recurring">Gastos recurrentes →</Link></div> */}
+      <div className="px-4 pt-1 pb-0">
+        <Link href="/bills/recurring" className="flex items-center gap-1.5 text-xs text-muted-foreground active:opacity-70 transition-opacity">
+          <Repeat className="size-3" />
+          <span>Gastos recurrentes</span>
+          <ChevronRight className="size-3" />
+        </Link>
+      </div>
 
 <div className="px-4 pt-4 space-y-5">
         {categoryGroups.length > 0 ? (
