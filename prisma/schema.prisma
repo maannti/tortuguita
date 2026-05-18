@@ -87,6 +87,7 @@ model User {
   conversations             Conversation[]
   recurringBills            RecurringBill[]
   recurringBillAssignments  RecurringBillAssignment[]
+  notifications             Notification[]
 
   @@index([organizationId])
   @@index([currentOrganizationId])
@@ -333,6 +334,19 @@ model Income {
   @@index([incomeTypeId])
   @@index([userId])
   @@index([incomeDate])
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  body      String
+  type      String    @default("general")
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, createdAt])
 }
 
 model IncomeAssignment {
