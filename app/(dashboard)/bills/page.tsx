@@ -146,6 +146,8 @@ export default async function BillsPage({ searchParams }: PageProps) {
 
   const categoryGroups = Array.from(catGroupMap.values())
   const grandTotal = categoryGroups.reduce((s, g) => s + g.total, 0)
+  const myTotal = categoryGroups.reduce((s, g) => s + g.bills.reduce((bs, b) => bs + (b.myShare ?? b.amount), 0), 0)
+  const hasSharedBills = categoryGroups.some(g => g.bills.some(b => b.isShared))
   const hasAnyUSD = categoryGroups.some(g => g.bills.some(b => b.amountUSD !== null))
 
   return (
@@ -155,6 +157,8 @@ export default async function BillsPage({ searchParams }: PageProps) {
       availableMonths={availableMonths}
       categoryGroups={categoryGroups}
       grandTotal={grandTotal}
+      myTotal={myTotal}
+      hasSharedBills={hasSharedBills}
       hasAnyUSD={hasAnyUSD}
       searchQuery={searchQuery}
       activeFilters={{ categoryIds: categoryIdFilters, cardIds: cardIdFilters }}
