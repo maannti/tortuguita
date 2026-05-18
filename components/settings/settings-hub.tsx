@@ -3,7 +3,7 @@ import { signOut, useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { useTheme } from "next-themes"
 import { useEffect, useState } from "react"
-import { ChevronRight, Sun, Moon, LogOut, User, Home, Check, CreditCard, Tag, Plus, X, Copy, Trash2, Settings2, UserMinus, Smartphone } from "lucide-react"
+import { ChevronRight, Sun, Moon, LogOut, User, Home, Check, CreditCard, Tag, Plus, X, Copy, Trash2, Settings2, UserMinus, Smartphone, Repeat2 } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { useSpaces } from "@/lib/spaces-context"
 import { NotificationToggle } from "@/components/settings/notification-toggle"
@@ -348,6 +348,7 @@ export function SettingsHub({ creditCards, categories }: Props) {
             {[
               { label: "Mis tarjetas", href: "/cards", icon: <CreditCard className="size-4 text-white" />, bg: "#7B9E87" },
               { label: "Categorías de gastos", href: "/categories", icon: <Tag className="size-4 text-white" />, bg: "#9D8189" },
+              { label: "Gastos recurrentes", href: "/bills/recurring", icon: <Repeat2 className="size-4 text-white" />, bg: "#C4A8AE" },
             ].map((item) => (
               <button key={item.label} onClick={() => push(item.href)}
                 className="w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-white/30 transition-colors">
