@@ -205,7 +205,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
     }
   }
 
-  const TEST_EMAILS = ["test-cards@tortuguita.app"]
+  const TEST_EMAILS = ["santimarcos8@hotmail.com"]
   const isTestUser = !!(session.user.email && TEST_EMAILS.includes(session.user.email))
   const showOnboarding = isTestUser || !userRecord?.onboardingSeenAt
   const [billCount, extraMemberCount, creditCardCount, importedBillCount] = checklistRaw
