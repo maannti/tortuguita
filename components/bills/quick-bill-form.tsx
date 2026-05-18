@@ -231,9 +231,32 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
     haptic("medium")
     setError(null); setIsLoading(true)
     try {
+      const billPayload = {
+        label: label.trim(),
+        amount,
+        amountUSD: amountUSDDisplay ? parseFloat(amountUSDDisplay.replace(",", ".")) || null : null,
+        paymentDate: new Date(paymentDate + "T12:00:00").toISOString(),
+        billTypeId,
+        categoryId: isCreditCard ? (categoryId || null) : null,
+        ...(isCreditCard && installments > 1 ? { totalInstallments: installments } : {}),
+        assignments: buildAssignments(),
+        notes: notes.trim() || "",
+        organizationId: selectedOrgId,
+        notifyMembers,
+      }
+
       // ── Recurring bill path ──────────────────────────────────────────────
       if (isRecurring) {
-        const res = await fetch("/api/recurring-bills", {
+        // In edit mode: save bill changes first, then create recurring template
+        if (isEdit) {
+          const billRes = await fetch(`/api/bills/${initialData!.id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(billPayload),
+          })
+          if (!billRes.ok) { const err = await billRes.json(); throw new Error(err.error || "Error al guardar") }
+        }
+        const recRes = await fetch("/api/recurring-bills", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -249,7 +272,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
             notes: notes.trim() || "",
           }),
         })
-        if (!res.ok) { const err = await res.json(); throw new Error(err.error || "Error al guardar") }
+        if (!recRes.ok) { const err = await recRes.json(); throw new Error(err.error || "Error al guardar") }
         try { sessionStorage.removeItem(DRAFT_KEY) } catch {}
         push("/bills/recurring"); refresh()
         return
@@ -260,19 +283,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          label: label.trim(),
-          amount,
-          amountUSD: amountUSDDisplay ? parseFloat(amountUSDDisplay.replace(",", ".")) || null : null,
-          paymentDate: new Date(paymentDate + "T12:00:00").toISOString(),
-          billTypeId,
-          categoryId: isCreditCard ? (categoryId || null) : null,
-          ...(isCreditCard && installments > 1 ? { totalInstallments: installments } : {}),
-          assignments: buildAssignments(),
-          notes: notes.trim() || "",
-          organizationId: selectedOrgId,
-          notifyMembers,
-        }),
+        body: JSON.stringify(billPayload),
       })
       if (!res.ok) { const err = await res.json(); throw new Error(err.error || "Error al guardar") }
       try { sessionStorage.removeItem(DRAFT_KEY) } catch {}
