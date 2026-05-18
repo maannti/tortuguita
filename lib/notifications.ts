@@ -1,8 +1,10 @@
 import { getFirebaseAdmin, admin } from "./firebase-admin"
+import { prisma } from "@/lib/prisma"
 
 export interface NotificationPayload {
   title: string
   body: string
+  type?: string    // Notification type (e.g. "due_date", "general")
   url?: string        // Where to navigate on tap
   data?: Record<string, string>
 }
@@ -10,10 +12,12 @@ export interface NotificationPayload {
 /**
  * Send a push notification to a single FCM token.
  * Returns true on success, false on failure (e.g. token expired).
+ * If userId is provided, also saves the notification to the DB.
  */
 export async function sendPushNotification(
   fcmToken: string,
-  payload: NotificationPayload
+  payload: NotificationPayload,
+  userId?: string
 ): Promise<boolean> {
   try {
     getFirebaseAdmin()
@@ -40,6 +44,18 @@ export async function sendPushNotification(
         ...payload.data,
       },
     })
+
+    if (userId) {
+      await prisma.notification.create({
+        data: {
+          userId,
+          title: payload.title,
+          body: payload.body,
+          type: payload.type ?? "general",
+        },
+      })
+    }
+
     return true
   } catch (err: any) {
     // Token invalid/unregistered — caller should clear it from DB
@@ -56,6 +72,7 @@ export async function sendPushNotification(
 
 /**
  * Send to multiple tokens, returns list of invalid tokens to clean up.
+ * Each userId is passed to sendPushNotification for DB persistence.
  */
 export async function sendPushToMany(
   tokens: { userId: string; fcmToken: string }[],
@@ -65,7 +82,7 @@ export async function sendPushToMany(
 
   await Promise.all(
     tokens.map(async ({ userId, fcmToken }) => {
-      const ok = await sendPushNotification(fcmToken, payload)
+      const ok = await sendPushNotification(fcmToken, payload, userId)
       if (!ok) invalidTokenUserIds.push(userId)
     })
   )
