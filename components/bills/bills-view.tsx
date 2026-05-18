@@ -459,9 +459,12 @@ export function BillsView({
                             <p className="text-base font-medium tabular-nums text-foreground" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
                               {showUSD && usdBill ? usdBill : formatARS(displayBillAmount)}
                             </p>
-                            {/* Secondary: show full total when displaying user's share */}
-                            {hasMyShare && showMyPart && !showUSD && (
+                            {/* Secondary: show total when in "Mi parte", show user's share when in "Total" */}
+                            {hasMyShare && !showUSD && showMyPart && (
                               <p className="text-[10px] text-muted-foreground">total {formatARS(bill.amount)}</p>
+                            )}
+                            {hasMyShare && !showUSD && !showMyPart && (
+                              <p className="text-[10px] text-muted-foreground">tu parte {formatARS(bill.myShare!)}</p>
                             )}
                             {/* Secondary line: show ARS when in USD mode */}
                             {showUSD && usdBill && (
