@@ -4,6 +4,7 @@ import { unstable_cache } from "next/cache"
 import { startOfMonth, endOfMonth, subMonths, format, parse } from "date-fns"
 import { es } from "date-fns/locale"
 import { HomeDashboard, SpaceData } from "@/components/dashboard/home-dashboard"
+import { PwaInstallBanner } from "@/components/pwa/pwa-install-banner"
 
 interface PageProps { searchParams: Promise<{ month?: string }> }
 
@@ -214,6 +215,8 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   }
 
   return (
+    <>
+    <PwaInstallBanner />
     <HomeDashboard
       month={format(monthStart, "MMMM yyyy", { locale: es })}
       monthKey={format(monthStart, "yyyy-MM")}
@@ -224,5 +227,6 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       checklistData={checklistData}
       insights={{ insights: insightStrings }}
     />
+    </>
   )
 }
