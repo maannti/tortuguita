@@ -136,7 +136,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
   const [catSheetOpen, setCatSheetOpen] = useState(false)
   const [catSpacePicker, setCatSpacePicker] = useState(false)
   const [isRecurring, setIsRecurring] = useState(false)
-  const [recurringDay, setRecurringDay] = useState<number>(() => Math.min(new Date().getDate(), 28))
+  const [recurringDay, setRecurringDay] = useState<number>(1)
   const [notifyMembers, setNotifyMembers] = useState(false)
 
   // ── Draft persistence (create mode only) ────────────────────────────────
@@ -685,7 +685,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
             </div>
           )}
 
-          {!isEdit && !(isCreditCard && installments > 1) && (
+          {!(isCreditCard && installments > 1) && (
             <div className="space-y-3">
               {/* Toggle "Repetir mensualmente" */}
               <button
