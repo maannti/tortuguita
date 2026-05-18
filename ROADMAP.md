@@ -1,6 +1,6 @@
 # Tortuguita v2 — Roadmap de Mejoras
 
-> Última actualización: 16 Mayo 2025
+> Última actualización: 17 Mayo 2025
 > Este archivo sirve como planificación entre sesiones de desarrollo.
 
 ---
@@ -9,8 +9,8 @@
 
 | Fase | Progreso | Próximo paso |
 |------|----------|--------------|
-| **Alta Prioridad** | 3/5 completados | Gastos Recurrentes |
-| **Media Prioridad** | 0/7 completados | — |
+| **Alta Prioridad** | 5/5 ✅ completados | — |
+| **Media Prioridad** | 0/6 completados | Presupuestos o Quick-Add |
 | **Baja Prioridad** | 0/6 completados | — |
 
 ---
@@ -120,11 +120,12 @@ Rediseño completo de /cuotas → nueva ruta /tarjetas con estilo Apple Wallet. 
 3. [x] Logos de bancos reales (PNG/SVG) en `/public/banks/`
 4. [x] Logos de redes reales (PNG) en `/public/networks/`
 5. [x] Campo `bank` agregado a `BillType` (schema + API + form)
-6. [x] Colores de fondo por banco (`BANK_COLORS`)
+6. [x] Colores de fondo por banco (`BANK_COLORS`) — pastelizados (45% blend con blanco)
 7. [x] Blanqueo de logos con `brightness-0 invert` para Santander y Ciudad
 8. [x] Badges de red en `CardIcon` usan imagen real (amex, cabal) en vez de letras
 9. [x] Bottom nav actualizado de /cuotas → /tarjetas
 10. [x] Rutas viejas `/cuotas` eliminadas
+11. [x] Widget en dashboard: stack Apple Wallet top 3 tarjetas, idéntico visualmente a /tarjetas
 
 #### Archivos creados
 - `app/(dashboard)/tarjetas/page.tsx`
@@ -144,48 +145,47 @@ Rediseño completo de /cuotas → nueva ruta /tarjetas con estilo Apple Wallet. 
 ---
 
 ### 4. Gastos Recurrentes
-- **Estado:** `[ ]` Pendiente
-- **Prioridad:** Alta
-- **Esfuerzo estimado:** 3-4 días
+- **Estado:** `[x]` ✅ Completado (17 Mayo 2025)
+- **Prioridad:** Alta (retomar después de notificaciones)
+- **Esfuerzo estimado:** 1-2 días adicionales (base ya construida)
 - **Impacto:** Elimina data entry repetitivo
 
 #### Descripción
-Permitir marcar un gasto como recurrente (mensual, semanal, etc.) y que se cree automáticamente. Ejemplos: Netflix, gimnasio, alquiler.
+Marcar un gasto como recurrente para que el sistema te *recuerde* confirmarlo cada mes — no lo genera automáticamente. El cron dispara una notificación push: *"¿Te llegó el alquiler? El mes pasado fue $X"*. El usuario solo confirma o ajusta el monto y se crea el Bill.
 
-#### Archivos a modificar/crear
-- `prisma/schema.prisma` — nuevo modelo `RecurringBill` o campo en `Bill`
-- `app/api/recurring-bills/route.ts` — (nuevo) CRUD de recurrencias
-- `app/api/cron/create-recurring/route.ts` — (nuevo) cron job
-- `components/bills/quick-bill-form.tsx` — toggle "repetir cada mes"
-- `app/(dashboard)/bills/recurring/page.tsx` — (nuevo) lista de recurrencias
+**Por qué este enfoque y no auto-generación:** en Argentina los montos cambian frecuentemente. Auto-generar crearía gastos con monto desactualizado. La confirmación manual es obligatoria, pero el sistema la hace trivial.
 
-#### Plan de implementación
-1. [ ] Decidir modelo de datos:
-   - Opción A: Campo `isRecurring` + `recurringFrequency` en Bill
-   - Opción B: Modelo separado `RecurringBill` que genera Bills
-   - **Decisión:** (pendiente)
-2. [ ] Crear schema Prisma y migrar
-3. [ ] API para crear/editar/pausar recurrencias
-4. [ ] UI en formulario de gasto: "Repetir" toggle
-5. [ ] Cron job (Vercel Cron) que crea gastos al inicio del mes
-6. [ ] Vista de recurrencias activas en /settings o /bills/recurring
-7. [ ] Notificación cuando se crea un gasto recurrente
+#### Lo que ya está construido ✅
+- `prisma/schema.prisma` — modelos `RecurringBill` + `RecurringBillAssignment` (ya en DB)
+- `app/api/recurring-bills/route.ts` — GET (lista) + POST (crear)
+- `app/api/recurring-bills/[id]/route.ts` — GET + PATCH + DELETE (con `?deleteGenerated=true`)
+- `app/api/cron/create-recurring/route.ts` — cron job (actualmente auto-genera; cambiar a notificación)
+- `vercel.json` — cron configurado `0 9 * * *`
+- `lib/validations/recurring-bill.ts` — schema Zod
+- `components/bills/recurring-bills-view.tsx` — vista /bills/recurring (lista activas/pausadas, context menu)
+- `app/(dashboard)/bills/recurring/page.tsx` — página de lista
+
+#### Lo que está oculto en UI (comentado, listo para descomentar)
+- `components/bills/quick-bill-form.tsx` — toggle "Repetir mensualmente" con selector de día
+- `components/bills/bills-view.tsx` — link "Gastos recurrentes →" debajo del ActionBar
+
+#### Lo que falta para completar
+1. [ ] **Ítem 10 primero:** setup notificaciones push (FCM + service worker)
+2. [ ] Cambiar cron: en vez de crear Bill, enviar notificación push con quick-action
+3. [ ] Pantalla de confirmación rápida (pre-llenada con último monto)
+4. [ ] Descomentar UI en formulario y bills-view
+5. [ ] Test end-to-end del flujo completo
 
 #### Criterios de éxito
-- Puedo crear un gasto recurrente mensual
-- El gasto se crea automáticamente el día configurado
-- Puedo pausar/eliminar una recurrencia
-- Puedo ver todas mis recurrencias activas
-
-#### Notas de implementación
-```
-(agregar notas durante desarrollo)
-```
+- Puedo marcar un gasto como recurrente
+- Recibo notif el día configurado: *"¿Te llegó X? El mes pasado fue $Y"*
+- Con un tap confirmo o ajusto el monto → se crea el Bill
+- Puedo pausar/eliminar una recurrencia desde /bills/recurring
 
 ---
 
 ### 5. AI con Contexto de Gastos
-- **Estado:** `[ ]` Pendiente
+- **Estado:** `[x]` ✅ Completado (17 Mayo 2025)
 - **Prioridad:** Alta
 - **Esfuerzo estimado:** 3-4 días
 - **Impacto:** Diferenciador único
@@ -332,9 +332,9 @@ Wrappear la PWA con Capacitor para publicar en App Store y Play Store. Ganar vis
 
 ---
 
-### 10. Notificaciones Push
-- **Estado:** `[ ]` Pendiente
-- **Prioridad:** Media
+### 10. Notificaciones Push ⚡ ADELANTADO — desbloquea Gastos Recurrentes
+- **Estado:** `[x]` ✅ Completado (17 Mayo 2025)
+- **Prioridad:** Alta (adelantado para desbloquear ítem 4)
 - **Esfuerzo estimado:** 1 semana
 
 #### Descripción
@@ -346,7 +346,7 @@ Notificar vencimientos de TC, recordatorios de gastos recurrentes, alertas de pr
 3. [ ] Configurar Capacitor Push Notifications para nativo
 4. [ ] Crear preferencias de notificación en settings
 5. [ ] Cron job para enviar notificaciones de vencimiento TC
-6. [ ] Notificaciones cuando se crea gasto recurrente
+6. [ ] **Notificación de recurrente:** "¿Te llegó X? El mes pasado fue $Y" con quick-action → desbloquea ítem 4
 
 ---
 
@@ -471,7 +471,34 @@ Permitir agregar gastos offline y sincronizar cuando vuelva la conexión.
 
 ## Log de Sesiones
 
-### Sesión: 16 Mayo 2025
+### Sesión: 17 Mayo 2025
+- **Duración:** ~1 día completo
+- **Trabajo realizado:**
+  - ✅ Fix build errors Vercel (InsightData type, thisMonthTotal)
+  - ✅ Fix chatbot follow-ups (system prompt — siempre usar tools)
+  - ✅ Fix categorías vacías en /tarjetas/new
+  - ✅ /tarjetas: mes default inteligente (currentDueDate), badges de categoría, secciones colapsables
+  - ✅ Haptics restaurados en toda la app (nav, forms, dashboard, AI, bills, tarjetas)
+  - ✅ **Ítem 10: Notificaciones Push FCM** — infraestructura completa (firebase-admin/client, SW, hook, API, cron, settings toggle)
+  - ✅ Bandeja de notificaciones (bell header + dropdown tray, DB persistence, 7-day cleanup)
+  - ✅ Notif: gasto compartido (toggle en form), resumen mensual (cron 1ro de mes), cierres de TC (3/1/0 días)
+  - ✅ **Ítem 4: Gastos Recurrentes** — cron → push en vez de auto-crear, toggle en form, pantalla confirmación
+  - ✅ **Ítem 5: AI con contexto** — tool get_spending_trend, system prompt proactivo, personalidad
+  - ✅ PWA install prompt (iOS slides ilustrados + Android nativo, banner dashboard + settings)
+  - ✅ Loading skeletons en dashboard, bills, tarjetas, settings
+- **Próxima sesión:** Media prioridad — Presupuestos por categoría o Quick-Add desde dashboard
+
+### Sesión: 16 Mayo 2025 (parte 2)
+- **Duración:** ~1.5 horas
+- **Trabajo realizado:**
+  - ✅ Widget de tarjetas en dashboard (stack Apple Wallet, top 3 por monto)
+  - Colores pastelizados (45% blend con blanco) en dashboard y /tarjetas
+  - Dashboard widget visualmente idéntico a las cards de /tarjetas
+  - Logos de banco y red consistentes en ambas vistas
+  - Iteración de diseño: chips horizontales → stack Apple Wallet limitado a 3
+- **Pendiente:** hacer push a prod cuando esté conforme
+
+### Sesión: 16 Mayo 2025 (parte 1)
 - **Duración:** ~2 horas
 - **Trabajo realizado:**
   - ✅ Implementado **3. Vista Wallet de Tarjetas** (`/tarjetas`)
@@ -481,7 +508,7 @@ Permitir agregar gastos offline y sincronizar cuando vuelva la conexión.
   - Badges de red con imágenes reales (amex, cabal) en lista de tarjetas
   - Ajustes estéticos: tamaño uniforme de logos, alineación vertical de nombres
   - Deploy a producción
-- **Próxima sesión:** **4. Gastos Recurrentes** o ajustes post-deploy
+- **Próxima sesión:** widget dashboard + ajustes post-deploy
 
 ### Sesión: 15 Mayo 2025 (parte 3)
 - **Duración:** ~1 hora
@@ -537,10 +564,10 @@ Permitir agregar gastos offline y sincronizar cuando vuelva la conexión.
 
 ## Decisiones Pendientes
 
-1. **Modelo de recurrencias:** ¿Campo en Bill o modelo separado?
+1. ~~**Modelo de recurrencias:** ¿Campo en Bill o modelo separado?~~ → Modelo separado `RecurringBill`, implementado
 2. ~~**Búsqueda:** ¿Solo en /bills o global con Cmd+K?~~ → Implementado en /bills, Cmd+K queda para futuro
 3. **Monetización:** ¿Stripe o MercadoPago primero?
-4. **App nativa:** ¿Capacitor ahora o esperar validación?
+4. **App nativa:** Capacitor al final, cuando esté todo completo y haya validación de usuarios
 
 ---
 
