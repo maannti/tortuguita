@@ -9,7 +9,7 @@
 
 | Fase | Progreso | Próximo paso |
 |------|----------|--------------|
-| **Alta Prioridad** | 5/5 ✅ completados | — |
+| **Alta Prioridad** | 5/6 completados | Arreglar rediseño de login |
 | **Media Prioridad** | 0/6 completados | Presupuestos o Quick-Add |
 | **Baja Prioridad** | 0/6 completados | — |
 
@@ -227,6 +227,38 @@ El chat de AI actualmente no tiene acceso a los gastos del usuario. Debería pod
 
 ---
 
+### 6. Arreglar Rediseño de Login
+- **Estado:** `[ ]` Pendiente
+- **Prioridad:** Alta
+- **Esfuerzo estimado:** Por definir
+- **Impacto:** UX crítica — primera impresión del usuario
+
+#### Descripción
+El flujo de login funciona bien, pero el diseño visual está desactualizado. Necesita alinearse con la estética del resto de la app (paleta pastel, tipografía, espaciado).
+
+#### Problemas actuales
+- Colores no coinciden con la paleta de la app (Sage, Peach, Pink, Dusty Rose, Mauve)
+- Diseño genérico, no refleja la identidad visual de Tortuguita
+
+#### Archivos a modificar
+- `app/(auth)/login/page.tsx`
+- `app/(auth)/signup/page.tsx` (probablemente mismo problema)
+- Componentes relacionados en `app/(auth)/`
+
+#### Plan de implementación
+1. [ ] Aplicar paleta de colores oficial (gradiente hero, acentos)
+2. [ ] Actualizar tipografía (Fraunces para títulos/montos)
+3. [ ] Mejorar espaciado y layout (mobile-first)
+4. [ ] Agregar elementos visuales de marca (logo, ilustraciones)
+5. [ ] Testear en mobile y desktop
+
+#### Criterios de éxito
+- Login se siente parte de la misma app que el dashboard
+- Usa la paleta pastel oficial
+- Primera impresión positiva del usuario
+
+---
+
 ## MEDIA PRIORIDAD — Features Nuevos
 
 > Funcionalidades que agregan valor significativo pero requieren más esfuerzo.
@@ -441,7 +473,28 @@ Soporte nativo para múltiples monedas, conversión automática, y reportes por 
 
 ---
 
-### 18. Modo Offline Mejorado
+### 18. Registro de Pagos entre Miembros ("¿Ya me pagaste?")
+- **Estado:** `[ ]` Pendiente diseño — a planificar
+- **Prioridad:** Media-Alta (muy pedido por usuarios compartidos)
+- **Esfuerzo estimado:** A definir
+
+#### Descripción
+Para gastos compartidos, poder marcar si la otra persona ya pagó su parte o no.
+
+#### Ideas a discutir
+- **Opción A (granular):** Cada gasto compartido tiene estado `pendiente/pagado` por miembro.
+- **Opción B (balance mensual):** Vista de balance neto entre miembros del hogar. Al final del mes: "Juan te debe $12.400" → botón "Saldar" que cierra el período. Más natural para convivencia diaria.
+- **Combinación:** balance mensual como vista principal + drill-down a los gastos individuales que componen la deuda.
+
+#### Preguntas pendientes
+- [ ] ¿Siempre entre dos personas o puede ser entre más miembros?
+- [ ] ¿Quién paga qué? ¿Hay un "pagador" por gasto o es libre?
+- [ ] ¿Mostrar el saldo neto (A - B) o los dos saldos por separado?
+- [ ] ¿Dónde vive en la UI? ¿Dashboard? ¿Sección propia?
+
+---
+
+### 19. Modo Offline Mejorado
 - **Estado:** `[ ]` Pendiente
 - **Prioridad:** Baja
 - **Esfuerzo estimado:** 1 semana
