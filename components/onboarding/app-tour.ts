@@ -29,6 +29,15 @@ const ALL_STEPS = [
     },
   },
   {
+    element: "[data-tour='ai-widget']",
+    popover: {
+      title: "tortuguita IA",
+      description: "Tu asistente financiero. Te da insights del mes y podés hacerle preguntas sobre tus gastos.",
+      side: "top" as const,
+      align: "center" as const,
+    },
+  },
+  {
     element: "[data-tour='categories']",
     popover: {
       title: "Por categoría",
