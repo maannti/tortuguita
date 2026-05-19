@@ -39,6 +39,7 @@ export function AiInsightWidget({ data }: { data: InsightData }) {
 
   return (
     <div
+      data-tour="ai-widget"
       className="rounded-3xl overflow-hidden flex"
       style={{ background: "linear-gradient(135deg, #D8E2DC 0%, #FFE5D9 55%, #FFCAD4 100%)" }}
     >

@@ -48,10 +48,19 @@
   margin-top: 0.875rem !important;
   display: flex !important;
   align-items: center !important;
-  gap: 0.4rem !important;
+  gap: 0.5rem !important;
+  flex-wrap: nowrap !important;
 }
 .driver-popover-progress-text {
   flex: 1 !important;
+  white-space: nowrap !important;
+  min-width: 0 !important;
+}
+.driver-popover-navigation-btns {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.4rem !important;
+  flex-shrink: 0 !important;
 }
 .driver-popover-prev-btn,
 .driver-popover-next-btn,
