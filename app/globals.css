@@ -101,6 +101,11 @@
   font-size: 1rem !important;
 }
 .driver-overlay { opacity: 0.55 !important; }
+/* Prevent accidental navigation when highlighted elements contain links/buttons */
+.driver-active .driver-active-element,
+.driver-active .driver-active-element * {
+  pointer-events: none !important;
+}
 
 /* ── Paleta: Sage · Peach · Blush · Rose · Mauve ── */
 :root {
