@@ -46,42 +46,41 @@
 }
 .driver-popover-footer {
   margin-top: 0.875rem !important;
-  display: flex !important;
-  flex-direction: column !important;
+  display: grid !important;
+  grid-template-rows: auto auto !important;
   gap: 0.5rem !important;
 }
 .driver-popover-progress-text {
-  order: 2 !important;
+  grid-row: 2 !important;
   text-align: center !important;
   white-space: nowrap !important;
 }
 .driver-popover-navigation-btns {
-  order: 1 !important;
-  display: flex !important;
+  grid-row: 1 !important;
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
   gap: 0.5rem !important;
-  width: 100% !important;
 }
 .driver-popover-prev-btn,
 .driver-popover-next-btn {
-  flex: 1 !important;
   border-radius: 999px !important;
   font-size: 0.8125rem !important;
   font-weight: 600 !important;
-  padding: 0.6rem 0 !important;
+  padding: 0.6rem 0.5rem !important;
   border: none !important;
   cursor: pointer !important;
   transition: opacity 0.15s !important;
   text-align: center !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  min-width: 0 !important;
 }
 .driver-popover-close-btn {
-  border-radius: 999px !important;
-  font-size: 0.75rem !important;
-  font-weight: 600 !important;
-  padding: 0.45rem 1rem !important;
   border: none !important;
   cursor: pointer !important;
-  transition: opacity 0.15s !important;
-  white-space: nowrap !important;
+  background: transparent !important;
+  color: #9D8189 !important;
+  font-size: 1rem !important;
 }
 .driver-popover-next-btn {
   background: #9D8189 !important;
