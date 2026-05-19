@@ -124,18 +124,14 @@ export function startAppTour() {
     steps,
     onPopoverRender: (popover) => {
       const el = popover.wrapper as HTMLElement
-      // driver.js positions via `inset` shorthand — clamp within viewport
+      // Always center the popover horizontally — driver.js positions based on
+      // the highlighted element which can cause overflow or asymmetry on mobile
       requestAnimationFrame(() => {
-        const rect = el.getBoundingClientRect()
-        const margin = 16
+        const parts = el.style.inset.split(' ')
+        const bottom = parts[2] ?? 'auto'
         const vw = window.innerWidth
-        if (rect.right > vw - margin || rect.left < margin) {
-          // Parse the bottom value from inset (format: "auto auto {bottom}px {left}px")
-          const parts = el.style.inset.split(' ')
-          const bottom = parts[2] ?? 'auto'
-          const newLeft = Math.max(margin, rect.left - Math.max(0, rect.right - (vw - margin)))
-          el.style.inset = `auto auto ${bottom} ${newLeft}px`
-        }
+        const centeredLeft = Math.max(16, (vw - el.offsetWidth) / 2)
+        el.style.inset = `auto auto ${bottom} ${centeredLeft}px`
       })
     },
   })
