@@ -124,14 +124,25 @@ export function startAppTour() {
     steps,
     onPopoverRender: (popover) => {
       const el = popover.wrapper as HTMLElement
-      // Always center the popover horizontally — driver.js positions based on
-      // the highlighted element which can cause overflow or asymmetry on mobile
       requestAnimationFrame(() => {
+        // 1. Center horizontally — driver.js positions based on the highlighted
+        //    element which causes overflow/asymmetry on narrow viewports
         const parts = el.style.inset.split(' ')
         const bottom = parts[2] ?? 'auto'
         const vw = window.innerWidth
         const centeredLeft = Math.max(16, (vw - el.offsetWidth) / 2)
         el.style.inset = `auto auto ${bottom} ${centeredLeft}px`
+
+        // 2. Force navBtns to fill the full content width — the grid/flex
+        //    context doesn't stretch it automatically in all browsers
+        const navBtns = el.querySelector('.driver-popover-navigation-btns') as HTMLElement
+        if (navBtns) {
+          const elStyle = window.getComputedStyle(el)
+          const contentWidth = el.getBoundingClientRect().width
+            - parseFloat(elStyle.paddingLeft)
+            - parseFloat(elStyle.paddingRight)
+          navBtns.style.width = contentWidth + 'px'
+        }
       })
     },
   })
