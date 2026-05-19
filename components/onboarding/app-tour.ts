@@ -21,6 +21,7 @@ const ALL_STEPS = [
   },
   {
     element: "[data-tour='cc-groups']",
+    disableActiveInteraction: true,
     popover: {
       title: "Tus tarjetas",
       description: "Las 3 tarjetas con más gasto este mes. Tocá para ir al detalle completo.",
@@ -113,7 +114,7 @@ const ALL_STEPS = [
 
 export function startAppTour() {
   // Filter steps to only those whose element exists in the DOM
-  const steps = ALL_STEPS.filter(step => !!document.querySelector(step.element))
+  const steps = ALL_STEPS.filter(step => !!document.querySelector(step.element as string))
 
   const driverObj = driver({
     showProgress: true,
@@ -125,13 +126,13 @@ export function startAppTour() {
     onPopoverRender: (popover) => {
       const el = popover.wrapper as HTMLElement
       requestAnimationFrame(() => {
-        // 1. Center horizontally — driver.js positions based on the highlighted
-        //    element which causes overflow/asymmetry on narrow viewports
-        const parts = el.style.inset.split(' ')
-        const bottom = parts[2] ?? 'auto'
+        // 1. Center horizontally — driver.js aligns to the highlighted element
+        //    which causes overflow/asymmetry on narrow viewports.
+        //    We only touch left/right; driver.js already set top/bottom correctly.
         const vw = window.innerWidth
         const centeredLeft = Math.max(16, (vw - el.offsetWidth) / 2)
-        el.style.inset = `auto auto ${bottom} ${centeredLeft}px`
+        el.style.left = `${centeredLeft}px`
+        el.style.right = 'auto'
 
         // 2. Force navBtns to fill the full content width — the grid/flex
         //    context doesn't stretch it automatically in all browsers
