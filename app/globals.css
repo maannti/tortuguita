@@ -25,10 +25,10 @@
   border: 1px solid rgba(255, 255, 255, 0.8) !important;
   border-radius: 1.25rem !important;
   box-shadow: 0 8px 32px rgba(157, 129, 137, 0.22), 0 2px 8px rgba(157, 129, 137, 0.10) !important;
-  padding: 1.25rem 1.25rem 1rem !important;
+  padding: 1.25rem !important;
+  width: min(320px, calc(100vw - 2rem)) !important;
   max-width: min(320px, calc(100vw - 2rem)) !important;
   box-sizing: border-box !important;
-  overflow: hidden !important;
 }
 .driver-popover-title {
   font-family: var(--font-fraunces, serif) !important;
@@ -42,45 +42,38 @@
   color: #9D8189 !important;
   line-height: 1.5 !important;
 }
-.driver-popover-progress-text {
-  font-size: 0.7rem !important;
-  color: #9D8189 !important;
-}
 .driver-popover-footer {
   margin-top: 0.875rem !important;
   display: flex !important;
   flex-direction: column !important;
-  gap: 0.625rem !important;
+  gap: 0.5rem !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
 }
 .driver-popover-progress-text {
   font-size: 0.7rem !important;
   color: #9D8189 !important;
   text-align: center !important;
+  white-space: nowrap !important;
 }
 .driver-popover-navigation-btns {
   display: flex !important;
-  align-items: center !important;
-  justify-content: space-between !important;
   gap: 0.5rem !important;
   width: 100% !important;
-}
-.driver-popover-next-btn,
-.driver-popover-prev-btn {
-  flex: 1 !important;
-  text-align: center !important;
+  box-sizing: border-box !important;
 }
 .driver-popover-prev-btn,
-.driver-popover-next-btn,
-.driver-popover-close-btn {
+.driver-popover-next-btn {
+  flex: 1 1 0 !important;
+  min-width: 0 !important;
   border-radius: 999px !important;
   font-size: 0.75rem !important;
   font-weight: 600 !important;
-  padding: 0.45rem 0.85rem !important;
+  padding: 0.5rem 0 !important;
   border: none !important;
   cursor: pointer !important;
   transition: opacity 0.15s !important;
-  white-space: nowrap !important;
-  flex-shrink: 0 !important;
+  text-align: center !important;
 }
 .driver-popover-next-btn {
   background: #9D8189 !important;
@@ -95,6 +88,8 @@
   background: transparent !important;
   color: #9D8189 !important;
   font-size: 1rem !important;
+  border: none !important;
+  cursor: pointer !important;
 }
 .driver-overlay { opacity: 0.55 !important; }
 
