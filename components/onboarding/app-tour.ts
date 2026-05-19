@@ -124,16 +124,17 @@ export function startAppTour() {
     steps,
     onPopoverRender: (popover) => {
       const el = popover.wrapper as HTMLElement
-      // Clamp popover horizontally within the viewport with 16px margin
+      // driver.js positions via `inset` shorthand — clamp within viewport
       requestAnimationFrame(() => {
         const rect = el.getBoundingClientRect()
         const margin = 16
         const vw = window.innerWidth
-        if (rect.right > vw - margin) {
-          el.style.left = `${Math.max(margin, parseFloat(el.style.left || '0') - (rect.right - (vw - margin)))}px`
-        }
-        if (rect.left < margin) {
-          el.style.left = `${margin}px`
+        if (rect.right > vw - margin || rect.left < margin) {
+          // Parse the bottom value from inset (format: "auto auto {bottom}px {left}px")
+          const parts = el.style.inset.split(' ')
+          const bottom = parts[2] ?? 'auto'
+          const newLeft = Math.max(margin, rect.left - Math.max(0, rect.right - (vw - margin)))
+          el.style.inset = `auto auto ${bottom} ${newLeft}px`
         }
       })
     },
