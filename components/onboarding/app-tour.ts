@@ -122,6 +122,21 @@ export function startAppTour() {
     prevBtnText: "← Anterior",
     doneBtnText: "¡Listo!",
     steps,
+    onPopoverRender: (popover) => {
+      const el = popover.wrapper as HTMLElement
+      // Clamp popover horizontally within the viewport with 16px margin
+      requestAnimationFrame(() => {
+        const rect = el.getBoundingClientRect()
+        const margin = 16
+        const vw = window.innerWidth
+        if (rect.right > vw - margin) {
+          el.style.left = `${Math.max(margin, parseFloat(el.style.left || '0') - (rect.right - (vw - margin)))}px`
+        }
+        if (rect.left < margin) {
+          el.style.left = `${margin}px`
+        }
+      })
+    },
   })
 
   driverObj.drive()
