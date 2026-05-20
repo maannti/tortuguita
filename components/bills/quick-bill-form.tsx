@@ -97,7 +97,7 @@ function inferSplitMode(assignments: Array<{ userId: string; percentage: number 
 }
 
 export function QuickBillForm({ categories, members, memberIncomes, currentUserId, organizations, backHref, defaultInstallments, mode = "create", initialData }: Props) {
-  const { push, refresh, back } = useRouter()
+  const { push, replace, refresh, back } = useRouter()
   const isEdit = mode === "edit"
 
   // Space selection (only in create mode; edit uses the bill's existing org)
@@ -288,7 +288,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
       if (!res.ok) { const err = await res.json(); throw new Error(err.error || "Error al guardar") }
       try { sessionStorage.removeItem(DRAFT_KEY) } catch {}
       const dest = isEdit ? `/bills/${initialData!.id}` : "/bills"
-      push(dest); refresh()
+      isEdit ? replace(dest) : push(dest); refresh()
     } catch (err) {
       if (err instanceof TypeError && err.message.includes("fetch")) {
         setError("Error de conexión. Revisá tu conexión e intentá de nuevo.")
