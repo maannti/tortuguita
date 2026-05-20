@@ -440,7 +440,7 @@ function ExpandedCardContent({ card }: { card: CardData }) {
 // ─── Main view ────────────────────────────────────────────────────────────────
 export function TarjetasWalletView({ cards, monthLabel, monthKey, prevMonth, nextMonth, cycleLabel }: Props) {
   const { push } = useRouter()
-  const [expandedIndex, setExpandedIndex] = useState<number | null>(cards.length > 0 ? 0 : null)
+  const [expandedIndex, setExpandedIndex] = useState<number | null>(null)
   const [showPicker, setShowPicker] = useState(false)
 
   const handleCardClick = (index: number) => {
