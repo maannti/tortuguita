@@ -1,7 +1,7 @@
 "use client"
 import { useState, useTransition, useCallback } from "react"
 import { useRouter } from "next/navigation"
-import { Plus, ChevronLeft, ChevronRight, ChevronDown, Check, X, FileText } from "lucide-react"
+import { ChevronLeft, ChevronRight, ChevronDown, Check, X, FileText, CreditCard } from "lucide-react"
 import Link from "next/link"
 import { haptic } from "@/lib/haptics"
 import { cn } from "@/lib/utils"
@@ -539,9 +539,10 @@ export function TarjetasWalletView({ cards, monthLabel, monthKey, prevMonth, nex
         <FileText className="size-4 text-primary" />
         Importar gastos
       </Link>
-      <Link href="/tarjetas/new"
-        className="fixed bottom-24 right-4 z-30 flex items-center justify-center size-14 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 active:scale-95 transition-transform">
-        <Plus className="size-6" />
+      <Link href="/cards"
+        className="fixed bottom-24 right-4 z-30 flex items-center gap-2 px-4 h-11 rounded-full glass text-foreground text-sm font-medium shadow-sm active:scale-95 transition-transform">
+        <CreditCard className="size-4 text-primary" />
+        Gestionar tarjetas
       </Link>
 
       {/* Month picker */}
