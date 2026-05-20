@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { DeleteIncomeTypeButton } from "@/components/income-types/delete-income-type-button";
@@ -22,6 +23,7 @@ interface IncomeTypesContentProps {
 
 export function IncomeTypesContent({ incomeTypes }: IncomeTypesContentProps) {
   const t = useTranslations();
+  const { replace } = useRouter();
 
   return (
     <div className="space-y-6">
@@ -67,10 +69,8 @@ export function IncomeTypesContent({ incomeTypes }: IncomeTypesContentProps) {
                   </div>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0 ml-4">
-                  <Button variant="outline" size="icon" className="size-10" asChild>
-                    <Link href={`/income-types/${incomeType.id}/edit`}>
-                      <Pencil className="size-4" />
-                    </Link>
+                  <Button variant="outline" size="icon" className="size-10" onClick={() => replace(`/income-types/${incomeType.id}/edit`)}>
+                    <Pencil className="size-4" />
                   </Button>
                   <DeleteIncomeTypeButton id={incomeType.id} name={incomeType.name} />
                 </div>
