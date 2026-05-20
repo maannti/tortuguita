@@ -61,7 +61,7 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
 }
 
 export function BillDetail({ bill }: BillDetailProps) {
-  const { push } = useRouter()
+  const { push, replace } = useRouter()
   const accentColor = (bill.category?.color || bill.billType.color) ?? "#9D8189"
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -98,12 +98,13 @@ export function BillDetail({ bill }: BillDetailProps) {
           Gastos
         </button>
         <div className="flex items-center gap-2">
-          <Link
-            href={`/bills/${bill.id}/edit`}
+          <button
+            type="button"
+            onClick={() => { haptic("selection"); replace(`/bills/${bill.id}/edit`) }}
             className="size-9 flex items-center justify-center rounded-2xl bg-muted/80 text-muted-foreground hover:text-foreground active:scale-95 transition-all"
           >
             <Pencil className="size-4" />
-          </Link>
+          </button>
           <button
             type="button"
             onClick={() => { haptic("light"); setDeleteOpen(true) }}
