@@ -81,6 +81,7 @@ model User {
   accounts                  Account[]
   sessions                  Session[]
   bills                     Bill[]
+  billsPaidFor              Bill[]           @relation("BillPaidBy")
   billAssignments           BillAssignment[]
   incomes                   Income[]
   incomeAssignments         IncomeAssignment[]
@@ -170,6 +171,7 @@ model Bill {
   categoryId          String?      // expense category (optional, used when billTypeId is a CC card)
   organizationId      String
   userId              String
+  paidByUserId        String?      // who actually paid upfront (null = creator paid)
   notes               String?      @db.Text
   totalInstallments   Int?         // e.g., 12 for 12-cuota plan
   currentInstallment  Int?         // e.g., 1, 2, 3...
@@ -184,6 +186,7 @@ model Bill {
   category       BillType?        @relation("BillCategory", fields: [categoryId], references: [id], onDelete: SetNull)
   organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   user           User             @relation(fields: [userId], references: [id], onDelete: Restrict)
+  paidByUser     User?            @relation("BillPaidBy", fields: [paidByUserId], references: [id], onDelete: SetNull)
   assignments    BillAssignment[]
   recurringBill  RecurringBill?   @relation(fields: [recurringBillId], references: [id], onDelete: SetNull)
 
@@ -197,6 +200,7 @@ model Bill {
   @@index([installmentGroupId])
   @@index([externalRef])
   @@index([recurringBillId])
+  @@index([paidByUserId])
   // Prevent duplicate installments within the same group
   @@unique([installmentGroupId, currentInstallment])
   // Prevent re-importing the same bank transaction (billTypeId scopes it per card)
@@ -253,6 +257,8 @@ model BillAssignment {
   billId     String
   userId     String
   percentage Decimal  @db.Decimal(5, 2)
+  isSettled  Boolean  @default(false)  // whether this member paid back their share to the payer
+  settledAt  DateTime?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
