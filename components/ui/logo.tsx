@@ -49,13 +49,13 @@ export function TurtleLogo({ size = 36, className = "" }: { size?: number; class
   )
 }
 
-export function LogoWordmark({ className = "" }: { className?: string }) {
+export function LogoWordmark({ className = "", size = "sm" }: { className?: string; size?: "sm" | "lg" }) {
+  const textSize = size === "lg" ? "1.75rem" : "1.2rem"
   return (
-    <div className={`flex items-center gap-2 ${className}`}>
-      <TurtleLogo size={30} />
+    <div className={`flex items-center ${className}`}>
       <span
-        style={{ fontFamily: "var(--font-fraunces, serif)", letterSpacing: "-0.02em" }}
-        className="text-[1.2rem] font-medium leading-none"
+        style={{ fontFamily: "var(--font-fraunces, serif)", letterSpacing: "-0.02em", fontSize: textSize }}
+        className="font-medium leading-none"
       >
         <span style={{ color: "#6B5159" }}>tortu</span>
         <span style={{ color: "#9D8189", fontStyle: "italic" }}>guita</span>

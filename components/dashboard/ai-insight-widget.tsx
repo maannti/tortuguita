@@ -1,54 +1,34 @@
 "use client"
 
+import { useState } from "react"
 import { useRouter } from "next/navigation"
+import { ChevronRight } from "lucide-react"
 import { TurtleIcon } from "@/components/ai/turtle-icon"
 
 export interface InsightData {
-  thisMonthTotal: number
-  lastMonthTotal: number
-  topCategory: { name: string; amount: number } | null
-  monthName: string
-}
-
-const arsFormatter = new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", minimumFractionDigits: 0, maximumFractionDigits: 0 })
-function formatARS(n: number) { return arsFormatter.format(Math.round(n)) }
-
-function buildInsight(data: InsightData): string {
-  const { thisMonthTotal, lastMonthTotal, topCategory } = data
-
-  if (thisMonthTotal === 0) {
-    return "Todavía no hay gastos este mes. ¿Empezamos a registrar?"
-  }
-
-  const topCatStr = topCategory ? ` ${topCategory.name} lidera con ${formatARS(topCategory.amount)}.` : ""
-
-  if (lastMonthTotal === 0) {
-    return `Este mes llevás ${formatARS(thisMonthTotal)} en gastos.${topCatStr}`
-  }
-
-  const pct = Math.round(((thisMonthTotal - lastMonthTotal) / lastMonthTotal) * 100)
-
-  if (pct > 25) {
-    return `Gastás bastante más que el mes pasado (+${pct}%).${topCatStr}`
-  }
-  if (pct > 8) {
-    return `Un poco más que el mes pasado (+${pct}%).${topCatStr}`
-  }
-  if (pct < -10) {
-    return `Vas más tranquilo que el mes pasado (${pct}%).${topCatStr}`
-  }
-  return `Tu gasto va similar al mes pasado.${topCatStr}`
+  insights: string[]
 }
 
 const QUICK_QUESTIONS = [
-  "¿En qué gasté más este mes?",
+  "¿En qué gasté más?",
   "Comparame con el mes pasado",
   "¿Cómo viene el gasto de cada uno?",
 ]
 
 export function AiInsightWidget({ data }: { data: InsightData }) {
+  const { insights } = data
   const router = useRouter()
-  const insight = buildInsight(data)
+
+  // Pick a random insight on mount; tap to cycle through the rest
+  const [idx, setIdx] = useState(() =>
+    insights.length > 0 ? Math.floor(Math.random() * insights.length) : 0
+  )
+
+  const insight = insights[idx] ?? ""
+
+  function cycleInsight() {
+    if (insights.length > 1) setIdx(i => (i + 1) % insights.length)
+  }
 
   function goToAi(question?: string) {
     if (question) {
@@ -59,23 +39,36 @@ export function AiInsightWidget({ data }: { data: InsightData }) {
 
   return (
     <div
-      className="rounded-3xl overflow-hidden"
+      data-tour="ai-widget"
+      className="rounded-3xl overflow-hidden flex"
       style={{ background: "linear-gradient(135deg, #D8E2DC 0%, #FFE5D9 55%, #FFCAD4 100%)" }}
     >
-      <div className="px-4 pt-4 pb-3 space-y-3">
+      {/* ── Left: content ── */}
+      <div className="flex-1 min-w-0 px-4 pt-3.5 pb-3.5 space-y-2.5">
 
         {/* Header */}
         <div className="flex items-center gap-2">
-          <div className="size-6 rounded-full bg-white/50 flex items-center justify-center flex-shrink-0">
-            <TurtleIcon className="size-3.5 text-[#9D8189]" />
+          <div className="size-5 rounded-full bg-white/50 flex items-center justify-center flex-shrink-0">
+            <TurtleIcon className="size-3 text-[#9D8189]" />
           </div>
-          <span className="text-xs font-semibold text-[#6B5159] uppercase tracking-wider">Tortuguita IA</span>
+          <span
+            className="text-xs font-semibold italic text-[#6B5159]"
+            style={{ fontFamily: "var(--font-fraunces, serif)" }}
+          >
+            tortuguita IA
+          </span>
         </div>
 
-        {/* Insight text */}
-        <p className="text-sm text-[#4A3540] leading-snug font-medium">
-          {insight}
-        </p>
+        {/* Insight text — tappable to cycle */}
+        <button
+          type="button"
+          onClick={cycleInsight}
+          className="text-left w-full"
+          disabled={insights.length <= 1}
+        >
+          <p className="text-sm text-[#4A3540] leading-snug font-medium">{insight}</p>
+
+        </button>
 
         {/* Quick question chips */}
         <div className="flex flex-wrap gap-1.5">
@@ -84,26 +77,25 @@ export function AiInsightWidget({ data }: { data: InsightData }) {
               key={q}
               type="button"
               onClick={() => goToAi(q)}
-              className="text-xs px-3 py-1.5 rounded-full bg-white/50 text-[#4A3540] hover:bg-white/70 active:scale-95 transition-all font-medium"
+              className="text-xs px-2.5 py-1 rounded-full bg-white/50 text-[#4A3540] hover:bg-white/70 active:scale-95 transition-all font-medium"
             >
               {q}
             </button>
           ))}
         </div>
 
-        {/* CTA */}
-        <div className="flex justify-end">
-          <button
-            type="button"
-            onClick={() => goToAi()}
-            className="flex items-center gap-1.5 text-xs font-semibold text-[#6B5159] hover:text-[#4A3540] active:scale-95 transition-all"
-          >
-            Preguntar algo
-            <span className="text-[10px]">→</span>
-          </button>
-        </div>
-
       </div>
+
+      {/* ── Right: invisible tap zone → /ai ── */}
+      <button
+        type="button"
+        onClick={() => goToAi()}
+        className="w-12 flex-shrink-0 flex items-center justify-center"
+        aria-label="Ir al chat de Tortuguita IA"
+      >
+        <ChevronRight className="size-4 text-[#9D8189]" strokeWidth={2} />
+      </button>
+
     </div>
   )
 }

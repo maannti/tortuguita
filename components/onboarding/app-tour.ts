@@ -21,6 +21,7 @@ const ALL_STEPS = [
   },
   {
     element: "[data-tour='cc-groups']",
+    disableActiveInteraction: true,
     popover: {
       title: "Tus tarjetas",
       description: "Las 3 tarjetas con más gasto este mes. Tocá para ir al detalle completo.",
@@ -29,10 +30,19 @@ const ALL_STEPS = [
     },
   },
   {
-    element: "[data-tour='recent-expenses']",
+    element: "[data-tour='ai-widget']",
     popover: {
-      title: "Gastos recientes",
-      description: "Todos los gastos del mes. Tocá uno para ver el detalle o editarlo.",
+      title: "tortuguita IA",
+      description: "Tu asistente financiero. Te da insights del mes y podés hacerle preguntas sobre tus gastos.",
+      side: "top" as const,
+      align: "center" as const,
+    },
+  },
+  {
+    element: "[data-tour='categories']",
+    popover: {
+      title: "Por categoría",
+      description: "El desglose de gastos del mes por categoría, con el gasto más grande del período.",
       side: "top" as const,
       align: "center" as const,
     },
@@ -104,7 +114,7 @@ const ALL_STEPS = [
 
 export function startAppTour() {
   // Filter steps to only those whose element exists in the DOM
-  const steps = ALL_STEPS.filter(step => !!document.querySelector(step.element))
+  const steps = ALL_STEPS.filter(step => !!document.querySelector(step.element as string))
 
   const driverObj = driver({
     showProgress: true,
@@ -113,6 +123,29 @@ export function startAppTour() {
     prevBtnText: "← Anterior",
     doneBtnText: "¡Listo!",
     steps,
+    onPopoverRender: (popover) => {
+      const el = popover.wrapper as HTMLElement
+      requestAnimationFrame(() => {
+        // 1. Center horizontally — driver.js aligns to the highlighted element
+        //    which causes overflow/asymmetry on narrow viewports.
+        //    We only touch left/right; driver.js already set top/bottom correctly.
+        const vw = window.innerWidth
+        const centeredLeft = Math.max(16, (vw - el.offsetWidth) / 2)
+        el.style.left = `${centeredLeft}px`
+        el.style.right = 'auto'
+
+        // 2. Force navBtns to fill the full content width — the grid/flex
+        //    context doesn't stretch it automatically in all browsers
+        const navBtns = el.querySelector('.driver-popover-navigation-btns') as HTMLElement
+        if (navBtns) {
+          const elStyle = window.getComputedStyle(el)
+          const contentWidth = el.getBoundingClientRect().width
+            - parseFloat(elStyle.paddingLeft)
+            - parseFloat(elStyle.paddingRight)
+          navBtns.style.width = contentWidth + 'px'
+        }
+      })
+    },
   })
 
   driverObj.drive()

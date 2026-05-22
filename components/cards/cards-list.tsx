@@ -13,7 +13,7 @@ interface CardsListProps {
 }
 
 export function CardsList({ cards }: CardsListProps) {
-  const { push } = useRouter()
+  const { push, replace } = useRouter()
   const newHref = `/cards/new`
 
   return (
@@ -60,7 +60,7 @@ export function CardsList({ cards }: CardsListProps) {
                     </p>
                   </div>
                   <div className="flex items-center gap-1 flex-shrink-0">
-                    <button onClick={() => push(`/cards/${card.id}/edit`)}
+                    <button onClick={() => replace(`/cards/${card.id}/edit`)}
                       className="p-2 rounded-lg hover:bg-black/5 text-muted-foreground hover:text-foreground transition-colors">
                       <Pencil className="size-4" />
                     </button>

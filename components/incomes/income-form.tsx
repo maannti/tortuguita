@@ -59,7 +59,7 @@ interface IncomeFormProps {
 }
 
 export function IncomeForm({ initialData, categories, members, memberIncomes = {}, currentUserId, mode, isPersonalOrg, userOrganizations, currentOrganizationId }: IncomeFormProps) {
-  const { push, refresh } = useRouter();
+  const { push, replace, refresh } = useRouter();
   const t = useTranslations();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -312,7 +312,7 @@ export function IncomeForm({ initialData, categories, members, memberIncomes = {
         return;
       }
 
-      push("/incomes");
+      replace("/incomes");
       refresh();
     } catch (error) {
       setError("Failed to save income");
@@ -485,7 +485,7 @@ export function IncomeForm({ initialData, categories, members, memberIncomes = {
             />
 
             {/* Multi-home toggle - only show in create mode with multiple homes */}
-            {showMultiHomeOption && (
+            {showMultiHomeOption && mode === "create" && (
               <div className="space-y-4 pt-2">
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
@@ -829,7 +829,7 @@ export function IncomeForm({ initialData, categories, members, memberIncomes = {
           <Button
             type="button"
             variant="outline"
-            onClick={() => push("/incomes")}
+            onClick={() => replace("/incomes")}
             disabled={isLoading}
             size="lg"
             className="w-full md:w-auto"

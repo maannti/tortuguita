@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils"
 const SLIDES = [
   {
     emoji: "🐢",
-    title: "Bienvenido a Tortuguita",
+    title: "Bienvenido a tortuguita",
     body: "Tu app para llevar las finanzas del hogar.\nSimple, sin drama.",
     gradient: "linear-gradient(160deg, #D8E2DC 0%, #FFE5D9 100%)",
     accent: "#4A3540",

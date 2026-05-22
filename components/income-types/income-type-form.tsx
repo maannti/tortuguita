@@ -27,7 +27,7 @@ interface IncomeTypeFormProps {
 }
 
 export function IncomeTypeForm({ initialData, mode }: IncomeTypeFormProps) {
-  const { push, refresh } = useRouter()
+  const { push, replace, refresh } = useRouter()
   const t = useTranslations()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -65,7 +65,7 @@ export function IncomeTypeForm({ initialData, mode }: IncomeTypeFormProps) {
         return
       }
 
-      push("/income-types")
+      replace("/income-types")
       refresh()
     } catch (error) {
       setError("Failed to save income type")
@@ -188,7 +188,7 @@ export function IncomeTypeForm({ initialData, mode }: IncomeTypeFormProps) {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => push("/income-types")}
+                onClick={() => replace("/income-types")}
                 disabled={isLoading}
                 size="lg"
                 className="w-full md:w-auto"

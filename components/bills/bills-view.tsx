@@ -3,13 +3,15 @@
 import { useRouter, useSearchParams, usePathname } from "next/navigation"
 import Link from "next/link"
 import { useState, useEffect, useRef, useTransition } from "react"
-import { ChevronLeft, ChevronRight, Plus, CreditCard, ChevronDown, Search, X, SlidersHorizontal, Check, User, Home, Loader2, Repeat } from "lucide-react"
+import { ChevronLeft, ChevronRight, Plus, CreditCard, ChevronDown, Search, X, SlidersHorizontal, Check, User, Home, Loader2, Repeat, Users } from "lucide-react"
 import { MonthPicker } from "@/components/ui/month-picker"
 import { cn } from "@/lib/utils"
+import { haptic } from "@/lib/haptics"
 
 interface BillItem {
   id: string; label: string; amount: number; amountUSD: number | null; paymentDate: string
   cardName: string | null; currentInstallment: number | null; totalInstallments: number | null
+  myShare?: number | null; isShared?: boolean
 }
 interface CategoryGroup {
   name: string; color: string; icon: string | null; total: number; totalUSD: number | null; bills: BillItem[]
@@ -36,12 +38,15 @@ interface Props {
   month: string; monthKey: string; availableMonths: string[]
   categoryGroups: CategoryGroup[]
   grandTotal: number
+  myTotal?: number
+  hasSharedBills?: boolean
   hasAnyUSD: boolean
   searchQuery?: string
   activeFilters?: ActiveFilters
   availableCategories?: FilterOption[]
   availableCards?: FilterOption[]
   organizations?: Organization[]
+  currentUserId?: string
 }
 
 const arsFormatter = new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", minimumFractionDigits: 0, maximumFractionDigits: 2 })
@@ -53,9 +58,10 @@ function capitalize(s: string) { return s.charAt(0).toUpperCase() + s.slice(1) }
 const MAUVE = "#9D8189"
 
 export function BillsView({
-  month, monthKey, availableMonths, categoryGroups, grandTotal, hasAnyUSD,
+  month, monthKey, availableMonths, categoryGroups, grandTotal, myTotal, hasSharedBills = false, hasAnyUSD,
   searchQuery = "", activeFilters = { categoryIds: [], cardIds: [] },
-  availableCategories = [], availableCards = [], organizations = []
+  availableCategories = [], availableCards = [], organizations = [],
+  currentUserId,
 }: Props) {
   const router = useRouter()
   const pathname = usePathname()
@@ -63,6 +69,7 @@ export function BillsView({
   const [isPending, startTransition] = useTransition()
 
   const [showPicker, setShowPicker] = useState(false)
+  const [showMyPart, setShowMyPart] = useState(true)
   const [showUSD, setShowUSD] = useState(false)
   const [usdRate, setUsdRate] = useState<number | null>(null)
   const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set())
@@ -237,6 +244,7 @@ export function BillsView({
           {/* Normal header content */}
           <div className="relative flex items-center justify-between">
             <button onClick={() => {
+              haptic("selection")
               if (!prevMonth) return
               const params = new URLSearchParams(searchParams.toString())
               params.set("month", prevMonth)
@@ -247,7 +255,7 @@ export function BillsView({
             </button>
             <div className="text-center space-y-0.5">
               <button
-                onClick={() => setShowPicker(true)}
+                onClick={() => { haptic("selection"); setShowPicker(true) }}
                 className="font-medium text-[#6B5159] px-3 py-1 rounded-full hover:bg-white/30 transition-colors active:scale-95"
                 style={{ fontFamily: "var(--font-fraunces, serif)", fontSize: "1.05rem" }}
               >
@@ -258,30 +266,33 @@ export function BillsView({
                   className="text-2xl font-medium text-[#4A3540] leading-tight"
                   style={{ fontFamily: "var(--font-fraunces, serif)" }}
                 >
-                  {showUSD && grandTotalUSD !== null ? formatUSD(grandTotalUSD) : formatARS(grandTotal)}
+                  {showUSD && grandTotalUSD !== null
+                    ? formatUSD(grandTotalUSD)
+                    : formatARS(hasSharedBills && showMyPart && myTotal != null ? myTotal : grandTotal)}
                 </p>
               )}
-              {/* ARS / USD toggle — only shown when there are USD bills */}
-              {hasAnyUSD && (
+              {/* Mi parte / Total toggle — only shown when there are shared bills */}
+              {hasSharedBills && (
                 <div className="flex items-center justify-center pt-1">
                   <div className="flex rounded-full bg-white/40 backdrop-blur-sm p-0.5">
                     <button
-                      onClick={() => setShowUSD(false)}
-                      className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-all ${!showUSD ? "bg-white/80 text-[#4A3540] shadow-sm" : "text-[#9D8189]"}`}
+                      onClick={() => { haptic("selection"); setShowMyPart(true) }}
+                      className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-all ${showMyPart ? "bg-white/80 text-[#4A3540] shadow-sm" : "text-[#9D8189]"}`}
                     >
-                      ARS
+                      Mi parte
                     </button>
                     <button
-                      onClick={() => setShowUSD(true)}
-                      className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-all ${showUSD ? "bg-white/80 text-[#4A3540] shadow-sm" : "text-[#9D8189]"}`}
+                      onClick={() => { haptic("selection"); setShowMyPart(false) }}
+                      className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-all ${!showMyPart ? "bg-white/80 text-[#4A3540] shadow-sm" : "text-[#9D8189]"}`}
                     >
-                      USD
+                      Total
                     </button>
                   </div>
                 </div>
               )}
             </div>
             <button onClick={() => {
+              haptic("selection")
               if (!nextMonth) return
               const params = new URLSearchParams(searchParams.toString())
               params.set("month", nextMonth)
@@ -302,7 +313,6 @@ export function BillsView({
           style={{ background: "linear-gradient(135deg, #D8E2DC 0%, #FFE5D9 55%, #FFCAD4 100%)" }}
         >
           {searchExpanded ? (
-            /* Expanded search input */
             <div className="flex items-center gap-2 px-3 py-2">
               <Search className="size-4 text-[#6B5159] flex-shrink-0" />
               <input
@@ -318,18 +328,16 @@ export function BillsView({
                 {isPending ? (
                   <Loader2 className="size-4 text-[#9D8189] animate-spin" />
                 ) : (
-                  <button onClick={localSearch ? clearSearch : () => setSearchExpanded(false)} className="size-6 flex items-center justify-center rounded-full hover:bg-white/30 active:scale-95 transition-all">
+                  <button onClick={() => { haptic("light"); localSearch ? clearSearch() : setSearchExpanded(false) }} className="size-6 flex items-center justify-center rounded-full hover:bg-white/30 active:scale-95 transition-all">
                     <X className="size-4 text-[#6B5159]" />
                   </button>
                 )}
               </div>
             </div>
           ) : (
-            /* Collapsed ActionBar with two buttons */
             <div className="flex items-center">
-              {/* Search button */}
               <button
-                onClick={() => setSearchExpanded(true)}
+                onClick={() => { haptic("light"); setSearchExpanded(true) }}
                 className={cn(
                   "flex-1 flex items-center justify-center gap-2 py-3 transition-all active:bg-white/20",
                   searchQuery && "bg-white/30"
@@ -340,13 +348,9 @@ export function BillsView({
                   {searchQuery ? `"${searchQuery}"` : "Buscar"}
                 </span>
               </button>
-
-              {/* Divider */}
               <div className="w-px h-6 bg-white/50" />
-
-              {/* Filter button */}
               <button
-                onClick={() => setFilterSheetOpen(true)}
+                onClick={() => { haptic("light"); setFilterSheetOpen(true) }}
                 className={cn(
                   "flex-1 flex items-center justify-center gap-2 py-3 transition-all active:bg-white/20",
                   hasActiveFilters && "bg-white/30"
@@ -362,20 +366,43 @@ export function BillsView({
         </div>
       </div>
 
-      {/* RECURRENTES link — oculto hasta integrar con notificaciones push (ver ROADMAP ítem 10) */}
-      {/* <div className="px-4 pt-2 pb-0"><Link href="/bills/recurring">Gastos recurrentes →</Link></div> */}
+      {/* Quick-access pills: Recurrentes + Compartidos */}
+      <div className="mx-4 mt-2 flex gap-2">
+        <Link
+          href="/bills/recurring"
+          className="flex-1 flex items-center justify-between px-3.5 py-3 rounded-2xl active:opacity-80 active:scale-[0.99] transition-all"
+          style={{ background: "#EAE4F2" }}
+        >
+          <div className="flex items-center gap-2">
+            <Repeat className="size-4 text-[#6B5A8A]" />
+            <span className="text-sm text-[#3d2f5a]"><em className="italic font-normal">gastos</em> <strong className="font-bold not-italic">recurrentes</strong></span>
+          </div>
+          <ChevronRight className="size-3.5 text-[#6B5A8A]" />
+        </Link>
+        <Link
+          href="/bills/shared"
+          className="flex-1 flex items-center justify-between px-3.5 py-3 rounded-2xl active:opacity-80 active:scale-[0.99] transition-all"
+          style={{ background: "#FFE0E8" }}
+        >
+          <div className="flex items-center gap-2">
+            <Users className="size-4 text-[#7a3040]" />
+            <span className="text-sm text-[#5a1828]"><em className="italic font-normal">gastos</em> <strong className="font-bold not-italic">compartidos</strong></span>
+          </div>
+          <ChevronRight className="size-3.5 text-[#7a3040]" />
+        </Link>
+      </div>
 
 <div className="px-4 pt-4 space-y-5">
         {categoryGroups.length > 0 ? (
           categoryGroups.map((group) => {
             const usdLabel = groupUSDDisplay(group)
             const isCollapsed = collapsedCategories.has(group.name)
-            const toggleCollapse = () => setCollapsedCategories(prev => {
+            const toggleCollapse = () => { haptic("selection"); setCollapsedCategories(prev => {
               const next = new Set(prev)
               if (next.has(group.name)) next.delete(group.name)
               else next.add(group.name)
               return next
-            })
+            }) }
             return (
               <section key={group.name}>
                 {/* Category header */}
@@ -409,6 +436,8 @@ export function BillsView({
                 {!isCollapsed && <div className="glass rounded-2xl overflow-hidden divide-y divide-white/60">
                   {group.bills.map((bill) => {
                     const usdBill = billUSDDisplay(bill)
+                    const hasMyShare = bill.isShared && bill.myShare != null
+                    const displayBillAmount = (hasMyShare && showMyPart) ? bill.myShare! : bill.amount
                     return (
                       <Link
                         key={bill.id}
@@ -429,18 +458,30 @@ export function BillsView({
                                 <CreditCard className="h-2.5 w-2.5" />{bill.cardName}
                               </span>
                             )}
+                            {bill.isShared && (
+                              <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full" style={{ backgroundColor: "#F4ACB720", color: "#9D8189" }}>
+                                compartido
+                              </span>
+                            )}
                           </div>
                         </div>
                         <div className="flex items-center gap-1 ml-3 flex-shrink-0">
                           <div className="text-right">
                             <p className="text-base font-medium tabular-nums text-foreground" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
-                              {showUSD && usdBill ? usdBill : formatARS(bill.amount)}
+                              {showUSD && usdBill ? usdBill : formatARS(displayBillAmount)}
                             </p>
-                            {/* Secondary line: show ARS when in USD mode (or vice versa) */}
-                            {showUSD && usdBill && (
-                              <p className="text-[10px] text-muted-foreground">{formatARS(bill.amount)}</p>
+                            {/* Secondary: show total when in "Mi parte", show user's share when in "Total" */}
+                            {hasMyShare && !showUSD && showMyPart && (
+                              <p className="text-[10px] text-muted-foreground">total {formatARS(bill.amount)}</p>
                             )}
-                            {!showUSD && bill.amountUSD && (
+                            {hasMyShare && !showUSD && !showMyPart && (
+                              <p className="text-[10px] text-muted-foreground">tu parte {formatARS(bill.myShare!)}</p>
+                            )}
+                            {/* Secondary line: show ARS when in USD mode */}
+                            {showUSD && usdBill && (
+                              <p className="text-[10px] text-muted-foreground">{formatARS(displayBillAmount)}</p>
+                            )}
+                            {!showUSD && !hasMyShare && bill.amountUSD && (
                               <p className="text-[10px] text-muted-foreground">{formatUSD(bill.amountUSD)}</p>
                             )}
                           </div>
@@ -469,7 +510,7 @@ export function BillsView({
                   }
                 </p>
                 <button
-                  onClick={clearEverything}
+                  onClick={() => { haptic("light"); clearEverything() }}
                   className="text-sm text-primary font-medium active:scale-95 transition-transform"
                 >
                   Limpiar filtros
@@ -513,7 +554,7 @@ export function BillsView({
           {/* Backdrop */}
           <div
             className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-            onClick={() => setFilterSheetOpen(false)}
+            onClick={() => { haptic("light"); setFilterSheetOpen(false) }}
           />
 
           {/* Sheet */}
@@ -528,7 +569,7 @@ export function BillsView({
                   Filtros
                 </h2>
                 <button
-                  onClick={() => setFilterSheetOpen(false)}
+                  onClick={() => { haptic("light"); setFilterSheetOpen(false) }}
                   className="p-1 text-muted-foreground hover:text-foreground active:scale-95 transition-all"
                 >
                   <X className="size-5" />
@@ -538,6 +579,26 @@ export function BillsView({
 
             {/* Content */}
             <div className="flex-1 overflow-y-auto px-5 py-4 space-y-6">
+              {/* Currency toggle — only shown when there are USD bills */}
+              {hasAnyUSD && (
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground mb-2 pl-1">Moneda</p>
+                  <div className="flex rounded-xl bg-muted/40 p-0.5 gap-0.5">
+                    <button
+                      onClick={() => { haptic("selection"); setShowUSD(false) }}
+                      className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${!showUSD ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"}`}
+                    >
+                      ARS
+                    </button>
+                    <button
+                      onClick={() => { haptic("selection"); setShowUSD(true) }}
+                      className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${showUSD ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"}`}
+                    >
+                      USD
+                    </button>
+                  </div>
+                </div>
+              )}
               {organizations.map(org => {
                 const orgCategories = availableCategories.filter(c => c.organizationId === org.id)
                 const orgCards = availableCards.filter(c => c.organizationId === org.id)
@@ -571,7 +632,7 @@ export function BillsView({
                             return (
                               <button
                                 key={cat.id}
-                                onClick={() => toggleCategory(cat.id)}
+                                onClick={() => { haptic("selection"); toggleCategory(cat.id) }}
                                 className={cn(
                                   "w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition-colors",
                                   isSelected
@@ -601,7 +662,7 @@ export function BillsView({
                             return (
                               <button
                                 key={card.id}
-                                onClick={() => toggleCard(card.id)}
+                                onClick={() => { haptic("selection"); toggleCard(card.id) }}
                                 className={cn(
                                   "w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition-colors",
                                   isSelected
@@ -628,13 +689,13 @@ export function BillsView({
             {/* Actions */}
             <div className="flex-shrink-0 flex gap-3 px-5 py-4 border-t border-border/50 pb-safe">
               <button
-                onClick={clearAllFilters}
+                onClick={() => { haptic("light"); clearAllFilters() }}
                 className="flex-1 h-12 rounded-xl bg-muted/50 text-muted-foreground font-medium active:scale-[0.98] transition-transform"
               >
                 Limpiar
               </button>
               <button
-                onClick={applyFilters}
+                onClick={() => { haptic("medium"); applyFilters() }}
                 className="flex-1 h-12 rounded-xl bg-primary text-primary-foreground font-medium active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
               >
                 {isPending ? (

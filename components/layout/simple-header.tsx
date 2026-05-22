@@ -3,10 +3,12 @@
 import Link from "next/link"
 import { useRouter, usePathname } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
-import { User, Home, Check } from "lucide-react"
+import { User, Home, Check, Bell } from "lucide-react"
 import { LogoWordmark } from "@/components/ui/logo"
 import { useSpaces } from "@/lib/spaces-context"
+import { usePushNotifications } from "@/hooks/use-push-notifications"
 import { cn } from "@/lib/utils"
+import { NotificationTray } from "@/components/layout/notification-tray"
 
 // Pages where the global space selector should be hidden (form has its own)
 const HIDE_SELECTOR_PATHS = ["/bills/new", "/tarjetas/new"]
@@ -42,8 +44,22 @@ export function SimpleHeader() {
   }
 
   const showSpaces = spaces.length > 1 && isHydrated && !hideSelector(pathname)
+  const { isEnabled: notifEnabled, isSupported: notifSupported } = usePushNotifications()
+  const [trayOpen, setTrayOpen] = useState(false)
+  const [unreadCount, setUnreadCount] = useState(0)
+
+  // Fetch unread count on mount
+  useEffect(() => {
+    fetch("/api/notifications")
+      .then((r) => r.json())
+      .then((data) => {
+        setUnreadCount(data.unreadCount ?? 0)
+      })
+      .catch(() => {})
+  }, [])
 
   return (
+    <>
     <header
       className="sticky top-0 z-30 px-4"
       style={{
@@ -58,7 +74,35 @@ export function SimpleHeader() {
           <LogoWordmark />
         </Link>
 
-        {showSpaces && (
+        <div className="flex items-center gap-2">
+          {/* Notification bell — always visible, tray shows DB history regardless of push support */}
+          <button
+              onClick={() => setTrayOpen(true)}
+              className="relative flex items-center justify-center size-9 rounded-full transition-all active:scale-90"
+              style={{ backgroundColor: unreadCount > 0 ? `${MAUVE}15` : `${MAUVE}08` }}
+              aria-label="Notificaciones"
+            >
+              <Bell
+                className="size-4.5"
+                style={{ color: notifEnabled ? MAUVE : `${MAUVE}60` }}
+                fill={notifEnabled ? MAUVE : "none"}
+                strokeWidth={notifEnabled ? 0 : 1.8}
+              />
+              {unreadCount > 0 ? (
+                <span
+                  className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 flex items-center justify-center rounded-full text-[9px] font-bold text-white px-1"
+                  style={{ backgroundColor: "#F4ACB7" }}
+                >
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </span>
+              ) : !notifEnabled && (
+                <span
+                  className="absolute top-1.5 right-1.5 size-1.5 rounded-full"
+                  style={{ backgroundColor: "#F4ACB7" }}
+                />
+              )}
+          </button>
+          {showSpaces && (
           <div ref={wrapperRef} className="relative">
             {/* Trigger: colored dots — active = solid mauve, inactive = ghost */}
             <button
@@ -134,8 +178,11 @@ export function SimpleHeader() {
               </div>
             )}
           </div>
-        )}
+          )}
+        </div>
       </div>
     </header>
+    <NotificationTray isOpen={trayOpen} onClose={() => setTrayOpen(false)} onRead={() => setUnreadCount(0)} />
+    </>
   )
 }

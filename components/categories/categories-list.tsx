@@ -14,7 +14,7 @@ interface CategoriesListProps {
 }
 
 export function CategoriesList({ categories, spaceId, spaceName }: CategoriesListProps) {
-  const { push } = useRouter()
+  const { push, replace } = useRouter()
   const newHref = `/categories/new?spaceId=${spaceId}`
 
   return (
@@ -50,7 +50,7 @@ export function CategoriesList({ categories, spaceId, spaceName }: CategoriesLis
                   <p className="text-xs text-muted-foreground mt-0.5">Gasto fijo</p>
                 </div>
                 <div className="flex items-center gap-1 flex-shrink-0">
-                  <button onClick={() => push(`/categories/${cat.id}/edit`)}
+                  <button onClick={() => replace(`/categories/${cat.id}/edit`)}
                     className="p-2 rounded-lg hover:bg-black/5 text-muted-foreground hover:text-foreground transition-colors">
                     <Pencil className="size-4" />
                   </button>
