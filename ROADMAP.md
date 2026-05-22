@@ -228,9 +228,8 @@ El chat de AI actualmente no tiene acceso a los gastos del usuario. Debería pod
 ---
 
 ### 6. Arreglar Rediseño de Login
-- **Estado:** `[ ]` Pendiente
+- **Estado:** `[x]` ✅ Completado (21 Mayo 2025)
 - **Prioridad:** Alta
-- **Esfuerzo estimado:** Por definir
 - **Impacto:** UX crítica — primera impresión del usuario
 
 #### Descripción
@@ -263,55 +262,62 @@ El flujo de login funciona bien, pero el diseño visual está desactualizado. Ne
 
 > Funcionalidades que agregan valor significativo pero requieren más esfuerzo.
 
-### 6. Presupuestos por Categoría
-- **Estado:** `[ ]` Pendiente
-- **Prioridad:** Media
-- **Esfuerzo estimado:** 1 semana
-
-#### Descripción
-Permitir establecer un límite mensual por categoría. Mostrar progreso visual y alertar cuando se acerca al límite.
-
-#### Archivos a modificar/crear
-- `prisma/schema.prisma` — modelo `Budget` o campo en `BillType`
-- `app/api/budgets/route.ts` — CRUD de presupuestos
-- `components/dashboard/home-dashboard.tsx` — indicador de progreso
-- `app/(dashboard)/budgets/page.tsx` — (nuevo) gestión de presupuestos
-- `components/budgets/budget-progress.tsx` — (nuevo) barra de progreso
-
-#### Plan de implementación
-1. [ ] Modelo de datos: `Budget { categoryId, amount, month?, isActive }`
-2. [ ] API CRUD para presupuestos
-3. [ ] UI para configurar presupuesto por categoría
-4. [ ] Widget de progreso en dashboard
-5. [ ] Alerta visual cuando gasto > 80% del presupuesto
-6. [ ] (Opcional) Notificación push cuando se excede
-
-#### Criterios de éxito
-- Puedo establecer presupuesto por categoría
-- Veo progreso en dashboard
-- Alerta visual al acercarme al límite
+### 6. ~~Presupuestos por Categoría~~ → movido a Banco de Ideas
 
 ---
 
-### 7. Quick-Add desde Dashboard
-- **Estado:** `[ ]` Pendiente
-- **Prioridad:** Media
-- **Esfuerzo estimado:** 2 días
-- **Impacto:** Reduce fricción para agregar gastos
+### 20. Registro de Pagos entre Miembros ("¿Ya me pagaste?")
+- **Estado:** `[ ]` Pendiente — a diseñar
+- **Prioridad:** Alta
+- **Esfuerzo estimado:** A definir tras exploración
+- **Impacto:** Muy pedido para espacios compartidos
 
 #### Descripción
-Agregar gasto sin salir del dashboard. Bottom sheet que se abre desde el FAB con formulario simplificado.
+Para gastos compartidos, poder registrar si la otra persona ya pagó su parte. La idea explorada: **balance mensual neto** entre miembros del hogar — al final del mes ves "Juan te debe $12.400" → botón "Saldar" que cierra el período.
 
-#### Plan de implementación
-1. [ ] Crear bottom sheet con formulario mínimo (monto, descripción, categoría)
-2. [ ] Abrir desde FAB en dashboard (en vez de navegar a /bills/new)
-3. [ ] Opción "Más opciones" para ir al formulario completo
-4. [ ] Animación suave de apertura/cierre
+#### Opciones a explorar
+- **Opción A (granular):** cada gasto compartido tiene estado `pendiente/pagado` por miembro → más control, más fricción
+- **Opción B (balance mensual):** vista de saldo neto entre miembros + "Saldar" al cierre de mes → más natural para convivencia diaria
+- **Combinación:** balance como vista principal + drill-down a los gastos que componen la deuda
 
-#### Criterios de éxito
-- Puedo agregar un gasto en <5 segundos
-- No pierdo el contexto del dashboard
-- Puedo acceder al formulario completo si necesito
+#### Preguntas pendientes
+- [ ] ¿Siempre entre dos personas o puede ser n miembros?
+- [ ] ¿Dónde vive en la UI? ¿Dashboard? ¿Sección propia?
+- [ ] ¿El "Saldar" genera un registro contable o solo marca como cerrado?
+
+---
+
+### 21. Adaptación Web / Desktop
+- **Estado:** `[ ]` Pendiente — a diseñar
+- **Prioridad:** Alta
+- **Esfuerzo estimado:** A definir
+- **Impacto:** Experiencia decente para usuarios que abren desde la compu
+
+#### Descripción
+La UI está pensada para mobile (ancho ~390px). En desktop se estira y se ve raro. No hace falta un rediseño completo — alcanza con contener el layout y aprovechar el espacio de forma inteligente.
+
+#### Opciones a explorar
+- **Opción A (mínima):** centrar el contenido con `max-w-md mx-auto` — la app se ve como una "columna de celular" centrada en el browser. Simple, coherente, 0 rediseño.
+- **Opción B (sidebar):** en pantallas grandes, el bottom nav se convierte en sidebar lateral izquierdo + contenido a la derecha. Más trabajo pero más "app de escritorio".
+- **Opción C (híbrida):** columna centrada más ancha (`max-w-2xl`) con algunos componentes que aprovechan el ancho (ej: grillas de 3 columnas en el dashboard).
+
+#### Preguntas pendientes
+- [ ] ¿Cuánto tiempo pasan los usuarios en desktop vs mobile?
+- [ ] ¿Alcanza con la opción A para que no se vea feo, o vale la pena ir por B?
+> Ver sección **Banco de Ideas** al final del archivo.
+
+---
+
+### 7. Quick-Add — Simplificación del formulario
+- **Estado:** `[x]` ✅ Completado (21 Mayo 2025)
+- **Prioridad:** Media
+- **Impacto:** Reduce fricción para agregar gastos
+
+#### Lo que se hizo
+- Campos "Monto en USD" y "Detalle" colapsados por defecto
+- Se revelan con links `+ agregar monto en USD` / `+ agregar detalle`
+- Si hay valor guardado en draft o en edición, se abren solos
+- Conclusión: el formulario actual es suficientemente bueno; duplicarlo sería confuso
 
 ---
 
@@ -473,24 +479,7 @@ Soporte nativo para múltiples monedas, conversión automática, y reportes por 
 
 ---
 
-### 18. Registro de Pagos entre Miembros ("¿Ya me pagaste?")
-- **Estado:** `[ ]` Pendiente diseño — a planificar
-- **Prioridad:** Media-Alta (muy pedido por usuarios compartidos)
-- **Esfuerzo estimado:** A definir
-
-#### Descripción
-Para gastos compartidos, poder marcar si la otra persona ya pagó su parte o no.
-
-#### Ideas a discutir
-- **Opción A (granular):** Cada gasto compartido tiene estado `pendiente/pagado` por miembro.
-- **Opción B (balance mensual):** Vista de balance neto entre miembros del hogar. Al final del mes: "Juan te debe $12.400" → botón "Saldar" que cierra el período. Más natural para convivencia diaria.
-- **Combinación:** balance mensual como vista principal + drill-down a los gastos individuales que componen la deuda.
-
-#### Preguntas pendientes
-- [ ] ¿Siempre entre dos personas o puede ser entre más miembros?
-- [ ] ¿Quién paga qué? ¿Hay un "pagador" por gasto o es libre?
-- [ ] ¿Mostrar el saldo neto (A - B) o los dos saldos por separado?
-- [ ] ¿Dónde vive en la UI? ¿Dashboard? ¿Sección propia?
+### 18. ~~Registro de Pagos entre Miembros~~ → movido a Alta Prioridad (ítem 20)
 
 ---
 
@@ -508,10 +497,10 @@ Permitir agregar gastos offline y sincronizar cuando vuelva la conexión.
 ## Backlog — Mejoras Menores
 
 ### UI/UX
+- [ ] Arreglar modo oscuro — hardcoded colors (bg-white, text-[#...], etc.) en toda la app; necesita audit completo con dark: variants de Tailwind o CSS vars por tema
 - [ ] Agrupar gastos por día en /bills
 - [ ] Skeleton screens consistentes
 - [ ] Empty states personalizados por contexto
-- [ ] Mejorar dark mode del hero gradient
 - [ ] Command palette global (Cmd+K)
 
 ### Tech Debt
@@ -625,3 +614,13 @@ Permitir agregar gastos offline y sincronizar cuando vuelva la conexión.
 ---
 
 *Actualizar este archivo al final de cada sesión de trabajo.*
+
+---
+
+## Banco de Ideas
+
+> Features descartados por ahora pero que podrían tener sentido en el futuro con más contexto o usuarios.
+
+### Presupuestos por Categoría
+- **Por qué se descartó:** En contexto de inflación argentina, los límites mensuales se desactualizan rápido. Requiere configuración activa que la mayoría no hace. La AI con `get_spending_trend` cubre el caso de uso principal (comparar vs mes anterior) sin fricción.
+- **Cuándo rescatar:** Si hay demanda explícita de usuarios, o si se implementa ajuste automático por inflación.
