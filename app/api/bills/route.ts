@@ -94,8 +94,9 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { organizationId: bodyOrgId, notifyMembers, ...rest } = body
+    const { organizationId: bodyOrgId, notifyMembers, paidByUserId: rawPaidBy, ...rest } = body
     const data = billSchema.parse(rest)
+    const paidByUserId: string | null = rawPaidBy ?? null
 
     // Validate organizationId from body
     const userOrgs = await getUserOrganizations(session.user.id)
@@ -172,6 +173,7 @@ export async function POST(request: NextRequest) {
               notes: data.notes,
               organizationId,
               userId,
+              paidByUserId,
               totalInstallments,
               currentInstallment: i,
               installmentGroupId,
@@ -230,6 +232,7 @@ export async function POST(request: NextRequest) {
         notes: data.notes,
         organizationId,
         userId,
+        paidByUserId,
         assignments: {
           create: data.assignments?.map((assignment) => ({
             userId: assignment.userId,
