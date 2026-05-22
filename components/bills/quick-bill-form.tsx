@@ -135,6 +135,8 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
   )
   const [catSheetOpen, setCatSheetOpen] = useState(false)
   const [catSpacePicker, setCatSpacePicker] = useState(false)
+  const [showUSD, setShowUSD] = useState(!!(initialData?.amountUSD))
+  const [showNotes, setShowNotes] = useState(!!(initialData?.notes))
   const [isRecurring, setIsRecurring] = useState(false)
   const [recurringDay, setRecurringDay] = useState<number>(1)
   const [notifyMembers, setNotifyMembers] = useState(false)
@@ -151,8 +153,8 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
       const d = JSON.parse(raw)
       if (d.label)             setLabel(d.label)
       if (d.amountDisplay)     setAmountDisplay(d.amountDisplay)
-      if (d.amountUSDDisplay)  setAmountUSDDisplay(d.amountUSDDisplay)
-      if (d.notes)             setNotes(d.notes)
+      if (d.amountUSDDisplay)  { setAmountUSDDisplay(d.amountUSDDisplay); setShowUSD(true) }
+      if (d.notes)             { setNotes(d.notes); setShowNotes(true) }
       if (d.categoryId)    setCategoryId(d.categoryId)
       if (d.paymentMethod) setPaymentMethod(d.paymentMethod)
       // Only restore cardId if the card still exists in the available list
@@ -453,12 +455,10 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
                 inputMode="decimal"
                 value={amountDisplay}
                 onChange={(e) => {
-                  // Strip existing thousand-dots, keep only digits and one comma
                   const stripped = e.target.value.replace(/\./g, "").replace(/[^0-9,]/g, "")
                   const commaIdx = stripped.indexOf(",")
                   const intPart = commaIdx >= 0 ? stripped.slice(0, commaIdx) : stripped
                   const decPart = commaIdx >= 0 ? stripped.slice(commaIdx + 1) : null
-                  // Format integer with thousand dots
                   const formattedInt = intPart ? intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ".") : ""
                   setAmountDisplay(decPart !== null ? `${formattedInt},${decPart}` : formattedInt)
                 }}
@@ -467,27 +467,40 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
                 className="flex-1 bg-transparent text-sm focus:outline-none"
               />
             </div>
-          </div>
 
-          {/* Monto en USD — opcional, visible siempre */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Monto en USD <span className="normal-case font-normal">(opcional)</span>
-            </label>
-            <div className="flex items-center gap-2 rounded-xl border bg-background px-4 py-3 focus-within:ring-2 focus-within:ring-primary/30">
-              <span className="text-muted-foreground font-medium text-sm">U$S</span>
-              <input
-                type="text"
-                inputMode="decimal"
-                value={amountUSDDisplay}
-                onChange={(e) => {
-                  const val = e.target.value.replace(/[^0-9.,]/g, "").replace(",", ".")
-                  setAmountUSDDisplay(val)
-                }}
-                placeholder="0.00"
-                className="flex-1 bg-transparent text-sm focus:outline-none"
-              />
-            </div>
+            {/* Monto en USD — oculto por defecto */}
+            {showUSD ? (
+              <div className="flex items-center gap-2 rounded-xl border bg-background px-4 py-3 focus-within:ring-2 focus-within:ring-primary/30">
+                <span className="text-muted-foreground font-medium text-sm">U$S</span>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={amountUSDDisplay}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/[^0-9.,]/g, "").replace(",", ".")
+                    setAmountUSDDisplay(val)
+                  }}
+                  placeholder="0.00"
+                  className="flex-1 bg-transparent text-sm focus:outline-none"
+                  autoFocus
+                />
+                <button
+                  type="button"
+                  onClick={() => { setShowUSD(false); setAmountUSDDisplay("") }}
+                  className="text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+                >
+                  <X className="size-3.5" />
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => { haptic("light"); setShowUSD(true) }}
+                className="text-xs text-muted-foreground/60 hover:text-muted-foreground transition-colors"
+              >
+                + agregar monto en USD
+              </button>
+            )}
           </div>
 
           {/* Categoría — siempre visible cuando no es crédito */}
@@ -733,17 +746,28 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
             </div>
           )}
 
-          {/* Detalle (notas opcionales) */}
-          <div className="space-y-1.5">
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Detalle <span className="normal-case font-normal">(opcional)</span></p>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Descripción adicional, observaciones..."
-              rows={2}
-              className="w-full rounded-xl border bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
-            />
-          </div>
+          {/* Detalle (notas opcionales) — oculto por defecto */}
+          {showNotes ? (
+            <div className="space-y-1.5">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Detalle <span className="normal-case font-normal">(opcional)</span></p>
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Descripción adicional, observaciones..."
+                rows={2}
+                autoFocus
+                className="w-full rounded-xl border bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
+              />
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => { haptic("light"); setShowNotes(true) }}
+              className="text-xs text-muted-foreground/60 hover:text-muted-foreground transition-colors"
+            >
+              + agregar detalle
+            </button>
+          )}
 
           {/* División */}
           {orgMembers.length > 1 && (

@@ -3,7 +3,7 @@
 import { useRouter, useSearchParams, usePathname } from "next/navigation"
 import Link from "next/link"
 import { useState, useEffect, useRef, useTransition } from "react"
-import { ChevronLeft, ChevronRight, Plus, CreditCard, ChevronDown, Search, X, SlidersHorizontal, Check, User, Home, Loader2, Repeat } from "lucide-react"
+import { ChevronLeft, ChevronRight, Plus, CreditCard, ChevronDown, Search, X, SlidersHorizontal, Check, User, Home, Loader2, Repeat, Users } from "lucide-react"
 import { MonthPicker } from "@/components/ui/month-picker"
 import { cn } from "@/lib/utils"
 import { haptic } from "@/lib/haptics"
@@ -313,7 +313,6 @@ export function BillsView({
           style={{ background: "linear-gradient(135deg, #D8E2DC 0%, #FFE5D9 55%, #FFCAD4 100%)" }}
         >
           {searchExpanded ? (
-            /* Expanded search input */
             <div className="flex items-center gap-2 px-3 py-2">
               <Search className="size-4 text-[#6B5159] flex-shrink-0" />
               <input
@@ -336,9 +335,7 @@ export function BillsView({
               </div>
             </div>
           ) : (
-            /* Collapsed ActionBar with two buttons */
             <div className="flex items-center">
-              {/* Search button */}
               <button
                 onClick={() => { haptic("light"); setSearchExpanded(true) }}
                 className={cn(
@@ -351,11 +348,7 @@ export function BillsView({
                   {searchQuery ? `"${searchQuery}"` : "Buscar"}
                 </span>
               </button>
-
-              {/* Divider */}
               <div className="w-px h-6 bg-white/50" />
-
-              {/* Filter button */}
               <button
                 onClick={() => { haptic("light"); setFilterSheetOpen(true) }}
                 className={cn(
@@ -373,11 +366,29 @@ export function BillsView({
         </div>
       </div>
 
-      <div className="px-4 pt-1 pb-0">
-        <Link href="/bills/recurring" className="flex items-center gap-1.5 text-xs text-muted-foreground active:opacity-70 transition-opacity">
-          <Repeat className="size-3" />
-          <span>Gastos recurrentes</span>
-          <ChevronRight className="size-3" />
+      {/* Quick-access pills: Recurrentes + Compartidos */}
+      <div className="mx-4 mt-2 flex gap-2">
+        <Link
+          href="/bills/recurring"
+          className="flex-1 flex items-center justify-between px-3.5 py-3 rounded-2xl active:opacity-80 active:scale-[0.99] transition-all"
+          style={{ background: "#EAE4F2" }}
+        >
+          <div className="flex items-center gap-2">
+            <Repeat className="size-4 text-[#6B5A8A]" />
+            <span className="text-sm text-[#3d2f5a]"><em className="italic font-normal">gastos</em> <strong className="font-bold not-italic">recurrentes</strong></span>
+          </div>
+          <ChevronRight className="size-3.5 text-[#6B5A8A]" />
+        </Link>
+        <Link
+          href="/bills/shared"
+          className="flex-1 flex items-center justify-between px-3.5 py-3 rounded-2xl active:opacity-80 active:scale-[0.99] transition-all"
+          style={{ background: "#FFE0E8" }}
+        >
+          <div className="flex items-center gap-2">
+            <Users className="size-4 text-[#7a3040]" />
+            <span className="text-sm text-[#5a1828]"><em className="italic font-normal">gastos</em> <strong className="font-bold not-italic">compartidos</strong></span>
+          </div>
+          <ChevronRight className="size-3.5 text-[#7a3040]" />
         </Link>
       </div>
 

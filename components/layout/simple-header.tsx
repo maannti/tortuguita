@@ -75,9 +75,8 @@ export function SimpleHeader() {
         </Link>
 
         <div className="flex items-center gap-2">
-          {/* Notification bell */}
-          {notifSupported && (
-            <button
+          {/* Notification bell — always visible, tray shows DB history regardless of push support */}
+          <button
               onClick={() => setTrayOpen(true)}
               className="relative flex items-center justify-center size-9 rounded-full transition-all active:scale-90"
               style={{ backgroundColor: unreadCount > 0 ? `${MAUVE}15` : `${MAUVE}08` }}
@@ -102,8 +101,7 @@ export function SimpleHeader() {
                   style={{ backgroundColor: "#F4ACB7" }}
                 />
               )}
-            </button>
-          )}
+          </button>
           {showSpaces && (
           <div ref={wrapperRef} className="relative">
             {/* Trigger: colored dots — active = solid mauve, inactive = ghost */}
