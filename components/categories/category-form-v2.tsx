@@ -47,7 +47,7 @@ interface Props {
 }
 
 export function CategoryFormV2({ mode, initialData, organizationId, spaceName, returnTo, members = [], currentUserId }: Props) {
-  const { push, refresh } = useRouter()
+  const { push, replace, refresh } = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [name, setName] = useState(initialData?.name || "")
@@ -115,7 +115,7 @@ export function CategoryFormV2({ mode, initialData, organizationId, spaceName, r
       })
       if (!res.ok) { const err = await res.json(); throw new Error(err.error || "Error al guardar") }
       const dest = returnTo || (organizationId ? `/categories?spaceId=${organizationId}` : "/categories")
-      push(dest); refresh()
+      replace(dest); refresh()
     } catch (err) {
       if (err instanceof TypeError && err.message.includes("fetch")) {
         setError("Error de conexión. Revisá tu conexión e intentá de nuevo.")
@@ -131,7 +131,7 @@ export function CategoryFormV2({ mode, initialData, organizationId, spaceName, r
     <form onSubmit={handleSubmit} className="flex flex-col min-h-[calc(100dvh-3.5rem)]">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b sticky top-0 bg-background/95 backdrop-blur-sm z-10">
-        <button type="button" onClick={() => push(backPath)}
+        <button type="button" onClick={() => replace(backPath)}
           className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
           <ChevronLeft className="size-4" />Volver
         </button>

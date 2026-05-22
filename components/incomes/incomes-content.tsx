@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -73,6 +74,7 @@ interface IncomesContentProps {
 
 export function IncomesContent({ incomes, availableMonths, categories }: IncomesContentProps) {
   const t = useTranslations();
+  const { replace } = useRouter();
 
   return (
     <div className="space-y-6">
@@ -129,11 +131,9 @@ export function IncomesContent({ incomes, availableMonths, categories }: Incomes
                             {t.incomes?.details || "Detalles"}
                           </DropdownMenuItem>
                         </DialogTrigger>
-                        <DropdownMenuItem asChild className="rounded-xl py-2.5 px-3">
-                          <Link href={`/incomes/${income.id}/edit`} className="flex items-center gap-2">
-                            <Pencil className="size-4" />
-                            {t.common.edit}
-                          </Link>
+                        <DropdownMenuItem className="rounded-xl py-2.5 px-3 flex items-center gap-2" onSelect={() => replace(`/incomes/${income.id}/edit`)}>
+                          <Pencil className="size-4" />
+                          {t.common.edit}
                         </DropdownMenuItem>
                         <DropdownMenuSeparator className="my-1.5" />
                         <DeleteIncomeButton id={income.id} label={income.label} asMenuItem />

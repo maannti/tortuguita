@@ -70,19 +70,25 @@ model User {
   currentOrganizationId String?       // Active organization for the user
   language              String        @default("es")
   onboardingSeenAt      DateTime?
+  fcmToken              String?       // Firebase Cloud Messaging token for push notifications
+  notificationsEnabled  Boolean       @default(false)
   createdAt             DateTime      @default(now())
   updatedAt             DateTime      @updatedAt
 
-  organization        Organization?      @relation("LegacyOrganization", fields: [organizationId], references: [id], onDelete: SetNull)
-  currentOrganization Organization?      @relation("CurrentOrganization", fields: [currentOrganizationId], references: [id], onDelete: SetNull)
-  userOrganizations   UserOrganization[]
-  accounts            Account[]
-  sessions            Session[]
-  bills               Bill[]
-  billAssignments     BillAssignment[]
-  incomes             Income[]
-  incomeAssignments   IncomeAssignment[]
-  conversations       Conversation[]
+  organization              Organization?             @relation("LegacyOrganization", fields: [organizationId], references: [id], onDelete: SetNull)
+  currentOrganization       Organization?             @relation("CurrentOrganization", fields: [currentOrganizationId], references: [id], onDelete: SetNull)
+  userOrganizations         UserOrganization[]
+  accounts                  Account[]
+  sessions                  Session[]
+  bills                     Bill[]
+  billsPaidFor              Bill[]           @relation("BillPaidBy")
+  billAssignments           BillAssignment[]
+  incomes                   Income[]
+  incomeAssignments         IncomeAssignment[]
+  conversations             Conversation[]
+  recurringBills            RecurringBill[]
+  recurringBillAssignments  RecurringBillAssignment[]
+  notifications             Notification[]
 
   @@index([organizationId])
   @@index([currentOrganizationId])
@@ -105,6 +111,7 @@ model Organization {
   incomeTypes       IncomeType[]
   incomes           Income[]
   conversations     Conversation[]
+  recurringBills    RecurringBill[]
 
   @@index([name])
   @@index([joinCode])
@@ -142,9 +149,11 @@ model BillType {
   createdAt          DateTime     @default(now())
   updatedAt          DateTime     @updatedAt
 
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  bills          Bill[]       @relation("BillType")
-  billsAsCategory Bill[]      @relation("BillCategory")
+  organization          Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  bills                 Bill[]          @relation("BillType")
+  billsAsCategory       Bill[]          @relation("BillCategory")
+  recurringBills        RecurringBill[] @relation("RecurringBillType")
+  recurringBillsAsCategory RecurringBill[] @relation("RecurringBillCategory")
 
   @@unique([organizationId, name])
   @@index([organizationId])
@@ -162,12 +171,14 @@ model Bill {
   categoryId          String?      // expense category (optional, used when billTypeId is a CC card)
   organizationId      String
   userId              String
+  paidByUserId        String?      // who actually paid upfront (null = creator paid)
   notes               String?      @db.Text
   totalInstallments   Int?         // e.g., 12 for 12-cuota plan
   currentInstallment  Int?         // e.g., 1, 2, 3...
   installmentGroupId  String?      // shared ID to group related installments
   externalRef         String?      // bank voucher/comprobante ID for deduplication on re-import
   isPaid              Boolean      @default(false)
+  recurringBillId     String?      // trazabilidad: qué plantilla generó este gasto
   createdAt           DateTime     @default(now())
   updatedAt           DateTime     @updatedAt
 
@@ -175,7 +186,9 @@ model Bill {
   category       BillType?        @relation("BillCategory", fields: [categoryId], references: [id], onDelete: SetNull)
   organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   user           User             @relation(fields: [userId], references: [id], onDelete: Restrict)
+  paidByUser     User?            @relation("BillPaidBy", fields: [paidByUserId], references: [id], onDelete: SetNull)
   assignments    BillAssignment[]
+  recurringBill  RecurringBill?   @relation(fields: [recurringBillId], references: [id], onDelete: SetNull)
 
   @@index([organizationId, paymentDate])
   @@index([organizationId, budgetDate])
@@ -186,10 +199,57 @@ model Bill {
   @@index([paymentDate])
   @@index([installmentGroupId])
   @@index([externalRef])
+  @@index([recurringBillId])
+  @@index([paidByUserId])
   // Prevent duplicate installments within the same group
   @@unique([installmentGroupId, currentInstallment])
   // Prevent re-importing the same bank transaction (billTypeId scopes it per card)
   @@unique([billTypeId, externalRef, currentInstallment])
+}
+
+model RecurringBill {
+  id              String    @id @default(cuid())
+  label           String
+  amount          Decimal   @db.Decimal(10, 2)
+  amountUSD       Decimal?  @db.Decimal(10, 2)
+  notes           String?   @db.Text
+  billTypeId      String
+  categoryId      String?
+  organizationId  String
+  userId          String
+  dayOfMonth      Int       // 1–28, día del mes en que se crea el gasto
+  isActive        Boolean   @default(true)
+  nextDate        DateTime  // próxima fecha en que el cron genera el Bill
+  lastGeneratedAt DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  billType     BillType                  @relation("RecurringBillType", fields: [billTypeId], references: [id], onDelete: Restrict)
+  category     BillType?                 @relation("RecurringBillCategory", fields: [categoryId], references: [id], onDelete: SetNull)
+  organization Organization              @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User                      @relation(fields: [userId], references: [id], onDelete: Restrict)
+  assignments  RecurringBillAssignment[]
+  bills        Bill[]
+
+  @@index([organizationId])
+  @@index([userId])
+  @@index([isActive, nextDate])
+}
+
+model RecurringBillAssignment {
+  id              String   @id @default(cuid())
+  recurringBillId String
+  userId          String
+  percentage      Decimal  @db.Decimal(5, 2)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  recurringBill RecurringBill @relation(fields: [recurringBillId], references: [id], onDelete: Cascade)
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([recurringBillId, userId])
+  @@index([recurringBillId])
+  @@index([userId])
 }
 
 model BillAssignment {
@@ -197,6 +257,8 @@ model BillAssignment {
   billId     String
   userId     String
   percentage Decimal  @db.Decimal(5, 2)
+  isSettled  Boolean  @default(false)  // whether this member paid back their share to the payer
+  settledAt  DateTime?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
@@ -278,6 +340,19 @@ model Income {
   @@index([incomeTypeId])
   @@index([userId])
   @@index([incomeDate])
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  body      String
+  type      String    @default("general")
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, createdAt])
 }
 
 model IncomeAssignment {

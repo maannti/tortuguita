@@ -11,6 +11,7 @@ type InstallmentBillSummary = {
 }
 type InstallmentGroup = {
   groupId: string; label: string; totalInstallments: number; minInstallment: number; bills: InstallmentBillSummary[]; memberNames: string[]
+  categoryName: string | null; categoryColor: string | null; categoryIcon: string | null
 }
 type CardEntry = CardData
 
@@ -30,7 +31,31 @@ export default async function CuotasPage({ searchParams }: PageProps) {
   const params = await searchParams
 
   const now = new Date()
-  const targetDate = params.month ? parse(params.month, "yyyy-MM", new Date()) : now
+
+  // Smart default: when no month param, show the month of the nearest upcoming dueDate.
+  // This reflects the user's mental model: "what will I pay next month?"
+  // We need creditCardTypes early, so fetch them first.
+  const creditCardTypesEarly = await prisma.billType.findMany({
+    where: { organizationId: { in: allOrgIds }, isCreditCard: true },
+    select: { currentDueDate: true },
+  })
+
+  let defaultDate = now
+  let cycleLabel: string | null = null // e.g. "junio 2026"
+
+  if (!params.month) {
+    const dueDates = creditCardTypesEarly
+      .map(ct => ct.currentDueDate ? new Date(ct.currentDueDate) : null)
+      .filter((d): d is Date => d !== null)
+    if (dueDates.length > 0) {
+      // Use the latest due date month among all cards (usually all in the same month)
+      const latestDue = new Date(Math.max(...dueDates.map(d => d.getTime())))
+      defaultDate = latestDue
+      cycleLabel = format(latestDue, "MMMM yyyy", { locale: es })
+    }
+  }
+
+  const targetDate = params.month ? parse(params.month, "yyyy-MM", new Date()) : defaultDate
   const monthStart = startOfMonth(targetDate)
   const monthEnd = endOfMonth(targetDate)
 
@@ -52,6 +77,7 @@ export default async function CuotasPage({ searchParams }: PageProps) {
       },
       include: {
         billType: true,
+        category: true,
         assignments: { include: { user: { select: { id: true, name: true } } } },
       },
       orderBy: [{ installmentGroupId: "asc" }, { currentInstallment: "asc" }],
@@ -66,6 +92,7 @@ export default async function CuotasPage({ searchParams }: PageProps) {
       },
       include: {
         billType: true,
+        category: true,
         assignments: { include: { user: { select: { id: true, name: true } } } },
       },
       orderBy: { budgetDate: "asc" },
@@ -104,6 +131,9 @@ export default async function CuotasPage({ searchParams }: PageProps) {
         minInstallment: groupMinInstallment.get(gId) ?? 1,
         bills: [],
         memberNames: bill.assignments.map((a) => a.user.name || "").filter(Boolean),
+        categoryName: bill.category?.name ?? null,
+        categoryColor: bill.category?.color ?? null,
+        categoryIcon: bill.category?.icon ?? null,
       })
     }
   }
@@ -152,7 +182,7 @@ export default async function CuotasPage({ searchParams }: PageProps) {
   for (const bill of singleCCBills) {
     const cardData = byCard.get(bill.billTypeId)
     if (!cardData) continue
-    cardData.singleBills.push({ id: bill.id, label: bill.label, amount: Number(bill.amount), amountUSD: bill.amountUSD ? Number(bill.amountUSD) : null, budgetDate: format(new Date(bill.budgetDate), "MMMM yyyy", { locale: es }), isPaid: bill.isPaid })
+    cardData.singleBills.push({ id: bill.id, label: bill.label, amount: Number(bill.amount), amountUSD: bill.amountUSD ? Number(bill.amountUSD) : null, budgetDate: format(new Date(bill.budgetDate), "MMMM yyyy", { locale: es }), isPaid: bill.isPaid, categoryName: bill.category?.name ?? null, categoryColor: bill.category?.color ?? null, categoryIcon: bill.category?.icon ?? null })
     cardData.monthTotal += Number(bill.amount)
   }
 
@@ -199,6 +229,7 @@ export default async function CuotasPage({ searchParams }: PageProps) {
       monthKey={monthKey}
       prevMonth={currentIndex > 0 ? availableMonths[currentIndex - 1] : null}
       nextMonth={currentIndex < availableMonths.length - 1 ? availableMonths[currentIndex + 1] : null}
+      cycleLabel={!params.month ? cycleLabel : null}
     />
   )
 }

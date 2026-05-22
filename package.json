@@ -1,10 +1,10 @@
 {
   "name": "manti-gastos",
-  "version": "0.1.0",
+  "version": "2.0.2",
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && next build --webpack",
+    "build": "prisma generate && prisma migrate deploy && next build --webpack",
     "start": "next start",
     "lint": "eslint",
     "db:seed": "tsx prisma/seed.ts"
@@ -34,6 +34,8 @@
     "driver.js": "^1.4.0",
     "echarts": "^6.0.0",
     "echarts-for-react": "^3.0.5",
+    "firebase": "^12.13.0",
+    "firebase-admin": "^13.10.0",
     "lucide-react": "^0.562.0",
     "next": "16.1.2",
     "next-auth": "^5.0.0-beta.30",

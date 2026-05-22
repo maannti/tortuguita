@@ -1,8 +1,9 @@
 "use client"
 import { useState, useTransition, useCallback } from "react"
 import { useRouter } from "next/navigation"
-import { Plus, ChevronLeft, ChevronRight, ChevronDown, Check, X } from "lucide-react"
+import { ChevronLeft, ChevronRight, ChevronDown, Check, X, FileText, CreditCard } from "lucide-react"
 import Link from "next/link"
+import { haptic } from "@/lib/haptics"
 import { cn } from "@/lib/utils"
 import { MonthPicker } from "@/components/ui/month-picker"
 
@@ -14,10 +15,12 @@ interface InstallmentBill {
 interface InstallmentGroup {
   groupId: string; label: string; totalInstallments: number; minInstallment: number
   bills: InstallmentBill[]; memberNames: string[]
+  categoryName: string | null; categoryColor: string | null; categoryIcon: string | null
 }
 interface SingleBill {
   id: string; label: string; amount: number; amountUSD: number | null
   budgetDate: string; isPaid: boolean
+  categoryName: string | null; categoryColor: string | null; categoryIcon: string | null
 }
 export interface CardData {
   typeName: string; typeColor: string; typeIcon: string | null; typeBank: string | null
@@ -34,6 +37,7 @@ interface Props {
   monthKey: string
   prevMonth: string | null
   nextMonth: string | null
+  cycleLabel?: string | null
 }
 
 const arsFormatter = new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", minimumFractionDigits: 0, maximumFractionDigits: 0 })
@@ -48,6 +52,7 @@ function PaidToggle({ billId, isPaid: initialIsPaid }: { billId: string; isPaid:
   const toggle = useCallback((e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
+    haptic("medium")
     startTransition(async () => {
       try {
         const res = await fetch(`/api/bills/${billId}/paid`, { method: "PATCH" })
@@ -96,10 +101,16 @@ function InstallmentGroupRow({ group, cardColor }: { group: InstallmentGroup; ca
     )}>
       <button
         className="w-full px-4 py-3 flex items-start gap-3 active:bg-black/5 transition-colors"
-        onClick={() => setExpanded(v => !v)}
+        onClick={() => { haptic("light"); setExpanded(v => !v) }}
       >
         <div className="flex-1 min-w-0 text-left">
           <p className="text-sm font-medium truncate">{group.label}</p>
+          {group.categoryName && (
+            <span className="inline-flex items-center gap-1 mt-0.5">
+              <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: group.categoryColor ?? "#9D8189" }} />
+              <span className="text-[10px] text-muted-foreground">{group.categoryName}</span>
+            </span>
+          )}
           <p className="text-[11px] text-muted-foreground mt-0.5">
             {paidCount}/{group.totalInstallments} cuotas
           </p>
@@ -161,6 +172,12 @@ function SingleBillRow({ bill }: { bill: SingleBill }) {
           <p className={cn("text-sm font-medium truncate", bill.isPaid && "text-muted-foreground line-through")}>
             {bill.label}
           </p>
+          {bill.categoryName && (
+            <span className="inline-flex items-center gap-1 mt-0.5">
+              <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: bill.categoryColor ?? "#9D8189" }} />
+              <span className="text-[10px] text-muted-foreground">{bill.categoryName}</span>
+            </span>
+          )}
         </div>
         <span className={cn("text-sm font-medium tabular-nums flex-shrink-0", bill.isPaid && "text-muted-foreground line-through")}
           style={{ fontFamily: "var(--font-fraunces, serif)" }}>
@@ -241,6 +258,13 @@ function pastelify(hex: string, factor = 0.45): string {
   return `#${mix(r)}${mix(g)}${mix(b)}`
 }
 
+function isLightColor(hex: string): boolean {
+  const r = parseInt(hex.slice(1, 3), 16)
+  const g = parseInt(hex.slice(3, 5), 16)
+  const b = parseInt(hex.slice(5, 7), 16)
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.6
+}
+
 function needsWhiteLogo(bankId: string | null): boolean {
   if (!bankId) return false
   return BANKS_NEED_WHITE.includes(bankId.toLowerCase())
@@ -273,6 +297,11 @@ function CardVisual({ card, isExpanded, onClick, style }: {
   // Darken color slightly for gradient end
   const darkerColor = cardColor + "cc"
 
+  // Adaptive text color based on card background luminance
+  const light = isLightColor(cardColor)
+  const txtPrimary = light ? "#2A1F24" : "white"
+  const txtSecondary = light ? "#4A3540" : "rgba(255,255,255,0.9)"
+
   // Clean up card name: avoid "Amex Amex" -> just "American Express"
   let displayName = card.typeName
   if (card.typeBank === "amexprop" && card.typeIcon === "amex") {
@@ -292,54 +321,46 @@ function CardVisual({ card, isExpanded, onClick, style }: {
       }}
     >
       <div className={cn(
-        "px-4 transition-all duration-300 overflow-hidden",
+        "px-4 transition-all duration-300 overflow-hidden flex flex-col justify-between",
         isExpanded ? "py-5" : "py-3.5"
-      )}>
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex-1 min-w-0">
-            {/* Fixed box so every logo renders at the same visual size */}
-            <div className="h-7 w-[108px] mb-2 flex items-center">
-              {bankLogo ? (
-                <img
-                  src={bankLogo}
-                  alt=""
-                  className={cn("w-full h-full object-contain object-left", needsWhiteLogo(card.typeBank) && "brightness-0 invert")}
-                />
-              ) : (
-                <span className="text-sm font-bold text-white/90 uppercase tracking-wider">
-                  {card.typeName.split(" ")[0]}
-                </span>
-              )}
-            </div>
-            {/* Card name */}
-            <p className="text-white text-sm font-semibold truncate">
-              {displayName}
-            </p>
-          </div>
-
-          {/* Right side: Amount + Network */}
-          <div className="flex flex-col items-end gap-2 flex-shrink-0">
-            {/* Amount - always visible */}
-            <p
-              className={cn(
-                "text-white font-medium leading-none transition-all",
-                isExpanded ? "text-2xl" : "text-xl"
-              )}
-              style={{ fontFamily: "var(--font-fraunces, serif)" }}
-            >
-              {formatARS(card.monthTotal)}
-            </p>
-            {/* Network logo — fixed box so all networks render at the same size */}
-            {networkLogo && (
-              <div className="h-6 w-[52px] flex items-center justify-end">
-                <img
-                  src={networkLogo}
-                  alt=""
-                  className="w-full h-full object-contain object-right"
-                />
-              </div>
+      )} style={{ minHeight: isExpanded ? 80 : 64 }}>
+        {/* Top row: bank logo ←→ network logo */}
+        <div className="flex items-center justify-between">
+          <div className="h-7 w-[108px] flex items-center">
+            {bankLogo ? (
+              <img
+                src={bankLogo}
+                alt=""
+                className={cn("w-full h-full object-contain object-left", needsWhiteLogo(card.typeBank) && "brightness-0 invert")}
+              />
+            ) : (
+              <span className="text-sm font-bold uppercase tracking-wider" style={{ color: txtSecondary }}>
+                {card.typeName.split(" ")[0]}
+              </span>
             )}
           </div>
+          {networkLogo && (
+            <div className="h-7 w-[52px] flex items-center justify-end">
+              <img
+                src={networkLogo}
+                alt=""
+                className="w-full h-full object-contain object-right"
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Bottom row: card name ←→ amount */}
+        <div className="flex items-end justify-between mt-2">
+          <p className="text-sm font-semibold truncate" style={{ color: txtSecondary }}>
+            {displayName}
+          </p>
+          <p
+            className={cn("font-medium leading-none transition-all", isExpanded ? "text-2xl" : "text-xl")}
+            style={{ color: txtPrimary, fontFamily: "var(--font-fraunces, serif)" }}
+          >
+            {formatARS(card.monthTotal)}
+          </p>
         </div>
       </div>
     </button>
@@ -348,6 +369,9 @@ function CardVisual({ card, isExpanded, onClick, style }: {
 
 // ─── Expanded card content ────────────────────────────────────────────────────
 function ExpandedCardContent({ card }: { card: CardData }) {
+  const [cuotasCollapsed, setCuotasCollapsed] = useState(false)
+  const [singlesCollapsed, setSinglesCollapsed] = useState(false)
+
   return (
     <div className="mt-4 space-y-4">
       {/* Stats row */}
@@ -375,17 +399,30 @@ function ExpandedCardContent({ card }: { card: CardData }) {
       {/* Transactions */}
       <div className="glass rounded-2xl overflow-hidden divide-y divide-white/60">
         {/* Installment groups */}
-        {card.installmentGroups.map(group => (
+        {card.installmentGroups.length > 0 && (
+          <button
+            onClick={() => { haptic("selection"); setCuotasCollapsed(v => !v) }}
+            className="w-full px-4 py-2 bg-black/[0.02] flex items-center justify-between"
+          >
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wide font-medium">Cuotas</p>
+            <ChevronDown className={cn("h-3 w-3 text-muted-foreground transition-transform", cuotasCollapsed && "-rotate-90")} />
+          </button>
+        )}
+        {!cuotasCollapsed && card.installmentGroups.map(group => (
           <InstallmentGroupRow key={group.groupId} group={group} cardColor={card.typeColor} />
         ))}
 
         {/* Single bills */}
-        {card.singleBills.length > 0 && card.installmentGroups.length > 0 && (
-          <div className="px-4 py-2 bg-black/[0.02]">
+        {card.singleBills.length > 0 && (
+          <button
+            onClick={() => { haptic("selection"); setSinglesCollapsed(v => !v) }}
+            className="w-full px-4 py-2 bg-black/[0.02] flex items-center justify-between"
+          >
             <p className="text-[10px] text-muted-foreground uppercase tracking-wide font-medium">Pagos únicos</p>
-          </div>
+            <ChevronDown className={cn("h-3 w-3 text-muted-foreground transition-transform", singlesCollapsed && "-rotate-90")} />
+          </button>
         )}
-        {card.singleBills.map(bill => (
+        {!singlesCollapsed && card.singleBills.map(bill => (
           <SingleBillRow key={bill.id} bill={bill} />
         ))}
 
@@ -401,12 +438,13 @@ function ExpandedCardContent({ card }: { card: CardData }) {
 }
 
 // ─── Main view ────────────────────────────────────────────────────────────────
-export function TarjetasWalletView({ cards, monthLabel, monthKey, prevMonth, nextMonth }: Props) {
+export function TarjetasWalletView({ cards, monthLabel, monthKey, prevMonth, nextMonth, cycleLabel }: Props) {
   const { push } = useRouter()
-  const [expandedIndex, setExpandedIndex] = useState<number | null>(cards.length > 0 ? 0 : null)
+  const [expandedIndex, setExpandedIndex] = useState<number | null>(null)
   const [showPicker, setShowPicker] = useState(false)
 
   const handleCardClick = (index: number) => {
+    haptic("light")
     setExpandedIndex(prev => prev === index ? null : index)
   }
 
@@ -428,7 +466,7 @@ export function TarjetasWalletView({ cards, monthLabel, monthKey, prevMonth, nex
           <div className="absolute -top-6 -right-6 size-32 rounded-full bg-white/20 blur-2xl pointer-events-none" />
           <div className="flex items-center justify-between">
             <button
-              onClick={() => prevMonth && push(`/tarjetas?month=${prevMonth}`)}
+              onClick={() => { if (prevMonth) { haptic("selection"); push(`/tarjetas?month=${prevMonth}`) } }}
               disabled={!prevMonth}
               className="size-8 flex items-center justify-center rounded-full bg-white/40 backdrop-blur-sm disabled:opacity-30 active:scale-95 transition-all"
             >
@@ -437,7 +475,7 @@ export function TarjetasWalletView({ cards, monthLabel, monthKey, prevMonth, nex
             <div className="text-center space-y-0.5">
               <p className="text-[11px] font-medium text-[#9D8189] uppercase tracking-wide">Tarjetas</p>
               <button
-                onClick={() => setShowPicker(true)}
+                onClick={() => { haptic("selection"); setShowPicker(true) }}
                 className="font-medium text-[#4A3540] px-3 py-1 rounded-full hover:bg-white/30 transition-colors active:scale-95"
                 style={{ fontFamily: "var(--font-fraunces, serif)", fontSize: "1.05rem" }}
               >
@@ -448,9 +486,14 @@ export function TarjetasWalletView({ cards, monthLabel, monthKey, prevMonth, nex
                   {formatARS(grandTotal)}
                 </p>
               )}
+              {cycleLabel && (
+                <p className="text-[10px] text-[#9D8189] mt-0.5">
+                  Gastos que vencen en {cycleLabel}
+                </p>
+              )}
             </div>
             <button
-              onClick={() => nextMonth && push(`/tarjetas?month=${nextMonth}`)}
+              onClick={() => { if (nextMonth) { haptic("selection"); push(`/tarjetas?month=${nextMonth}`) } }}
               disabled={!nextMonth}
               className="size-8 flex items-center justify-center rounded-full bg-white/40 backdrop-blur-sm disabled:opacity-30 active:scale-95 transition-all"
             >
@@ -490,10 +533,16 @@ export function TarjetasWalletView({ cards, monthLabel, monthKey, prevMonth, nex
         </div>
       )}
 
-      {/* FAB */}
-      <Link href="/tarjetas/new"
-        className="fixed bottom-24 right-4 z-30 flex items-center justify-center size-14 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 active:scale-95 transition-transform">
-        <Plus className="size-6" />
+      {/* FABs */}
+      <Link href="/resumen"
+        className="fixed bottom-40 right-4 z-30 flex items-center gap-2 px-4 h-11 rounded-full glass text-foreground text-sm font-medium shadow-sm active:scale-95 transition-transform">
+        <FileText className="size-4 text-primary" />
+        Importar gastos
+      </Link>
+      <Link href="/cards"
+        className="fixed bottom-24 right-4 z-30 flex items-center gap-2 px-4 h-11 rounded-full glass text-foreground text-sm font-medium shadow-sm active:scale-95 transition-transform">
+        <CreditCard className="size-4 text-primary" />
+        Gestionar tarjetas
       </Link>
 
       {/* Month picker */}

@@ -236,13 +236,14 @@ export async function POST(request: NextRequest) {
             )
           );
           controller.close();
-        } catch (error) {
+        } catch (error: any) {
           console.error("Streaming error:", error);
+          const detail = error?.message ?? String(error)
           controller.enqueue(
             new TextEncoder().encode(
               `data: ${JSON.stringify({
                 type: "error",
-                error: "An error occurred processing your request",
+                error: `Error: ${detail}`,
               })}\n\n`
             )
           );

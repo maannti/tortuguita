@@ -65,7 +65,7 @@ export default async function BillsPage({ searchParams }: PageProps) {
           billType: { isCreditCard: true },
         }),
       },
-      include: { billType: true, category: true },
+      include: { billType: true, category: true, assignments: true },
       orderBy: { budgetDate: "asc" },
     }),
     // Get all bill types for filter options (include organizationId for grouping)
@@ -100,6 +100,7 @@ export default async function BillsPage({ searchParams }: PageProps) {
     bills: Array<{
       id: string; label: string; amount: number; amountUSD: number | null; paymentDate: string
       cardName: string | null; currentInstallment: number | null; totalInstallments: number | null
+      myShare: number | null; isShared: boolean
     }>
   }>()
 
@@ -126,6 +127,9 @@ export default async function BillsPage({ searchParams }: PageProps) {
     const billUSD = bill.amountUSD ? Number(bill.amountUSD) : null
     g.total += Number(bill.amount)
     if (billUSD !== null) g.totalUSD = (g.totalUSD ?? 0) + billUSD
+    const myAssignment = bill.assignments.find(a => a.userId === session.user.id!)
+    const isShared = bill.assignments.some(a => a.userId !== session.user.id!)
+    const myShare = myAssignment ? Number(bill.amount) * (Number(myAssignment.percentage) / 100) : null
     g.bills.push({
       id: bill.id,
       label: bill.label,
@@ -135,11 +139,15 @@ export default async function BillsPage({ searchParams }: PageProps) {
       cardName: bill.billType.isCreditCard ? bill.billType.name : null,
       currentInstallment: bill.currentInstallment,
       totalInstallments: bill.totalInstallments,
+      myShare,
+      isShared,
     })
   }
 
   const categoryGroups = Array.from(catGroupMap.values())
   const grandTotal = categoryGroups.reduce((s, g) => s + g.total, 0)
+  const myTotal = categoryGroups.reduce((s, g) => s + g.bills.reduce((bs, b) => bs + (b.myShare ?? b.amount), 0), 0)
+  const hasSharedBills = categoryGroups.some(g => g.bills.some(b => b.isShared))
   const hasAnyUSD = categoryGroups.some(g => g.bills.some(b => b.amountUSD !== null))
 
   return (
@@ -149,12 +157,15 @@ export default async function BillsPage({ searchParams }: PageProps) {
       availableMonths={availableMonths}
       categoryGroups={categoryGroups}
       grandTotal={grandTotal}
+      myTotal={myTotal}
+      hasSharedBills={hasSharedBills}
       hasAnyUSD={hasAnyUSD}
       searchQuery={searchQuery}
       activeFilters={{ categoryIds: categoryIdFilters, cardIds: cardIdFilters }}
       availableCategories={availableCategories}
       availableCards={availableCards}
       organizations={organizations}
+      currentUserId={session.user.id!}
     />
   )
 }

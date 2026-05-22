@@ -177,7 +177,7 @@ export function SignupForm() {
               <FormItem>
                 <FormLabel>{t.common.name}</FormLabel>
                 <FormControl>
-                  <Input placeholder="John Doe" autoComplete="name" disabled={isLoading} {...field} />
+                  <Input placeholder="John Doe" autoComplete="name" disabled={isLoading} className="rounded-full" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -191,7 +191,7 @@ export function SignupForm() {
               <FormItem>
                 <FormLabel>{t.common.email}</FormLabel>
                 <FormControl>
-                  <Input placeholder="name@example.com" type="email" autoComplete="email" disabled={isLoading} {...field} />
+                  <Input placeholder="name@example.com" type="email" autoComplete="email" disabled={isLoading} className="rounded-full" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -211,7 +211,7 @@ export function SignupForm() {
                       type={showPassword ? "text" : "password"}
                       autoComplete="new-password"
                       disabled={isLoading}
-                      className="pr-10"
+                      className="rounded-full pr-10"
                       {...field}
                     />
                     <button
@@ -278,7 +278,7 @@ export function SignupForm() {
                 <FormItem>
                   <FormLabel>{t.settings.organizationName}</FormLabel>
                   <FormControl>
-                    <Input placeholder="Mi Hogar" disabled={isLoading} {...field} />
+                    <Input placeholder="Mi Hogar" disabled={isLoading} className="rounded-full" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -297,6 +297,7 @@ export function SignupForm() {
                     <Input
                       placeholder="XXXXXXXX"
                       disabled={isLoading}
+                      className="rounded-full"
                       {...field}
                       onChange={(e) => field.onChange(e.target.value.toUpperCase())}
                     />

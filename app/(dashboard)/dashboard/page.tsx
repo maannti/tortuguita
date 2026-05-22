@@ -4,6 +4,7 @@ import { unstable_cache } from "next/cache"
 import { startOfMonth, endOfMonth, subMonths, format, parse } from "date-fns"
 import { es } from "date-fns/locale"
 import { HomeDashboard, SpaceData } from "@/components/dashboard/home-dashboard"
+import { PwaInstallBanner } from "@/components/pwa/pwa-install-banner"
 
 interface PageProps { searchParams: Promise<{ month?: string }> }
 
@@ -137,17 +138,15 @@ export default async function DashboardPage({ searchParams }: PageProps) {
     }
   })
 
-  // Insights data
+  // ── Build rotating insights array ──
   const thisMonthTotal = spaces.reduce((s, sp) => s + sp.totalAmount, 0)
   const lastMonthTotal = lastMonthBills.reduce((s, b) => s + Number(b.amount), 0)
+
+  // Top category (skips CC card names)
   const catTotals = new Map<string, { name: string; amount: number }>()
   for (const [bills] of allOrgData) {
     for (const bill of bills) {
-      // For CC bills: use expense category if available, else skip (avoid polluting with card names)
-      // For regular bills: use the bill type name
-      const name = bill.billType.isCreditCard
-        ? (bill.category?.name ?? null)
-        : bill.billType.name
+      const name = bill.billType.isCreditCard ? (bill.category?.name ?? null) : bill.billType.name
       if (!name) continue
       const cur = catTotals.get(name) ?? { name, amount: 0 }
       catTotals.set(name, { name, amount: cur.amount + Number(bill.amount) })
@@ -157,7 +156,58 @@ export default async function DashboardPage({ searchParams }: PageProps) {
     ? [...catTotals.values()].sort((a, b) => b.amount - a.amount)[0]
     : null
 
-  const showOnboarding = !userRecord?.onboardingSeenAt
+  const fmt = (n: number) =>
+    new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(Math.round(n))
+
+  const insightStrings: string[] = []
+
+  if (thisMonthTotal === 0) {
+    insightStrings.push("Todavía no hay gastos este mes. ¿Empezamos a registrar?")
+  } else {
+    // 1. Total del mes
+    insightStrings.push(`Llevás ${fmt(thisMonthTotal)} en gastos este mes.`)
+
+    // 2. Comparación con mes anterior
+    if (lastMonthTotal > 0) {
+      const pct = Math.round(((thisMonthTotal - lastMonthTotal) / lastMonthTotal) * 100)
+      if (pct > 10)       insightStrings.push(`Gastás un ${pct}% más que el mes pasado.`)
+      else if (pct < -10) insightStrings.push(`Gastás un ${Math.abs(pct)}% menos que el mes pasado.`)
+      else                insightStrings.push(`Gastos similares al mes pasado (${pct > 0 ? "+" : ""}${pct}%).`)
+    }
+
+    // 3. Categoría líder
+    if (topCategory) {
+      insightStrings.push(`${topCategory.name} es tu categoría más grande: ${fmt(topCategory.amount)}.`)
+    }
+
+    // 4. Total en tarjetas de crédito
+    const ccTotal = spaces.reduce((s, sp) => s + sp.creditCardGroups.reduce((cs, g) => cs + g.totalAmount, 0), 0)
+    if (ccTotal > 0 && ccTotal < thisMonthTotal) {
+      insightStrings.push(`En tarjetas de crédito llevás ${fmt(ccTotal)} este mes.`)
+    }
+
+    // 5. Por miembro (espacios compartidos)
+    for (const space of spaces) {
+      if (!space.isPersonal && space.members.length > 1) {
+        for (const member of space.members) {
+          if (member.id !== userId && member.expenses > 0) {
+            insightStrings.push(`${member.name.split(" ")[0]} lleva ${fmt(member.expenses)} en gastos este mes.`)
+          }
+        }
+      }
+    }
+
+    // 6. Gasto más grande del mes
+    const allExpenses = spaces.flatMap(sp => sp.recentExpenses)
+    if (allExpenses.length > 0) {
+      const biggest = allExpenses.reduce((max, e) => e.amount > max.amount ? e : max, allExpenses[0])
+      insightStrings.push(`Tu gasto más grande fue "${biggest.label}" (${fmt(biggest.amount)}).`)
+    }
+  }
+
+  const TEST_EMAILS = ["santimarcos8@hotmail.com"]
+  const isTestUser = !!(session.user.email && TEST_EMAILS.includes(session.user.email))
+  const showOnboarding = isTestUser || !userRecord?.onboardingSeenAt
   const [billCount, extraMemberCount, creditCardCount, importedBillCount] = checklistRaw
   const checklistData = {
     hasBills: billCount > 0,
@@ -167,6 +217,8 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   }
 
   return (
+    <>
+    <PwaInstallBanner />
     <HomeDashboard
       month={format(monthStart, "MMMM yyyy", { locale: es })}
       monthKey={format(monthStart, "yyyy-MM")}
@@ -175,7 +227,8 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       currentUserId={userId}
       showOnboarding={showOnboarding}
       checklistData={checklistData}
-      insights={{ thisMonthTotal, lastMonthTotal, topCategory, monthName: format(monthStart, "MMMM", { locale: es }) }}
+      insights={{ insights: insightStrings }}
     />
+    </>
   )
 }

@@ -1,6 +1,22 @@
 @import "tailwindcss";
 @import "driver.js/dist/driver.css";
 
+/* ── PWA splash screen ── */
+@keyframes pwa-text-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes pwa-splash-out {
+  0%   { opacity: 1; pointer-events: auto; }
+  100% { opacity: 0; pointer-events: none; visibility: hidden; }
+}
+#pwa-splash {
+  animation: pwa-splash-out 0.5s ease 0.9s forwards;
+}
+#pwa-splash span {
+  animation: pwa-text-in 0.55s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both;
+}
+
 /* ── driver.js tour — brand overrides ── */
 .driver-popover {
   background: rgba(255, 255, 255, 0.97) !important;
@@ -30,24 +46,45 @@
 }
 .driver-popover-footer {
   margin-top: 0.875rem !important;
-  display: flex !important;
-  align-items: center !important;
-  gap: 0.4rem !important;
+  display: grid !important;
+  grid-template-rows: auto auto !important;
+  gap: 0.5rem !important;
 }
 .driver-popover-progress-text {
-  flex: 1 !important;
+  grid-row: 2 !important;
+  text-align: center !important;
+  white-space: nowrap !important;
+}
+.driver-popover-navigation-btns {
+  grid-row: 1 !important;
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 0.5rem !important;
+}
+.driver-popover-footer button {
+  text-shadow: none !important;
 }
 .driver-popover-prev-btn,
-.driver-popover-next-btn,
-.driver-popover-close-btn {
+.driver-popover-next-btn {
   border-radius: 999px !important;
-  font-size: 0.75rem !important;
+  font-size: 0.8125rem !important;
   font-weight: 600 !important;
-  padding: 0.45rem 1rem !important;
+  padding: 0.6rem 0.5rem !important;
   border: none !important;
   cursor: pointer !important;
   transition: opacity 0.15s !important;
+  text-align: center !important;
   white-space: nowrap !important;
+  overflow: hidden !important;
+  min-width: 0 !important;
+  text-shadow: none !important;
+}
+.driver-popover-close-btn {
+  border: none !important;
+  cursor: pointer !important;
+  background: transparent !important;
+  color: #9D8189 !important;
+  font-size: 1rem !important;
 }
 .driver-popover-next-btn {
   background: #9D8189 !important;
