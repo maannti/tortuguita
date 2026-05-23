@@ -45,14 +45,7 @@ export function BottomNav() {
     /* Floating pill nav */
     <nav className="fixed bottom-4 left-4 right-4 z-40">
       <div
-        className="flex h-16 items-stretch rounded-2xl px-2 gap-1"
-        style={{
-          background: "rgba(255,255,255,0.75)",
-          backdropFilter: "blur(20px)",
-          WebkitBackdropFilter: "blur(20px)",
-          boxShadow: "0 4px 30px rgba(157,129,137,0.14), 0 1px 4px rgba(157,129,137,0.08), inset 0 1px 0 rgba(255,255,255,0.9)",
-          border: "1px solid rgba(255,255,255,0.8)",
-        }}
+        className="flex h-16 items-stretch rounded-2xl px-2 gap-1 backdrop-blur-xl border border-white/80 dark:border-white/10 shadow-[0_4px_30px_rgba(157,129,137,0.14),0_1px_4px_rgba(157,129,137,0.08)] bg-white/75 dark:bg-card/90"
       >
         {navItems.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(item.href + "/")
