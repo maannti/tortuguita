@@ -1,6 +1,6 @@
 # Tortuguita v2 — Roadmap de Mejoras
 
-> Última actualización: 17 Mayo 2025
+> Última actualización: 23 Mayo 2026
 > Este archivo sirve como planificación entre sesiones de desarrollo.
 
 ---
@@ -9,315 +9,129 @@
 
 | Fase | Progreso | Próximo paso |
 |------|----------|--------------|
-| **Alta Prioridad** | 5/6 completados | Arreglar rediseño de login |
-| **Media Prioridad** | 0/6 completados | Presupuestos o Quick-Add |
-| **Baja Prioridad** | 0/6 completados | — |
+| **Alta Prioridad** | 8/8 completados ✅ | — |
+| **Media Prioridad** | 2/6 completados | Dashboard widget saldo compartido |
+| **Baja Prioridad** | 0/4 completados | — |
 
 ---
 
 ## ALTA PRIORIDAD — Quick Wins
 
-> Mejoras con alto impacto y esfuerzo bajo-medio. Atacar primero.
-
 ### 1. Búsqueda Global
 - **Estado:** `[x]` ✅ Completado (15 Mayo 2025)
-- **Prioridad:** Alta
-- **Esfuerzo real:** ~30 minutos
-- **Impacto:** Desbloquea usuarios con muchos datos
 
-#### Descripción
-Agregar búsqueda por texto en gastos (label, notas, categoría). Debe ser accesible desde /bills y potencialmente desde el header global.
-
-#### Archivos modificados/creados
-- `app/(dashboard)/bills/page.tsx` — acepta `?search=` param, filtra en Prisma
-- `components/bills/bills-view.tsx` — muestra SearchInput, empty state contextual
-- `components/ui/search-input.tsx` — **(NUEVO)** componente reutilizable con debounce
-
-#### Implementación final
-1. [x] Filtro server-side en Prisma con `contains` + `mode: "insensitive"`
-2. [x] Búsqueda en: label, notas, nombre de categoría, nombre de billType
-3. [x] Componente `SearchInput` con debounce 300ms
-4. [x] URL params (`?search=`) para persistencia y compartir
-5. [x] Empty state diferenciado: "sin resultados" vs "sin gastos"
-6. [ ] (Pendiente) Command palette global (Cmd+K) — para futuro
-
-#### Criterios de éxito
-- ✅ Búsqueda por label funciona
-- ✅ Búsqueda por nombre de categoría funciona
-- ✅ Mobile-friendly (no rompe layout)
-- ⏳ Performance: pendiente validar con muchos datos
-
-#### Notas de implementación
-```
-Patrón usado: URL params + Server Component (Next.js App Router pattern)
-- No se usa API endpoint, se filtra directamente en page.tsx con Prisma
-- El SearchInput actualiza la URL, lo que triggerea re-render del Server Component
-- Debounce de 300ms para evitar requests excesivos
-- Clear button (X) y soporte para Escape key
-```
+Filtro server-side en Prisma, búsqueda en label/notas/categoría/billType. Componente `SearchInput` con debounce 300ms. URL params para persistencia.
 
 ---
 
 ### 2. Filtros en /bills
 - **Estado:** `[x]` ✅ Completado (15 Mayo 2025)
-- **Prioridad:** Alta
-- **Esfuerzo real:** ~1 hora
-- **Impacto:** Reduce fricción diaria
 
-#### Descripción
-Permitir filtrar gastos por: categoría, tarjeta de crédito. Los filtros deben ser combinables (multi-select).
-
-#### Archivos modificados
-- `app/(dashboard)/bills/page.tsx` — query params `categoryIds`, `cardIds` (multi-select)
-- `components/bills/bills-view.tsx` — ActionBar + FilterSheet integrados
-
-#### Implementación final
-1. [x] **ActionBar** debajo del hero con colores de gradiente
-2. [x] Botón "Buscar" que se expande inline con búsqueda en tiempo real
-3. [x] Botón "Filtros" que abre bottom sheet
-4. [x] **FilterSheet** con multi-select agrupado por espacio (Personal/Casa)
-5. [x] Categorías y Tarjetas separadas dentro de cada espacio
-6. [x] URL params `?categoryIds=a,b&cardIds=c,d` para multi-select
-7. [x] Botones Limpiar/Aplicar en el sheet
-
-#### Criterios de éxito
-- ✅ Puedo filtrar por múltiples categorías
-- ✅ Puedo filtrar por múltiples TCs
-- ✅ Puedo combinar filtros (categorías + TCs)
-- ✅ Los filtros persisten en URL
-- ✅ El total del hero se actualiza en vivo con búsqueda
-
-#### Notas de implementación
-```
-Patrón: ActionBar + Bottom Sheet
-- ActionBar usa mismos colores del hero (gradiente pastel)
-- Búsqueda se expande inline en la ActionBar (no abre sheet)
-- Búsqueda usa debounce 300ms + useTransition para updates no-blocking
-- FilterSheet agrupa por organización (como el resumen-importer)
-- Multi-select con checkmarks (Set<string> para tracking)
-```
-
-#### Pendiente evaluar
-- [ ] **Secciones colapsables en FilterSheet**: Se discutió agregar flechitas para colapsar
-      categorías por espacio. Decisión: NO implementar por ahora. El filtro debe mostrar
-      todas las opciones de un vistazo. Evaluar después de unos días de uso si realmente
-      hace falta.
+ActionBar con búsqueda inline + FilterSheet con multi-select por categoría y tarjeta, agrupado por espacio.
 
 ---
 
 ### 3. Vista Wallet de Tarjetas (/tarjetas)
 - **Estado:** `[x]` ✅ Completado (16 Mayo 2025)
-- **Prioridad:** Alta
-- **Esfuerzo real:** ~2 sesiones
-- **Impacto:** Visibilidad de gastos y cuotas por tarjeta, reemplaza /cuotas
 
-#### Descripción
-Rediseño completo de /cuotas → nueva ruta /tarjetas con estilo Apple Wallet. Tarjetas visuales con logos de bancos y redes, gastos expandibles, barra de progreso de cuotas.
-
-#### Implementación final
-1. [x] Nueva ruta `/tarjetas` y `/tarjetas/new`
-2. [x] Componente `TarjetasWalletView` con tarjetas estilo Apple Wallet
-3. [x] Logos de bancos reales (PNG/SVG) en `/public/banks/`
-4. [x] Logos de redes reales (PNG) en `/public/networks/`
-5. [x] Campo `bank` agregado a `BillType` (schema + API + form)
-6. [x] Colores de fondo por banco (`BANK_COLORS`) — pastelizados (45% blend con blanco)
-7. [x] Blanqueo de logos con `brightness-0 invert` para Santander y Ciudad
-8. [x] Badges de red en `CardIcon` usan imagen real (amex, cabal) en vez de letras
-9. [x] Bottom nav actualizado de /cuotas → /tarjetas
-10. [x] Rutas viejas `/cuotas` eliminadas
-11. [x] Widget en dashboard: stack Apple Wallet top 3 tarjetas, idéntico visualmente a /tarjetas
-
-#### Archivos creados
-- `app/(dashboard)/tarjetas/page.tsx`
-- `app/(dashboard)/tarjetas/new/page.tsx`
-- `components/tarjetas/tarjetas-wallet-view.tsx`
-- `public/banks/` — 15 logos de bancos
-- `public/networks/` — 4 logos de redes
-
-#### Archivos modificados
-- `prisma/schema.prisma` — campo `bank` en `BillType`
-- `lib/validations/bill-type.ts` — campo `bank` opcional
-- `components/cards/card-form.tsx` — guarda `bank`
-- `components/ui/card-network.tsx` — badges amex/cabal con imagen
-- `components/layout/bottom-nav.tsx` — link a /tarjetas
-- `components/cuotas/cuotas-view.tsx` — links internos a /tarjetas
+Rediseño /cuotas → /tarjetas estilo Apple Wallet. Logos de bancos/redes reales, colores pastelizados, barra de progreso de cuotas, widget en dashboard.
 
 ---
 
 ### 4. Gastos Recurrentes
 - **Estado:** `[x]` ✅ Completado (17 Mayo 2025)
-- **Prioridad:** Alta (retomar después de notificaciones)
-- **Esfuerzo estimado:** 1-2 días adicionales (base ya construida)
-- **Impacto:** Elimina data entry repetitivo
 
-#### Descripción
-Marcar un gasto como recurrente para que el sistema te *recuerde* confirmarlo cada mes — no lo genera automáticamente. El cron dispara una notificación push: *"¿Te llegó el alquiler? El mes pasado fue $X"*. El usuario solo confirma o ajusta el monto y se crea el Bill.
-
-**Por qué este enfoque y no auto-generación:** en Argentina los montos cambian frecuentemente. Auto-generar crearía gastos con monto desactualizado. La confirmación manual es obligatoria, pero el sistema la hace trivial.
-
-#### Lo que ya está construido ✅
-- `prisma/schema.prisma` — modelos `RecurringBill` + `RecurringBillAssignment` (ya en DB)
-- `app/api/recurring-bills/route.ts` — GET (lista) + POST (crear)
-- `app/api/recurring-bills/[id]/route.ts` — GET + PATCH + DELETE (con `?deleteGenerated=true`)
-- `app/api/cron/create-recurring/route.ts` — cron job (actualmente auto-genera; cambiar a notificación)
-- `vercel.json` — cron configurado `0 9 * * *`
-- `lib/validations/recurring-bill.ts` — schema Zod
-- `components/bills/recurring-bills-view.tsx` — vista /bills/recurring (lista activas/pausadas, context menu)
-- `app/(dashboard)/bills/recurring/page.tsx` — página de lista
-
-#### Lo que está oculto en UI (comentado, listo para descomentar)
-- `components/bills/quick-bill-form.tsx` — toggle "Repetir mensualmente" con selector de día
-- `components/bills/bills-view.tsx` — link "Gastos recurrentes →" debajo del ActionBar
-
-#### Lo que falta para completar
-1. [ ] **Ítem 10 primero:** setup notificaciones push (FCM + service worker)
-2. [ ] Cambiar cron: en vez de crear Bill, enviar notificación push con quick-action
-3. [ ] Pantalla de confirmación rápida (pre-llenada con último monto)
-4. [ ] Descomentar UI en formulario y bills-view
-5. [ ] Test end-to-end del flujo completo
-
-#### Criterios de éxito
-- Puedo marcar un gasto como recurrente
-- Recibo notif el día configurado: *"¿Te llegó X? El mes pasado fue $Y"*
-- Con un tap confirmo o ajusto el monto → se crea el Bill
-- Puedo pausar/eliminar una recurrencia desde /bills/recurring
+Cron job diario → push notification de recordatorio → pantalla de confirmación rápida pre-llenada. Toggle en formulario de gasto. Vista `/bills/recurring`.
 
 ---
 
 ### 5. AI con Contexto de Gastos
 - **Estado:** `[x]` ✅ Completado (17 Mayo 2025)
-- **Prioridad:** Alta
-- **Esfuerzo estimado:** 3-4 días
-- **Impacto:** Diferenciador único
 
-#### Descripción
-El chat de AI actualmente no tiene acceso a los gastos del usuario. Debería poder responder preguntas como "¿cuánto gasté en comida este mes?" o "¿cuál es mi categoría más cara?".
-
-#### Archivos a modificar/crear
-- `lib/ai/tools.ts` — agregar tools para consultar gastos
-- `lib/ai/tool-handlers.ts` — implementar handlers
-- `app/api/ai/chat/route.ts` — asegurar que tools funcionan
-- `components/ai/chat-message.tsx` — renderizar respuestas con datos
-
-#### Plan de implementación
-1. [ ] Definir tools disponibles para Claude:
-   - `get_expenses_summary` — total por mes/categoría
-   - `get_recent_expenses` — últimos N gastos
-   - `get_category_breakdown` — gasto por categoría
-   - `get_spending_trend` — comparación mes a mes
-   - `search_expenses` — buscar por texto
-2. [ ] Implementar handlers con queries Prisma
-3. [ ] Asegurar que solo accede a datos del usuario actual
-4. [ ] Testear prompts comunes:
-   - "¿Cuánto gasté este mes?"
-   - "¿En qué categoría gasto más?"
-   - "Comparame este mes con el anterior"
-5. [ ] Mejorar UI para mostrar datos estructurados (tablas, mini-charts)
-
-#### Criterios de éxito
-- Claude puede responder "¿cuánto gasté en X?"
-- Las respuestas incluyen datos reales del usuario
-- No hay acceso a datos de otros usuarios (security)
-- Respuestas en <3 segundos
-
-#### Notas de implementación
-```
-(agregar notas durante desarrollo)
-```
+Tool `get_spending_trend` + system prompt proactivo con personalidad. Claude responde preguntas sobre gastos reales del usuario.
 
 ---
 
 ### 6. Arreglar Rediseño de Login
 - **Estado:** `[x]` ✅ Completado (21 Mayo 2025)
-- **Prioridad:** Alta
-- **Impacto:** UX crítica — primera impresión del usuario
 
-#### Descripción
-El flujo de login funciona bien, pero el diseño visual está desactualizado. Necesita alinearse con la estética del resto de la app (paleta pastel, tipografía, espaciado).
+Paleta pastel oficial, tipografía Fraunces, diseño mobile-first consistente con el resto de la app.
 
-#### Problemas actuales
-- Colores no coinciden con la paleta de la app (Sage, Peach, Pink, Dusty Rose, Mauve)
-- Diseño genérico, no refleja la identidad visual de Tortuguita
+---
 
-#### Archivos a modificar
-- `app/(auth)/login/page.tsx`
-- `app/(auth)/signup/page.tsx` (probablemente mismo problema)
-- Componentes relacionados en `app/(auth)/`
+### 7. Adaptación Web / Desktop
+- **Estado:** `[x]` ✅ Completado (22 Mayo 2026)
 
-#### Plan de implementación
-1. [ ] Aplicar paleta de colores oficial (gradiente hero, acentos)
-2. [ ] Actualizar tipografía (Fraunces para títulos/montos)
-3. [ ] Mejorar espaciado y layout (mobile-first)
-4. [ ] Agregar elementos visuales de marca (logo, ilustraciones)
-5. [ ] Testear en mobile y desktop
+Sidebar nav en lg+, contenido centrado con `max-w-xl mx-auto`, bottom nav oculto en desktop. Header adaptivo con logo oculto en lg (lo muestra el sidebar). Avatares de miembros adaptativos: chips para 1-2, avatar-grid para 3+.
 
-#### Criterios de éxito
-- Login se siente parte de la misma app que el dashboard
-- Usa la paleta pastel oficial
-- Primera impresión positiva del usuario
+#### Archivos modificados
+- `components/layout/side-nav.tsx` — *(NUEVO)* sidebar sticky con logo, nav items y user/settings
+- `app/(dashboard)/layout.tsx` — flex layout: sidebar + main con header/content/bottom-nav
+- `components/layout/bottom-nav.tsx` — `lg:hidden`
+- `components/layout/simple-header.tsx` — logo `lg:hidden`, inner div `lg:max-w-xl lg:mx-auto`
+- `app/globals.css` — overrides de padding-bottom en desktop
+
+---
+
+### 8. Registro de Pagos entre Miembros ("¿Ya me pagaste?")
+- **Estado:** `[x]` ✅ Completado (22–23 Mayo 2026)
+
+Vista `/bills/shared` con balance neto mensual por persona. Swipe bidireccional para saldar gastos individuales. Tickbox en header de cada grupo para saldar todo de una. Grupos siempre visibles aunque todo esté saldado (para ver historial y deshacer).
+
+#### Features implementados
+- Hero card con "Te deben" / "Debés" + barra de progreso
+- Selector de espacio + navegación por mes
+- Tiles de miembros: cuadrados con bordes redondeados, distribución uniforme en grid
+- `SwipeableBillRow`: swipe izquierda o derecha → saldar. Botón circular visible en mobile y desktop
+- `BillGroup` header: swipe para saldar todo, tickbox circular (verde ✓ cuando todo está saldado)
+- Fix UTC: filtro de fecha usa `Date.UTC()` para no excluir bills almacenados a medianoche UTC
+- Fix visibilidad: grupos con netAmount=0 (todo saldado) siguen apareciendo
+
+#### Archivos creados/modificados
+- `app/(dashboard)/bills/shared/page.tsx`
+- `app/api/shared-balance/route.ts`
+- `app/api/bills/[id]/settle/route.ts`
+- `components/bills/shared-balance-view.tsx`
 
 ---
 
 ## MEDIA PRIORIDAD — Features Nuevos
 
-> Funcionalidades que agregan valor significativo pero requieren más esfuerzo.
-
-### 6. ~~Presupuestos por Categoría~~ → movido a Banco de Ideas
-
----
-
-### 20. Registro de Pagos entre Miembros ("¿Ya me pagaste?")
-- **Estado:** `[ ]` Pendiente — a diseñar
+### 20. Dashboard Widget — Saldo Compartido
+- **Estado:** `[ ]` Pendiente
 - **Prioridad:** Alta
-- **Esfuerzo estimado:** A definir tras exploración
-- **Impacto:** Muy pedido para espacios compartidos
+- **Esfuerzo estimado:** 1 sesión
+- **Impacto:** Visibilidad del saldo pendiente desde el home
 
 #### Descripción
-Para gastos compartidos, poder registrar si la otra persona ya pagó su parte. La idea explorada: **balance mensual neto** entre miembros del hogar — al final del mes ves "Juan te debe $12.400" → botón "Saldar" que cierra el período.
+Widget en el dashboard home que muestra el saldo neto pendiente con otros miembros del espacio compartido activo. Si te deben → verde; si debés → rosa. Tap → navega a `/bills/shared`.
 
-#### Opciones a explorar
-- **Opción A (granular):** cada gasto compartido tiene estado `pendiente/pagado` por miembro → más control, más fricción
-- **Opción B (balance mensual):** vista de saldo neto entre miembros + "Saldar" al cierre de mes → más natural para convivencia diaria
-- **Combinación:** balance como vista principal + drill-down a los gastos que componen la deuda
-
-#### Preguntas pendientes
-- [ ] ¿Siempre entre dos personas o puede ser n miembros?
-- [ ] ¿Dónde vive en la UI? ¿Dashboard? ¿Sección propia?
-- [ ] ¿El "Saldar" genera un registro contable o solo marca como cerrado?
+#### Opción acordada (B)
+Tarjeta compacta debajo del hero del dashboard con:
+- Total "te deben" y "debés" del mes actual
+- Avatares de las personas con deuda pendiente
+- Link a `/bills/shared` para el detalle
 
 ---
 
-### 21. Adaptación Web / Desktop
-- **Estado:** `[ ]` Pendiente — a diseñar
-- **Prioridad:** Alta
-- **Esfuerzo estimado:** A definir
-- **Impacto:** Experiencia decente para usuarios que abren desde la compu
-
-#### Descripción
-La UI está pensada para mobile (ancho ~390px). En desktop se estira y se ve raro. No hace falta un rediseño completo — alcanza con contener el layout y aprovechar el espacio de forma inteligente.
-
-#### Opciones a explorar
-- **Opción A (mínima):** centrar el contenido con `max-w-md mx-auto` — la app se ve como una "columna de celular" centrada en el browser. Simple, coherente, 0 rediseño.
-- **Opción B (sidebar):** en pantallas grandes, el bottom nav se convierte en sidebar lateral izquierdo + contenido a la derecha. Más trabajo pero más "app de escritorio".
-- **Opción C (híbrida):** columna centrada más ancha (`max-w-2xl`) con algunos componentes que aprovechan el ancho (ej: grillas de 3 columnas en el dashboard).
-
-#### Preguntas pendientes
-- [ ] ¿Cuánto tiempo pasan los usuarios en desktop vs mobile?
-- [ ] ¿Alcanza con la opción A para que no se vea feo, o vale la pena ir por B?
-> Ver sección **Banco de Ideas** al final del archivo.
-
----
-
-### 7. Quick-Add — Simplificación del formulario
-- **Estado:** `[x]` ✅ Completado (21 Mayo 2025)
+### 21. Notificaciones — Revisión y Mejora
+- **Estado:** `[ ]` Pendiente
 - **Prioridad:** Media
-- **Impacto:** Reduce fricción para agregar gastos
+- **Esfuerzo estimado:** 1 sesión
 
-#### Lo que se hizo
-- Campos "Monto en USD" y "Detalle" colapsados por defecto
-- Se revelan con links `+ agregar monto en USD` / `+ agregar detalle`
-- Si hay valor guardado en draft o en edición, se abren solos
-- Conclusión: el formulario actual es suficientemente bueno; duplicarlo sería confuso
+#### Descripción
+La infraestructura de notificaciones push está lista (FCM, service worker, cron). Falta revisar y ampliar los casos de uso:
+- [ ] Notificación cuando termina el mes con saldo compartido pendiente
+- [ ] Revisar notificaciones de cierre de TC (3/1/0 días) — ¿funcionan bien?
+- [ ] Revisar notificaciones de gastos recurrentes — ¿llegan?
+- [ ] Mejorar copy de las notificaciones
+
+---
+
+### 7b. Quick-Add — Simplificación del formulario
+- **Estado:** `[x]` ✅ Completado (21 Mayo 2025)
+
+Campos "Monto en USD" y "Detalle" colapsados por defecto, se revelan con links. El formulario actual es suficientemente bueno.
 
 ---
 
@@ -325,21 +139,8 @@ La UI está pensada para mobile (ancho ~390px). En desktop se estira y se ve rar
 - **Estado:** `[ ]` Pendiente
 - **Prioridad:** Media
 - **Esfuerzo estimado:** 1-2 días
-- **Impacto:** Social proof, viralidad
 
-#### Descripción
-Generar imagen compartible de un gasto para redes sociales. Útil para mostrar compras grandes o splits con amigos.
-
-#### Plan de implementación
-1. [ ] Diseñar template de imagen con branding Tortuguita
-2. [ ] Usar html2canvas o similar para generar imagen
-3. [ ] Botón "Compartir" en detalle del gasto
-4. [ ] Integrar Web Share API para compartir nativo
-
-#### Criterios de éxito
-- Puedo generar imagen de un gasto
-- La imagen tiene buen diseño y branding
-- Puedo compartir directamente a WhatsApp/Instagram
+Generar imagen compartible de un gasto (html2canvas o similar), botón "Compartir" en detalle, Web Share API para WhatsApp/Instagram.
 
 ---
 
@@ -348,60 +149,22 @@ Generar imagen compartible de un gasto para redes sociales. Útil para mostrar c
 - **Prioridad:** Media
 - **Esfuerzo estimado:** 1-2 semanas
 
-#### Descripción
-Wrappear la PWA con Capacitor para publicar en App Store y Play Store. Ganar visibilidad y acceso a APIs nativas.
-
-#### Plan de implementación
-1. [ ] Instalar Capacitor: `npm install @capacitor/core @capacitor/cli`
-2. [ ] Inicializar: `npx cap init`
-3. [ ] Agregar plataformas: `npx cap add ios && npx cap add android`
-4. [ ] Configurar splash screen y app icons
-5. [ ] Resolver problemas de deep linking
-6. [ ] Configurar push notifications (Firebase + APNs)
-7. [ ] Build y test en dispositivos reales
-8. [ ] Crear cuentas de developer ($99 Apple, $25 Google)
-9. [ ] Preparar screenshots y descripciones para stores
-10. [ ] Submit para review
-
-#### Criterios de éxito
-- App funciona en iOS y Android nativamente
-- Push notifications funcionan
-- Publicada en ambos stores
+Wrappear la PWA con Capacitor para publicar en App Store y Play Store.
 
 ---
 
-### 10. Notificaciones Push ⚡ ADELANTADO — desbloquea Gastos Recurrentes
+### 10. Notificaciones Push
 - **Estado:** `[x]` ✅ Completado (17 Mayo 2025)
-- **Prioridad:** Alta (adelantado para desbloquear ítem 4)
-- **Esfuerzo estimado:** 1 semana
 
-#### Descripción
-Notificar vencimientos de TC, recordatorios de gastos recurrentes, alertas de presupuesto.
-
-#### Plan de implementación
-1. [ ] Setup Firebase Cloud Messaging (FCM)
-2. [ ] Implementar service worker para web push
-3. [ ] Configurar Capacitor Push Notifications para nativo
-4. [ ] Crear preferencias de notificación en settings
-5. [ ] Cron job para enviar notificaciones de vencimiento TC
-6. [ ] **Notificación de recurrente:** "¿Te llegó X? El mes pasado fue $Y" con quick-action → desbloquea ítem 4
+FCM + service worker + bandeja de notificaciones en header. Notif: gasto compartido, resumen mensual, cierres de TC, gastos recurrentes.
 
 ---
 
 ### 11. Referral System
 - **Estado:** `[ ]` Pendiente
 - **Prioridad:** Baja
-- **Esfuerzo estimado:** 3-4 días
 
-#### Descripción
-Sistema de referidos para crecimiento orgánico. "Invitá a un amigo y ambos reciben 1 mes Pro gratis."
-
-#### Plan de implementación
-1. [ ] Modelo: `Referral { referrerId, referredId, status, reward }`
-2. [ ] Generar código de referido único por usuario
-3. [ ] Landing page para referidos
-4. [ ] Lógica de recompensas
-5. [ ] UI para compartir código
+Sistema de referidos para crecimiento orgánico.
 
 ---
 
@@ -410,97 +173,57 @@ Sistema de referidos para crecimiento orgánico. "Invitá a un amigo y ambos rec
 - **Prioridad:** Alta (para sustentabilidad)
 - **Esfuerzo estimado:** 2 semanas
 
-#### Descripción
-Plan pago con features premium: AI ilimitado, más spaces, analytics avanzados.
+Plan pago con features premium. Integración Stripe / MercadoPago. Decisión pendiente sobre cuál primero.
 
-#### Plan de implementación
-1. [ ] Definir features Free vs Pro
-2. [ ] Integrar Stripe / MercadoPago
-3. [ ] Modelo: `Subscription { userId, plan, status, expiresAt }`
-4. [ ] Paywall UI
-5. [ ] Webhooks para gestión de pagos
-6. [ ] Lógica de límites (ej: 50 AI queries/mes en Free)
+---
+
+### 22. Cafecito
+- **Estado:** `[ ]` Pendiente
+- **Prioridad:** Baja
+- **Esfuerzo estimado:** 15 minutos
+
+Agregar link de cafecito.app en la página de Configuración (`/settings`), al final. Botón discreto tipo `☕ Invitame un cafecito`.
 
 ---
 
 ## BAJA PRIORIDAD — Nice to Have
 
-> Features deseables pero no críticos. Implementar cuando haya tiempo.
-
 ### 13. Analytics Avanzados (Gráficos de Tendencia)
 - **Estado:** `[ ]` Pendiente
-- **Prioridad:** Media
 - **Esfuerzo estimado:** 1 semana
 
-#### Descripción
 Gráficos de tendencia, comparación mes a mes, proyecciones.
 
 ---
 
 ### 14. Exportación de Datos (CSV/Excel)
 - **Estado:** `[ ]` Pendiente
-- **Prioridad:** Baja
 - **Esfuerzo estimado:** 2-3 días
-
-#### Descripción
-Exportar gastos a CSV/Excel. Feature para power users y compliance.
 
 ---
 
 ### 15. Integraciones Bancarias
 - **Estado:** `[ ]` Pendiente
-- **Prioridad:** Baja (depende de APIs disponibles)
 - **Esfuerzo estimado:** Variable
 
-#### Descripción
 Conexión directa con bancos para importar transacciones automáticamente.
 
 ---
 
 ### 16. Widgets iOS/Android
 - **Estado:** `[ ]` Pendiente
-- **Prioridad:** Baja
 - **Esfuerzo estimado:** 1-2 semanas
-- **Impacto:** Engagement pasivo
 
-#### Descripción
-Widgets para home screen que muestren gasto del mes, presupuesto restante, o próximos vencimientos.
-
----
-
-### 17. Multi-moneda (USD/EUR)
-- **Estado:** `[ ]` Pendiente
-- **Prioridad:** Baja
-- **Esfuerzo estimado:** 1 semana
-- **Impacto:** Usuarios con gastos en dólares
-
-#### Descripción
-Soporte nativo para múltiples monedas, conversión automática, y reportes por moneda.
-
----
-
-### 18. ~~Registro de Pagos entre Miembros~~ → movido a Alta Prioridad (ítem 20)
-
----
-
-### 19. Modo Offline Mejorado
-- **Estado:** `[ ]` Pendiente
-- **Prioridad:** Baja
-- **Esfuerzo estimado:** 1 semana
-- **Impacto:** Uso sin conexión
-
-#### Descripción
-Permitir agregar gastos offline y sincronizar cuando vuelva la conexión.
+Widgets para home screen con gasto del mes o próximos vencimientos.
 
 ---
 
 ## Backlog — Mejoras Menores
 
 ### UI/UX
-- [ ] Arreglar modo oscuro — hardcoded colors (bg-white, text-[#...], etc.) en toda la app; necesita audit completo con dark: variants de Tailwind o CSS vars por tema
+- [ ] Dark mode: audit completo de colores hardcodeados (bg-white, text-[#...]) en vistas secundarias
 - [ ] Agrupar gastos por día en /bills
 - [ ] Skeleton screens consistentes
-- [ ] Empty states personalizados por contexto
 - [ ] Command palette global (Cmd+K)
 
 ### Tech Debt
@@ -513,92 +236,47 @@ Permitir agregar gastos offline y sincronizar cuando vuelva la conexión.
 
 ## Log de Sesiones
 
-### Sesión: 22 Mayo 2025 (parte 2) — en curso
+### Sesión: 23 Mayo 2026
 - **Trabajo realizado:**
-  - ✅ Gastos compartidos: fix $0, fix settle para dirección "te debe X", hero en tiempo real
-  - ✅ Chips adaptivos en shared-balance (1→full, 2→50/50, 3→33%, 4+→scroll horizontal)
+  - ✅ Fix bug: gastos compartidos no aparecían en `/bills/shared` por filtro de fecha con timezone local (UTC-3) — corregido a `Date.UTC()`
+  - ✅ Fix bug: grupos de balance desaparecían al saldar todo (netAmount=0) — ahora siempre visibles si hay bills
+  - ✅ Tiles de miembros: circular → cuadrado con bordes redondeados (`rounded-2xl`), grid uniforme con `gridTemplateColumns: repeat(N, 1fr)`
+  - ✅ Botones de saldar: tickbox en header del grupo (saldar todo), círculo visible en mobile y desktop, swipe sigue funcionando
+  - ✅ v2.1.1 pusheado a producción
+
+### Sesión: 22 Mayo 2026
+- **Trabajo realizado:**
+  - ✅ **Ítem 7 — Adaptación Desktop:** sidebar nav lg+, contenido centrado, header adaptivo, bottom nav oculto
+  - ✅ Avatares adaptativos en dashboard y shared-balance: chips (≤2), avatar-grid con iniciales (≥3)
+  - ✅ Dark mode: `AiInsightWidget` completamente controlado por JS (`useTheme` + inline styles)
+  - ✅ Fix `Decimal(10,2)` → `Decimal(14,2)` para montos grandes en ARS (ALTER TABLE directo en Neon)
+  - ✅ Detección de duplicados mejorada: comprobante exacto + proximidad de fecha + `sourceDescription` oculto
+  - ✅ **Ítem 8 — Shared Balance:** swipe bidireccional, saldar todo, swipe en header de grupo
+  - ✅ v2.1.0 pusheado a producción
+
+### Sesión: 22 Mayo 2026 (parte 1)
+- **Trabajo realizado:**
+  - ✅ Gastos compartidos: fix $0, fix settle por dirección, hero en tiempo real
+  - ✅ Chips adaptativos en shared-balance
   - ✅ Test data: "Viaje Bariloche 2026" con 6 miembros + 10 gastos compartidos
-  - ✅ Deploy v2.0.2 a producción (fix Vercel + Neon advisory lock)
-  - ✅ **Modo oscuro — Ronda 1 y 2 (en progreso):**
-    - Layout: bottom-nav, simple-header — dark variants completos
-    - globals.css — hero gradient utility classes (`.hero-gradient`, `.hero-gradient-green/pink/neutral`) con `.dark` variants
-    - Reemplazados todos los inline `style={{ background: "linear-gradient(#D8E2DC...)" }}` con clases CSS en: `home-dashboard.tsx`, `bills-view.tsx`, `tarjetas-wallet-view.tsx`, `shared-balance-view.tsx`, `cuotas-view.tsx`, `ai-insight-widget.tsx`
-    - Hero text colors dark: `text-[#6B5159]→dark:text-[#d4b8c0]`, `text-[#9D8189]→dark:text-[#c4a8b0]`, `text-[#4A3540]→dark:text-[#f0e0e8]` en todos los hero cards
-    - shared-balance: `useTheme()` + `tc` helper para colores dinámicos del hero
-- **Pendiente (modo oscuro):**
-  - `ai-insight-widget.tsx` — text colors dentro del widget
-  - `cuotas-view.tsx` — content area (cuota cards)
-  - Ronda 3: tarjetas content, settings, secondary views
-  - pwa-install-sheet, onboarding-slides, tour-invite-card (low priority)
-  - quick-bill-form billing feedback badges
+  - ✅ Deploy v2.0.2
 
 ### Sesión: 17 Mayo 2025
-- **Duración:** ~1 día completo
 - **Trabajo realizado:**
-  - ✅ Fix build errors Vercel (InsightData type, thisMonthTotal)
-  - ✅ Fix chatbot follow-ups (system prompt — siempre usar tools)
-  - ✅ Fix categorías vacías en /tarjetas/new
-  - ✅ /tarjetas: mes default inteligente (currentDueDate), badges de categoría, secciones colapsables
-  - ✅ Haptics restaurados en toda la app (nav, forms, dashboard, AI, bills, tarjetas)
-  - ✅ **Ítem 10: Notificaciones Push FCM** — infraestructura completa (firebase-admin/client, SW, hook, API, cron, settings toggle)
-  - ✅ Bandeja de notificaciones (bell header + dropdown tray, DB persistence, 7-day cleanup)
-  - ✅ Notif: gasto compartido (toggle en form), resumen mensual (cron 1ro de mes), cierres de TC (3/1/0 días)
-  - ✅ **Ítem 4: Gastos Recurrentes** — cron → push en vez de auto-crear, toggle en form, pantalla confirmación
-  - ✅ **Ítem 5: AI con contexto** — tool get_spending_trend, system prompt proactivo, personalidad
-  - ✅ PWA install prompt (iOS slides ilustrados + Android nativo, banner dashboard + settings)
-  - ✅ Loading skeletons en dashboard, bills, tarjetas, settings
-- **Próxima sesión:** Media prioridad — Presupuestos por categoría o Quick-Add desde dashboard
+  - ✅ Fix build errors Vercel
+  - ✅ Fix chatbot follow-ups
+  - ✅ **Ítem 10: Notificaciones Push FCM** — infraestructura completa
+  - ✅ Bandeja de notificaciones (bell header + dropdown, DB, cleanup)
+  - ✅ **Ítem 4: Gastos Recurrentes** — cron → push → confirmación
+  - ✅ **Ítem 5: AI con contexto** — tool get_spending_trend, personalidad
+  - ✅ PWA install prompt (iOS + Android)
+  - ✅ Loading skeletons
 
-### Sesión: 16 Mayo 2025 (parte 2)
-- **Duración:** ~1.5 horas
-- **Trabajo realizado:**
-  - ✅ Widget de tarjetas en dashboard (stack Apple Wallet, top 3 por monto)
-  - Colores pastelizados (45% blend con blanco) en dashboard y /tarjetas
-  - Dashboard widget visualmente idéntico a las cards de /tarjetas
-  - Logos de banco y red consistentes en ambas vistas
-  - Iteración de diseño: chips horizontales → stack Apple Wallet limitado a 3
-- **Pendiente:** hacer push a prod cuando esté conforme
-
-### Sesión: 16 Mayo 2025 (parte 1)
-- **Duración:** ~2 horas
-- **Trabajo realizado:**
-  - ✅ Implementado **3. Vista Wallet de Tarjetas** (`/tarjetas`)
-  - Rediseño completo de /cuotas → /tarjetas estilo Apple Wallet
-  - Logos de bancos y redes reales (PNG/SVG) — 15 bancos, 4 redes
-  - Campo `bank` en schema Prisma para identificar banco de cada tarjeta
-  - Badges de red con imágenes reales (amex, cabal) en lista de tarjetas
-  - Ajustes estéticos: tamaño uniforme de logos, alineación vertical de nombres
-  - Deploy a producción
-- **Próxima sesión:** widget dashboard + ajustes post-deploy
-
-### Sesión: 15 Mayo 2025 (parte 3)
-- **Duración:** ~1 hora
-- **Trabajo realizado:**
-  - ✅ Implementado **2. Filtros en /bills** con ActionBar
-  - ActionBar con gradiente del hero (Buscar | Filtros)
-  - Búsqueda se expande inline con updates en tiempo real
-  - FilterSheet con multi-select agrupado por espacio
-  - Discusión sobre secciones colapsables → decisión: NO (evaluar después de uso)
-- **Archivos modificados:** `app/(dashboard)/bills/page.tsx`, `components/bills/bills-view.tsx`
-- **Próxima sesión:** **3. Resumen de Cuotas en Dashboard** o ajustes según feedback
-
-### Sesión: 15 Mayo 2025 (parte 2)
-- **Duración:** ~30 minutos
-- **Trabajo realizado:**
-  - ✅ Implementado **1.1 Búsqueda Global** en /bills
-  - Creado componente reutilizable `SearchInput` con debounce
-  - Empty state contextual (sin resultados vs sin gastos)
-- **Archivos creados:** `components/ui/search-input.tsx`
-- **Archivos modificados:** `app/(dashboard)/bills/page.tsx`, `components/bills/bills-view.tsx`
-- **Próxima sesión:** **1.2 Filtros en /bills**
-
-### Sesión: 15 Mayo 2025 (parte 1)
-- **Duración:** ~2 horas
-- **Trabajo realizado:**
-  - Análisis completo de producto (UX, UI, mercado, estrategia)
-  - Generado PDF con análisis (`analisis-producto-tortuguita.pdf`)
-  - Creado este archivo de roadmap
-- **Próxima tarea:** Búsqueda Global
+### Sesiones: 15–16 Mayo 2025
+- ✅ Ítem 1: Búsqueda Global
+- ✅ Ítem 2: Filtros en /bills
+- ✅ Ítem 3: Vista Wallet /tarjetas (Apple Wallet style)
+- ✅ Widget tarjetas en dashboard
 
 ---
 
@@ -610,36 +288,41 @@ Permitir agregar gastos offline y sincronizar cuando vuelva la conexión.
 - UI text en español
 - Montos con `Intl.NumberFormat("es-AR")`
 - Fechas con `date-fns` locale español
+- **No pushear a prod sin instrucción explícita del usuario**
 
 ### Archivos clave
 - `CLAUDE.md` — referencia rápida del proyecto
 - `ROADMAP.md` — este archivo
-- `components/dashboard/home-dashboard.tsx` — diseño aprobado, no modificar sin permiso
+- `components/dashboard/home-dashboard.tsx` — diseño aprobado, **NO modificar sin permiso explícito**
+
+### Stack
+- Next.js 16 App Router · TypeScript · Tailwind · Prisma (PostgreSQL/Neon) · NextAuth v5 · Anthropic SDK
 
 ### APIs externas
 - **Anthropic:** Claude 3.5 Sonnet para AI
 - **Resend:** Emails transaccionales
+- **Firebase:** Push notifications (FCM)
 - **Vercel:** Hosting + Cron Jobs
+- **Neon:** PostgreSQL serverless
 
----
-
-## Decisiones Pendientes
-
-1. ~~**Modelo de recurrencias:** ¿Campo en Bill o modelo separado?~~ → Modelo separado `RecurringBill`, implementado
-2. ~~**Búsqueda:** ¿Solo en /bills o global con Cmd+K?~~ → Implementado en /bills, Cmd+K queda para futuro
-3. **Monetización:** ¿Stripe o MercadoPago primero?
-4. **App nativa:** Capacitor al final, cuando esté todo completo y haya validación de usuarios
-
----
-
-*Actualizar este archivo al final de cada sesión de trabajo.*
+### Decisiones tomadas
+- Modelo de recurrencias → `RecurringBill` separado ✅
+- Búsqueda → en /bills con URL params, Cmd+K para futuro
+- Desktop → sidebar lg+ (Opción B) ✅
+- Shared balance → balance neto mensual con drill-down ✅
+- Monetización → Stripe vs MercadoPago pendiente de decidir
+- App nativa → Capacitor al final, cuando haya validación de usuarios
+- Ads (AdMob/AdSense) → **NO**, no es coherente con una app de finanzas personales
 
 ---
 
 ## Banco de Ideas
 
-> Features descartados por ahora pero que podrían tener sentido en el futuro con más contexto o usuarios.
-
 ### Presupuestos por Categoría
-- **Por qué se descartó:** En contexto de inflación argentina, los límites mensuales se desactualizan rápido. Requiere configuración activa que la mayoría no hace. La AI con `get_spending_trend` cubre el caso de uso principal (comparar vs mes anterior) sin fricción.
-- **Cuándo rescatar:** Si hay demanda explícita de usuarios, o si se implementa ajuste automático por inflación.
+En contexto de inflación argentina los límites se desactualizan rápido. La AI con `get_spending_trend` cubre el caso principal sin fricción. Rescatar si hay demanda explícita.
+
+### Multi-moneda (USD/EUR)
+Soporte nativo para múltiples monedas, conversión automática, reportes por moneda. Baja prioridad hasta que haya más usuarios.
+
+### Modo Offline Mejorado
+Agregar gastos offline y sincronizar al volver la conexión. Baja prioridad.
