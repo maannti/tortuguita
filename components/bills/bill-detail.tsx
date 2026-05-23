@@ -13,7 +13,6 @@ import {
 } from "@/components/ui/dialog"
 import { CategoryBadge } from "@/components/categories/category-badge"
 import { CardIcon, BANKS, isNetworkId, NetworkId } from "@/components/ui/card-network"
-import { haptic } from "@/lib/haptics"
 
 interface BillDetailProps {
   bill: {
@@ -61,7 +60,7 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
 }
 
 export function BillDetail({ bill }: BillDetailProps) {
-  const { push, replace } = useRouter()
+  const { push } = useRouter()
   const accentColor = (bill.category?.color || bill.billType.color) ?? "#9D8189"
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -91,23 +90,22 @@ export function BillDetail({ bill }: BillDetailProps) {
       <div className="flex items-center justify-between px-4 py-3 border-b sticky top-0 bg-background/95 backdrop-blur-sm z-10">
         <button
           type="button"
-          onClick={() => { haptic("selection"); push("/bills") }}
+          onClick={() => push("/bills")}
           className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           <ChevronLeft className="size-4" />
           Gastos
         </button>
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => { haptic("selection"); replace(`/bills/${bill.id}/edit`) }}
+          <Link
+            href={`/bills/${bill.id}/edit`}
             className="size-9 flex items-center justify-center rounded-2xl bg-muted/80 text-muted-foreground hover:text-foreground active:scale-95 transition-all"
           >
             <Pencil className="size-4" />
-          </button>
+          </Link>
           <button
             type="button"
-            onClick={() => { haptic("light"); setDeleteOpen(true) }}
+            onClick={() => setDeleteOpen(true)}
             className="size-9 flex items-center justify-center rounded-2xl bg-muted/80 text-muted-foreground hover:text-destructive active:scale-95 transition-all"
           >
             <Trash2 className="size-4" />
@@ -258,7 +256,7 @@ export function BillDetail({ bill }: BillDetailProps) {
           <div className="flex flex-col gap-2.5 pt-2">
             <button
               type="button"
-              onClick={() => { haptic("heavy"); handleDelete() }}
+              onClick={handleDelete}
               disabled={isDeleting}
               className="w-full rounded-full bg-destructive text-white py-3.5 text-sm font-semibold disabled:opacity-50 active:scale-[0.97] transition-all"
             >
@@ -266,7 +264,7 @@ export function BillDetail({ bill }: BillDetailProps) {
             </button>
             <button
               type="button"
-              onClick={() => { haptic("light"); setDeleteOpen(false); setDeleteError(null) }}
+              onClick={() => { setDeleteOpen(false); setDeleteError(null) }}
               disabled={isDeleting}
               className="w-full rounded-full bg-muted text-muted-foreground py-3.5 text-sm font-medium disabled:opacity-50 active:scale-[0.97] transition-all"
             >
