@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef, useCallback } from "react"
+import { useTheme } from "next-themes"
 import { ChevronLeft, ChevronRight, Check } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { haptic } from "@/lib/haptics"
@@ -92,38 +93,55 @@ type HeroVariant = "green" | "pink" | "neutral"
 
 const HERO_THEME = {
   green: {
-    gradient: "linear-gradient(135deg, #C8EBD8 0%, #B8E0D0 45%, #A8D5C2 100%)",
     label:    "#3a6b58",
     sub:      "#3a6b58",
     monthBg:  "rgba(255,255,255,0.35)",
     monthTxt: "#2d5245",
     main:     "#1a3d30",
     progress: "#2d7a5a",
+    darkLabel:    "#FCB9B2",
+    darkSub:      "#FCB9B2",
+    darkMonthBg:  "rgba(255,255,255,0.15)",
+    darkMonthTxt: "#FED0BB",
+    darkMain:     "#FED0BB",
+    darkProgress: "#B23A48",
   },
   pink: {
-    gradient: "linear-gradient(135deg, #FFCAD4 0%, #F4ACB7 45%, #e89aa8 100%)",
     label:    "#7a3040",
     sub:      "#7a3040",
     monthBg:  "rgba(255,255,255,0.35)",
     monthTxt: "#5a2030",
     main:     "#5a1828",
     progress: "#9D3050",
+    darkLabel:    "#FCB9B2",
+    darkSub:      "#FCB9B2",
+    darkMonthBg:  "rgba(255,255,255,0.15)",
+    darkMonthTxt: "#FED0BB",
+    darkMain:     "#FED0BB",
+    darkProgress: "#B23A48",
   },
   neutral: {
-    gradient: "linear-gradient(135deg, #E8E0DC 0%, #D8D0CC 100%)",
     label:    "#4a3540",
     sub:      "#6b5560",
     monthBg:  "rgba(255,255,255,0.3)",
     monthTxt: "#4a3540",
     main:     "#2d1a20",
     progress: "#7a5560",
+    darkLabel:    "#FCB9B2",
+    darkSub:      "#FCB9B2",
+    darkMonthBg:  "rgba(255,255,255,0.12)",
+    darkMonthTxt: "#FED0BB",
+    darkMain:     "#FED0BB",
+    darkProgress: "#8C2F39",
   },
-} as const
+}
 
 // ── Main component ────────────────────────────────────────────────────────
 
 export function SharedBalanceView({ organizations, currentUserId }: Props) {
   const now = new Date()
+  const { resolvedTheme } = useTheme()
+  const isDark = resolvedTheme === "dark"
 
   const [selectedOrgId, setSelectedOrgId] = useState(
     organizations.find((o) => !o.isPersonal)?.id ?? organizations[0]?.id ?? ""
@@ -235,6 +253,15 @@ export function SharedBalanceView({ organizations, currentUserId }: Props) {
     : "neutral"
 
   const theme = HERO_THEME[heroVariant]
+  // Pick light vs dark hero colors
+  const tc = {
+    label:    isDark ? theme.darkLabel    : theme.label,
+    sub:      isDark ? theme.darkSub      : theme.sub,
+    monthBg:  isDark ? theme.darkMonthBg  : theme.monthBg,
+    monthTxt: isDark ? theme.darkMonthTxt : theme.monthTxt,
+    main:     isDark ? theme.darkMain     : theme.main,
+    progress: isDark ? theme.darkProgress : theme.progress,
+  }
   const monthLabel = format(parse(month, "yyyy-MM", new Date()), "MMMM yyyy", { locale: es })
   const progressPct =
     data && data.totalCount > 0
@@ -250,7 +277,7 @@ export function SharedBalanceView({ organizations, currentUserId }: Props) {
   const otherMembers = (data?.members ?? []).filter((m) => m.id !== currentUserId)
 
   return (
-    <div className="min-h-full bg-[#f0ece8] pb-24">
+    <div className="min-h-full bg-background pb-24">
       {/* Space selector */}
       <div className="flex gap-2 px-4 pt-4 pb-1 overflow-x-auto">
         {organizations.map((org) => (
@@ -260,8 +287,8 @@ export function SharedBalanceView({ organizations, currentUserId }: Props) {
             className={cn(
               "flex-shrink-0 px-4 py-1.5 rounded-full text-[12px] font-semibold border-none transition-colors",
               selectedOrgId === org.id
-                ? "bg-[#4A3540] text-white"
-                : "bg-[#ede9e7] text-[#9D8189]"
+                ? "bg-foreground text-background"
+                : "bg-muted text-muted-foreground"
             )}
           >
             {org.name}
@@ -271,8 +298,7 @@ export function SharedBalanceView({ organizations, currentUserId }: Props) {
 
       {/* ── Hero card ── */}
       <div
-        className="mx-4 mt-3 rounded-3xl overflow-hidden p-5 relative"
-        style={{ background: theme.gradient }}
+        className={cn("mx-4 mt-3 rounded-3xl overflow-hidden p-5 relative", `hero-gradient-${heroVariant}`)}
       >
         {/* decorative orbs */}
         <div
@@ -288,7 +314,7 @@ export function SharedBalanceView({ organizations, currentUserId }: Props) {
         <div className="flex items-center justify-between mb-4 relative">
           <span
             className="text-[10px] font-bold uppercase tracking-[0.08em]"
-            style={{ color: theme.label }}
+            style={{ color: tc.label }}
           >
             Gastos compartidos
           </span>
@@ -296,20 +322,20 @@ export function SharedBalanceView({ organizations, currentUserId }: Props) {
             <button
               onClick={prevMonth}
               className="p-1 opacity-60 hover:opacity-100"
-              style={{ color: theme.sub }}
+              style={{ color: tc.sub }}
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
             <span
               className="text-[13px] font-semibold rounded-full px-2.5 py-1"
-              style={{ color: theme.monthTxt, background: theme.monthBg }}
+              style={{ color: tc.monthTxt, background: tc.monthBg }}
             >
               {monthLabel}
             </span>
             <button
               onClick={nextMonth}
               className="p-1 opacity-60 hover:opacity-100"
-              style={{ color: theme.sub }}
+              style={{ color: tc.sub }}
             >
               <ChevronRight className="w-4 h-4" />
             </button>
@@ -320,34 +346,34 @@ export function SharedBalanceView({ organizations, currentUserId }: Props) {
         <div className="flex gap-3 mb-4 relative">
           <div
             className="flex-1 rounded-2xl px-3 py-2.5"
-            style={{ background: "rgba(255,255,255,0.45)" }}
+            style={{ background: isDark ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.45)" }}
           >
             <div
               className="text-[10px] font-semibold uppercase tracking-[0.06em] mb-0.5"
-              style={{ color: theme.sub }}
+              style={{ color: tc.sub }}
             >
               Te deben
             </div>
             <div
               className="text-[20px] font-light leading-none"
-              style={{ fontFamily: "var(--font-fraunces, serif)", color: theme.sub }}
+              style={{ fontFamily: "var(--font-fraunces, serif)", color: tc.sub }}
             >
               {formatARS(data?.totalOwedToMe ?? 0)}
             </div>
           </div>
           <div
             className="flex-1 rounded-2xl px-3 py-2.5"
-            style={{ background: "rgba(255,255,255,0.45)" }}
+            style={{ background: isDark ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.45)" }}
           >
             <div
               className="text-[10px] font-semibold uppercase tracking-[0.06em] mb-0.5"
-              style={{ color: theme.sub }}
+              style={{ color: tc.sub }}
             >
               Debés
             </div>
             <div
               className="text-[20px] font-light leading-none"
-              style={{ fontFamily: "var(--font-fraunces, serif)", color: theme.main }}
+              style={{ fontFamily: "var(--font-fraunces, serif)", color: tc.main }}
             >
               {formatARS(data?.totalIOwe ?? 0)}
             </div>
@@ -358,7 +384,7 @@ export function SharedBalanceView({ organizations, currentUserId }: Props) {
         <div className="relative">
           <div
             className="flex justify-between text-[11px] font-medium mb-1.5"
-            style={{ color: theme.sub }}
+            style={{ color: tc.sub }}
           >
             <span>Saldado este mes</span>
             <span>
@@ -367,11 +393,11 @@ export function SharedBalanceView({ organizations, currentUserId }: Props) {
           </div>
           <div
             className="h-1.5 rounded-full overflow-hidden"
-            style={{ background: "rgba(255,255,255,0.4)" }}
+            style={{ background: isDark ? "rgba(255,255,255,0.15)" : "rgba(255,255,255,0.4)" }}
           >
             <div
               className="h-full rounded-full transition-all duration-500"
-              style={{ width: `${progressPct}%`, background: theme.progress }}
+              style={{ width: `${progressPct}%`, background: tc.progress }}
             />
           </div>
         </div>
@@ -396,15 +422,15 @@ export function SharedBalanceView({ organizations, currentUserId }: Props) {
                 className={cn(
                   "rounded-xl px-3 py-2 border",
                   owes && owes.netAmount > 0
-                    ? "border-[#F4ACB7] bg-[#fff5f7]"
+                    ? "border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/30"
                     : owed && owed.netAmount > 0
-                    ? "border-[#a8d5c2] bg-[#f4fbf8]"
-                    : "border-[#ede9e7] bg-white"
+                    ? "border-green-300 dark:border-green-800 bg-green-50 dark:bg-green-950/30"
+                    : "border-border bg-card"
                 )}
                 style={chipStyle}
               >
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-[12px] font-semibold text-[#4a3540] truncate">
+                  <span className="text-[12px] font-semibold text-foreground truncate">
                     {member.name.split(" ")[0]}
                   </span>
                   {owes && owes.netAmount > 0 ? (
@@ -412,19 +438,19 @@ export function SharedBalanceView({ organizations, currentUserId }: Props) {
                       <div className="text-[13px] font-semibold text-[#9D3050]" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
                         −{formatARS(owes.netAmount)}
                       </div>
-                      <div className="text-[9px] text-[#9D8189]">le debés</div>
+                      <div className="text-[9px] text-muted-foreground">le debés</div>
                     </div>
                   ) : owed && owed.netAmount > 0 ? (
                     <div className="text-right flex-shrink-0">
                       <div className="text-[13px] font-semibold text-[#2d7a5a]" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
                         +{formatARS(owed.netAmount)}
                       </div>
-                      <div className="text-[9px] text-[#9D8189]">te debe</div>
+                      <div className="text-[9px] text-muted-foreground">te debe</div>
                     </div>
                   ) : (
                     <div className="text-right flex-shrink-0">
-                      <div className="text-[13px] font-medium text-[#9D8189]" style={{ fontFamily: "var(--font-fraunces, serif)" }}>$0</div>
-                      <div className="text-[9px] text-[#9D8189]">al día ✓</div>
+                      <div className="text-[13px] font-medium text-muted-foreground" style={{ fontFamily: "var(--font-fraunces, serif)" }}>$0</div>
+                      <div className="text-[9px] text-muted-foreground">al día ✓</div>
                     </div>
                   )}
                 </div>
@@ -437,18 +463,18 @@ export function SharedBalanceView({ organizations, currentUserId }: Props) {
       {/* ── Loading ── */}
       {loading && !data && (
         <div className="flex items-center justify-center py-12">
-          <div className="w-6 h-6 border-2 border-[#9D8189] border-t-transparent rounded-full animate-spin" />
+          <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
         </div>
       )}
 
       {/* ── Empty state ── */}
       {!loading && data && data.iOwe.length === 0 && data.owedToMe.length === 0 && (
-        <div className="mx-4 mt-4 rounded-2xl bg-white border border-[#ede9e7] p-8 text-center">
+        <div className="mx-4 mt-4 rounded-2xl bg-card border p-8 text-center">
           <div className="text-3xl mb-3">🎉</div>
-          <div className="text-[15px] font-semibold text-[#1a1a1a] mb-1">
+          <div className="text-[15px] font-semibold text-foreground mb-1">
             Todo saldado
           </div>
-          <div className="text-[13px] text-[#9D8189]">
+          <div className="text-[13px] text-muted-foreground">
             No hay deudas pendientes este mes en este espacio
           </div>
         </div>
@@ -498,12 +524,12 @@ function BillGroup({ person, direction, onSettle, settlingIds }: BillGroupProps)
 
   return (
     <>
-      <div className="px-4 pt-4 pb-2 text-[11px] font-bold uppercase tracking-[0.08em] text-[#9D8189]">
+      <div className="px-4 pt-4 pb-2 text-[11px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
         {sectionLabel}
       </div>
-      <div className="mx-4 mb-3 bg-white rounded-[18px] overflow-hidden border border-[#ede9e7]">
+      <div className="mx-4 mb-3 bg-card rounded-[18px] overflow-hidden border">
         {/* Header */}
-        <div className="flex items-center justify-between px-3.5 py-3 bg-[#faf9f8] border-b border-[#ede9e7]">
+        <div className="flex items-center justify-between px-3.5 py-3 bg-muted/40 border-b border-border">
           <div className="flex items-center gap-2">
             <div
               className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold text-white flex-shrink-0"
@@ -512,8 +538,8 @@ function BillGroup({ person, direction, onSettle, settlingIds }: BillGroupProps)
               {initials}
             </div>
             <div>
-              <div className="text-[13px] font-semibold text-[#1a1a1a]">{firstName}</div>
-              <div className="text-[11px] text-[#9D8189]">
+              <div className="text-[13px] font-semibold text-foreground">{firstName}</div>
+              <div className="text-[11px] text-muted-foreground">
                 {person.bills.length} {person.bills.length === 1 ? "gasto" : "gastos"} · {settledCount} saldados
               </div>
             </div>
@@ -595,7 +621,7 @@ function SwipeableBillRow({ bill, canSettle, onSettle, settling }: SwipeableBill
   const swipeProgress = Math.min(deltaX / SWIPE_THRESHOLD, 1)
 
   return (
-    <div className="relative overflow-hidden border-b border-[#f5f2f0] last:border-b-0">
+    <div className="relative overflow-hidden border-b border-border last:border-b-0">
       {/* Green settle layer (revealed on swipe) */}
       {canSettle && (
         <div
@@ -613,11 +639,13 @@ function SwipeableBillRow({ bill, canSettle, onSettle, settling }: SwipeableBill
 
       {/* Row content */}
       <div
-        className="flex items-center gap-2.5 px-3.5 py-3 relative z-10"
+        className={cn(
+          "flex items-center gap-2.5 px-3.5 py-3 relative z-10",
+          localSettled ? "bg-green-50 dark:bg-green-950/20" : "bg-card"
+        )}
         style={{
           transform: `translateX(${deltaX}px)`,
           transition: deltaX === 0 ? "transform 0.25s ease-out" : "none",
-          background: localSettled ? "#f4fbf8" : "white",
         }}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
@@ -630,13 +658,13 @@ function SwipeableBillRow({ bill, canSettle, onSettle, settling }: SwipeableBill
         <div className="flex-1 min-w-0">
           <div
             className={cn(
-              "text-[13px] font-medium text-[#1a1a1a] truncate",
+              "text-[13px] font-medium text-foreground truncate",
               localSettled && "line-through opacity-40"
             )}
           >
             {bill.label}
           </div>
-          <div className="text-[11px] text-[#9D8189] mt-0.5">
+          <div className="text-[11px] text-muted-foreground mt-0.5">
             {dateStr} · {bill.percentage}% · {bill.payerName.split(" ")[0]} pagó
           </div>
         </div>
@@ -659,11 +687,11 @@ function SwipeableBillRow({ bill, canSettle, onSettle, settling }: SwipeableBill
               "w-7 h-7 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all active:scale-90",
               localSettled
                 ? "bg-[#2d7a5a] border-[#2d7a5a] text-white"
-                : "border-[#d0cac8] bg-white"
+                : "border-border bg-card"
             )}
           >
             {settling ? (
-              <div className="w-3 h-3 border border-[#9D8189] border-t-transparent rounded-full animate-spin" />
+              <div className="w-3 h-3 border border-primary border-t-transparent rounded-full animate-spin" />
             ) : localSettled ? (
               <Check className="w-3.5 h-3.5" />
             ) : null}
