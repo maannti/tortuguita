@@ -61,13 +61,7 @@ export function SimpleHeader() {
   return (
     <>
     <header
-      className="sticky top-0 z-30 px-4"
-      style={{
-        background: "rgba(253,250,249,0.85)",
-        backdropFilter: "blur(20px)",
-        WebkitBackdropFilter: "blur(20px)",
-        borderBottom: "1px solid rgba(255,255,255,0.65)",
-      }}
+      className="sticky top-0 z-30 px-4 backdrop-blur-xl border-b border-white/65 dark:border-white/10 bg-[rgba(253,250,249,0.85)] dark:bg-card/85"
     >
       <div className="flex h-14 items-center justify-between">
         <Link href="/dashboard">
@@ -133,14 +127,7 @@ export function SimpleHeader() {
             {/* Dropdown */}
             {open && (
               <div
-                className="absolute right-0 top-[calc(100%+8px)] min-w-[210px] rounded-2xl p-1.5 z-50"
-                style={{
-                  background: "rgba(255,255,255,0.97)",
-                  backdropFilter: "blur(20px)",
-                  WebkitBackdropFilter: "blur(20px)",
-                  border: "1px solid rgba(255,255,255,0.8)",
-                  boxShadow: "0 8px 32px rgba(157,129,137,0.18), 0 2px 8px rgba(157,129,137,0.10)",
-                }}
+                className="absolute right-0 top-[calc(100%+8px)] min-w-[210px] rounded-2xl p-1.5 z-50 backdrop-blur-xl border border-white/80 dark:border-white/10 bg-white/97 dark:bg-card shadow-[0_8px_32px_rgba(157,129,137,0.18),0_2px_8px_rgba(157,129,137,0.10)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)]"
               >
                 <p className="text-[10px] font-semibold uppercase tracking-wider px-3 pt-2 pb-1.5" style={{ color: `${MAUVE}80` }}>
                   Espacios

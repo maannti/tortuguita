@@ -513,6 +513,25 @@ Permitir agregar gastos offline y sincronizar cuando vuelva la conexión.
 
 ## Log de Sesiones
 
+### Sesión: 22 Mayo 2025 (parte 2) — en curso
+- **Trabajo realizado:**
+  - ✅ Gastos compartidos: fix $0, fix settle para dirección "te debe X", hero en tiempo real
+  - ✅ Chips adaptivos en shared-balance (1→full, 2→50/50, 3→33%, 4+→scroll horizontal)
+  - ✅ Test data: "Viaje Bariloche 2026" con 6 miembros + 10 gastos compartidos
+  - ✅ Deploy v2.0.2 a producción (fix Vercel + Neon advisory lock)
+  - ✅ **Modo oscuro — Ronda 1 y 2 (en progreso):**
+    - Layout: bottom-nav, simple-header — dark variants completos
+    - globals.css — hero gradient utility classes (`.hero-gradient`, `.hero-gradient-green/pink/neutral`) con `.dark` variants
+    - Reemplazados todos los inline `style={{ background: "linear-gradient(#D8E2DC...)" }}` con clases CSS en: `home-dashboard.tsx`, `bills-view.tsx`, `tarjetas-wallet-view.tsx`, `shared-balance-view.tsx`, `cuotas-view.tsx`, `ai-insight-widget.tsx`
+    - Hero text colors dark: `text-[#6B5159]→dark:text-[#d4b8c0]`, `text-[#9D8189]→dark:text-[#c4a8b0]`, `text-[#4A3540]→dark:text-[#f0e0e8]` en todos los hero cards
+    - shared-balance: `useTheme()` + `tc` helper para colores dinámicos del hero
+- **Pendiente (modo oscuro):**
+  - `ai-insight-widget.tsx` — text colors dentro del widget
+  - `cuotas-view.tsx` — content area (cuota cards)
+  - Ronda 3: tarjetas content, settings, secondary views
+  - pwa-install-sheet, onboarding-slides, tour-invite-card (low priority)
+  - quick-bill-form billing feedback badges
+
 ### Sesión: 17 Mayo 2025
 - **Duración:** ~1 día completo
 - **Trabajo realizado:**
