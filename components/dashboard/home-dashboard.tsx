@@ -265,17 +265,20 @@ export function HomeDashboard({ month, monthKey, availableMonths, spaces, curren
                 ))}
               </div>
             ) : members.length > 2 ? (
-              /* 3+ members — avatar style, wraps to fit */
-              <div className="flex flex-wrap justify-center gap-x-2 gap-y-2.5">
+              /* 3+ members — rounded-square tiles, fill width evenly */
+              <div
+                className="grid gap-x-1 gap-y-2"
+                style={{ gridTemplateColumns: `repeat(${Math.min(members.length, 5)}, 1fr)` }}
+              >
                 {members.map((member) => {
                   const parts = member.name.trim().split(" ")
                   const initials = parts.length >= 2
                     ? (parts[0][0] + parts[1][0]).toUpperCase()
                     : parts[0].slice(0, 2).toUpperCase()
                   return (
-                    <div key={member.id} className="flex flex-col items-center gap-1 w-[60px]">
+                    <div key={member.id} className="flex flex-col items-center gap-1">
                       <div
-                        className="size-10 rounded-full flex items-center justify-center text-xs font-semibold backdrop-blur-sm flex-shrink-0"
+                        className="size-11 rounded-2xl flex items-center justify-center text-xs font-semibold backdrop-blur-sm"
                         style={{ background: "rgba(255,255,255,0.35)", color: isDark ? "#FED0BB" : "#4A3540" }}
                       >
                         {initials}
@@ -284,7 +287,7 @@ export function HomeDashboard({ month, monthKey, availableMonths, spaces, curren
                         style={{ color: isDark ? "#FCB9B2" : "#9D8189" }}>
                         {parts[0]}
                       </p>
-                      <p className="text-[11px] font-medium text-center leading-tight"
+                      <p className="text-[11px] font-medium text-center leading-tight w-full truncate"
                         style={{ fontFamily: "var(--font-fraunces, serif)", color: isDark ? "#FED0BB" : "#4A3540" }}>
                         {formatARS(member.expenses)}
                       </p>
