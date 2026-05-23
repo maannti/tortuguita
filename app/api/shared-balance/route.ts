@@ -26,13 +26,13 @@ export async function GET(req: NextRequest) {
     include: { user: { select: { id: true, name: true, email: true } } },
   })
 
-  // Build date range filter
+  // Build date range filter (UTC-based so bills stored at midnight UTC are included)
   let dateFilter: { gte: Date; lt: Date } | undefined
   if (month) {
     const [y, m] = month.split("-").map(Number)
     dateFilter = {
-      gte: new Date(y, m - 1, 1),
-      lt: new Date(y, m, 1),
+      gte: new Date(Date.UTC(y, m - 1, 1)),
+      lt: new Date(Date.UTC(y, m, 1)),
     }
   }
 
