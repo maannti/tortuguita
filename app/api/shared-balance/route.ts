@@ -135,21 +135,25 @@ export async function GET(req: NextRequest) {
 
     const theyOweMe = debtMap[member.id]?.[currentUserId]?.amount ?? 0
     const iOweThem = debtMap[currentUserId]?.[member.id]?.amount ?? 0
+    const theyOweMeBills = debtMap[member.id]?.[currentUserId]?.bills ?? []
+    const iOweThem_bills = debtMap[currentUserId]?.[member.id]?.bills ?? []
 
-    if (theyOweMe > 0) {
+    // Always include groups that have bills together (even if all settled → netAmount=0)
+    // so the user can see history and undo settlements
+    if (theyOweMeBills.length > 0) {
       owedToMe[member.id] = {
         memberId: member.id,
         memberName: member.name,
         netAmount: theyOweMe,
-        bills: debtMap[member.id]?.[currentUserId]?.bills ?? [],
+        bills: theyOweMeBills,
       }
     }
-    if (iOweThem > 0) {
+    if (iOweThem_bills.length > 0) {
       iOwe[member.id] = {
         memberId: member.id,
         memberName: member.name,
         netAmount: iOweThem,
-        bills: debtMap[currentUserId]?.[member.id]?.bills ?? [],
+        bills: iOweThem_bills,
       }
     }
   }
