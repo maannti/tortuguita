@@ -20,6 +20,7 @@ const transactionSchema = z.object({
   organizationId: z.string().min(1), // per-transaction: derived from chosen category's org
   userId: z.string().min(1),
   comprobante: z.string().nullable().optional(), // banco voucher/ID for deduplication
+  descripcionRaw: z.string().nullable().optional(), // raw bank description for future duplicate detection
 })
 
 const importSchema = z.object({
@@ -144,6 +145,7 @@ export async function POST(request: NextRequest) {
                 currentInstallment: i,
                 installmentGroupId,
                 externalRef: externalRef ?? undefined,
+                sourceDescription: tx.descripcionRaw ?? undefined,
                 assignments: {
                   create: [{ userId: tx.userId, percentage: 100 }],
                 },
@@ -165,6 +167,7 @@ export async function POST(request: NextRequest) {
               organizationId: tx.organizationId,
               userId: tx.userId,
               externalRef: externalRef ?? undefined,
+              sourceDescription: tx.descripcionRaw ?? undefined,
               assignments: {
                 create: [{ userId: tx.userId, percentage: 100 }],
               },

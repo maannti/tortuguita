@@ -177,6 +177,7 @@ model Bill {
   currentInstallment  Int?         // e.g., 1, 2, 3...
   installmentGroupId  String?      // shared ID to group related installments
   externalRef         String?      // bank voucher/comprobante ID for deduplication on re-import
+  sourceDescription   String?      // raw bank description (hidden from user, used for duplicate detection)
   isPaid              Boolean      @default(false)
   recurringBillId     String?      // trazabilidad: qué plantilla generó este gasto
   createdAt           DateTime     @default(now())
