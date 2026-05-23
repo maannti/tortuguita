@@ -1,5 +1,6 @@
 "use client"
-import { useState, useTransition, useCallback } from "react"
+import { useState, useTransition, useCallback, useEffect } from "react"
+import { useTheme } from "next-themes"
 import { useRouter } from "next/navigation"
 import { ChevronLeft, ChevronRight, ChevronDown, Check, X, FileText, CreditCard } from "lucide-react"
 import Link from "next/link"
@@ -100,7 +101,7 @@ function InstallmentGroupRow({ group, cardColor }: { group: InstallmentGroup; ca
       sorted.some(b => b.isPaid) && "ring-1 ring-emerald-400/30 rounded-xl"
     )}>
       <button
-        className="w-full px-4 py-3 flex items-start gap-3 active:bg-black/5 transition-colors"
+        className="w-full px-4 py-3 flex items-start gap-3 active:bg-black/5 dark:active:bg-white/10 transition-colors"
         onClick={() => { haptic("light"); setExpanded(v => !v) }}
       >
         <div className="flex-1 min-w-0 text-left">
@@ -115,7 +116,7 @@ function InstallmentGroupRow({ group, cardColor }: { group: InstallmentGroup; ca
             {paidCount}/{group.totalInstallments} cuotas
           </p>
           {/* Progress bar */}
-          <div className="mt-1.5 w-full h-1 bg-black/8 rounded-full overflow-hidden">
+          <div className="mt-1.5 w-full h-1 bg-black/8 dark:bg-white/15 rounded-full overflow-hidden">
             <div
               className="h-full rounded-full transition-all duration-500"
               style={{ width: `${progress * 100}%`, backgroundColor: cardColor }}
@@ -131,13 +132,13 @@ function InstallmentGroupRow({ group, cardColor }: { group: InstallmentGroup; ca
       </button>
 
       {expanded && (
-        <div className="border-t border-black/5 divide-y divide-black/5 bg-black/[0.02]">
+        <div className="border-t border-black/5 dark:border-white/10 divide-y divide-black/5 dark:divide-white/10 bg-black/[0.02] dark:bg-white/[0.03]">
           {sorted.map(bill => (
             <div
               key={bill.id}
               className={cn(
                 "flex items-center gap-2.5 px-4 py-2.5 transition-colors",
-                bill.isPaid && "bg-emerald-50/60"
+                bill.isPaid && "bg-emerald-50/60 dark:bg-emerald-950/20"
               )}
             >
               <PaidToggle billId={bill.id} isPaid={bill.isPaid} />
@@ -164,7 +165,7 @@ function SingleBillRow({ bill }: { bill: SingleBill }) {
   return (
     <div className={cn(
       "flex items-center gap-2.5 px-4 py-3 transition-colors",
-      bill.isPaid && "bg-emerald-50/60"
+      bill.isPaid && "bg-emerald-50/60 dark:bg-emerald-950/20"
     )}>
       <PaidToggle billId={bill.id} isPaid={bill.isPaid} />
       <Link href={`/bills/${bill.id}`} className="flex-1 min-w-0 flex items-center justify-between gap-2">
@@ -258,6 +259,14 @@ function pastelify(hex: string, factor = 0.45): string {
   return `#${mix(r)}${mix(g)}${mix(b)}`
 }
 
+function darkify(hex: string): string {
+  const r = parseInt(hex.slice(1, 3), 16)
+  const g = parseInt(hex.slice(3, 5), 16)
+  const b = parseInt(hex.slice(5, 7), 16)
+  const mix = (c: number) => Math.round(c * 0.62).toString(16).padStart(2, "0")
+  return `#${mix(r)}${mix(g)}${mix(b)}`
+}
+
 function isLightColor(hex: string): boolean {
   const r = parseInt(hex.slice(1, 3), 16)
   const g = parseInt(hex.slice(3, 5), 16)
@@ -288,19 +297,26 @@ function CardVisual({ card, isExpanded, onClick, style }: {
   onClick: () => void
   style?: React.CSSProperties
 }) {
+  const { resolvedTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+  const isDark = mounted && resolvedTheme === "dark"
+
   const bankLogo = getBankLogo(card.typeBank)
   const networkLogo = getNetworkLogo(card.typeIcon)
   // Use bank reference color if available, otherwise keep original typeColor
   const bankRefColor = getBankColor(card.typeBank)
-  const cardColor = pastelify(bankRefColor || card.typeColor)
+  const cardColor = isDark
+    ? darkify(bankRefColor || card.typeColor)
+    : pastelify(bankRefColor || card.typeColor)
 
-  // Darken color slightly for gradient end
-  const darkerColor = cardColor + "cc"
+  // Gradient end color
+  const darkerColor = isDark ? cardColor + "dd" : cardColor + "cc"
 
   // Adaptive text color based on card background luminance
-  const light = isLightColor(cardColor)
-  const txtPrimary = light ? "#2A1F24" : "white"
-  const txtSecondary = light ? "#4A3540" : "rgba(255,255,255,0.9)"
+  const light = !isDark && isLightColor(cardColor)
+  const txtPrimary = isDark ? "#FED0BB" : (light ? "#2A1F24" : "white")
+  const txtSecondary = isDark ? "#FCB9B2" : (light ? "#4A3540" : "rgba(255,255,255,0.9)")
 
   // Clean up card name: avoid "Amex Amex" -> just "American Express"
   let displayName = card.typeName
@@ -402,7 +418,7 @@ function ExpandedCardContent({ card }: { card: CardData }) {
         {card.installmentGroups.length > 0 && (
           <button
             onClick={() => { haptic("selection"); setCuotasCollapsed(v => !v) }}
-            className="w-full px-4 py-2 bg-black/[0.02] flex items-center justify-between"
+            className="w-full px-4 py-2 bg-black/[0.02] dark:bg-white/[0.03] flex items-center justify-between"
           >
             <p className="text-[10px] text-muted-foreground uppercase tracking-wide font-medium">Cuotas</p>
             <ChevronDown className={cn("h-3 w-3 text-muted-foreground transition-transform", cuotasCollapsed && "-rotate-90")} />
@@ -416,7 +432,7 @@ function ExpandedCardContent({ card }: { card: CardData }) {
         {card.singleBills.length > 0 && (
           <button
             onClick={() => { haptic("selection"); setSinglesCollapsed(v => !v) }}
-            className="w-full px-4 py-2 bg-black/[0.02] flex items-center justify-between"
+            className="w-full px-4 py-2 bg-black/[0.02] dark:bg-white/[0.03] flex items-center justify-between"
           >
             <p className="text-[10px] text-muted-foreground uppercase tracking-wide font-medium">Pagos únicos</p>
             <ChevronDown className={cn("h-3 w-3 text-muted-foreground transition-transform", singlesCollapsed && "-rotate-90")} />
@@ -440,6 +456,10 @@ function ExpandedCardContent({ card }: { card: CardData }) {
 // ─── Main view ────────────────────────────────────────────────────────────────
 export function TarjetasWalletView({ cards, monthLabel, monthKey, prevMonth, nextMonth, cycleLabel }: Props) {
   const { push } = useRouter()
+  const { resolvedTheme } = useTheme()
+  const [mountedView, setMountedView] = useState(false)
+  useEffect(() => setMountedView(true), [])
+  const isDark = mountedView && resolvedTheme === "dark"
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null)
   const [showPicker, setShowPicker] = useState(false)
 
@@ -461,7 +481,9 @@ export function TarjetasWalletView({ cards, monthLabel, monthKey, prevMonth, nex
         <div
           data-tour="tarjetas-header"
           className="relative rounded-3xl overflow-hidden px-5 py-4"
-          style={{ background: "linear-gradient(135deg, #D8E2DC 0%, #FFE5D9 55%, #FFCAD4 100%)" }}
+          style={{ background: isDark
+            ? "linear-gradient(135deg, #461220 0%, #6B2030 55%, #8C2F39 100%)"
+            : "linear-gradient(135deg, #D8E2DC 0%, #FFE5D9 55%, #FFCAD4 100%)" }}
         >
           <div className="absolute -top-6 -right-6 size-32 rounded-full bg-white/20 blur-2xl pointer-events-none" />
           <div className="flex items-center justify-between">
@@ -470,24 +492,24 @@ export function TarjetasWalletView({ cards, monthLabel, monthKey, prevMonth, nex
               disabled={!prevMonth}
               className="size-8 flex items-center justify-center rounded-full bg-white/40 backdrop-blur-sm disabled:opacity-30 active:scale-95 transition-all"
             >
-              <ChevronLeft className="size-4 text-[#6B5159]" />
+              <ChevronLeft className="size-4" style={{ color: isDark ? "#FCB9B2" : "#6B5159" }} />
             </button>
             <div className="text-center space-y-0.5">
-              <p className="text-[11px] font-medium text-[#9D8189] uppercase tracking-wide">Tarjetas</p>
+              <p className="text-[11px] font-medium uppercase tracking-wide" style={{ color: isDark ? "#FCB9B2" : "#9D8189" }}>Tarjetas</p>
               <button
                 onClick={() => { haptic("selection"); setShowPicker(true) }}
-                className="font-medium text-[#4A3540] px-3 py-1 rounded-full hover:bg-white/30 transition-colors active:scale-95"
-                style={{ fontFamily: "var(--font-fraunces, serif)", fontSize: "1.05rem" }}
+                className="font-medium px-3 py-1 rounded-full hover:bg-white/30 transition-colors active:scale-95"
+                style={{ fontFamily: "var(--font-fraunces, serif)", fontSize: "1.05rem", color: isDark ? "#FED0BB" : "#4A3540" }}
               >
                 {capitalize(monthLabel)}
               </button>
               {grandTotal > 0 && (
-                <p className="text-2xl font-medium text-[#4A3540] leading-tight" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
+                <p className="text-2xl font-medium leading-tight" style={{ fontFamily: "var(--font-fraunces, serif)", color: isDark ? "#FED0BB" : "#4A3540" }}>
                   {formatARS(grandTotal)}
                 </p>
               )}
               {cycleLabel && (
-                <p className="text-[10px] text-[#9D8189] mt-0.5">
+                <p className="text-[10px] mt-0.5" style={{ color: isDark ? "#FCB9B2" : "#9D8189" }}>
                   Gastos que vencen en {cycleLabel}
                 </p>
               )}
@@ -497,7 +519,7 @@ export function TarjetasWalletView({ cards, monthLabel, monthKey, prevMonth, nex
               disabled={!nextMonth}
               className="size-8 flex items-center justify-center rounded-full bg-white/40 backdrop-blur-sm disabled:opacity-30 active:scale-95 transition-all"
             >
-              <ChevronRight className="size-4 text-[#6B5159]" />
+              <ChevronRight className="size-4" style={{ color: isDark ? "#FCB9B2" : "#6B5159" }} />
             </button>
           </div>
         </div>
