@@ -1,22 +1,6 @@
 @import "tailwindcss";
 @import "driver.js/dist/driver.css";
 
-/* ── PWA splash screen ── */
-@keyframes pwa-text-in {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-@keyframes pwa-splash-out {
-  0%   { opacity: 1; pointer-events: auto; }
-  100% { opacity: 0; pointer-events: none; visibility: hidden; }
-}
-#pwa-splash {
-  animation: pwa-splash-out 0.5s ease 0.9s forwards;
-}
-#pwa-splash span {
-  animation: pwa-text-in 0.55s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both;
-}
-
 /* ── driver.js tour — brand overrides ── */
 .driver-popover {
   background: rgba(255, 255, 255, 0.97) !important;
@@ -46,45 +30,29 @@
 }
 .driver-popover-footer {
   margin-top: 0.875rem !important;
-  display: grid !important;
-  grid-template-rows: auto auto !important;
-  gap: 0.5rem !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.4rem !important;
 }
 .driver-popover-progress-text {
-  grid-row: 2 !important;
-  text-align: center !important;
-  white-space: nowrap !important;
-}
-.driver-popover-navigation-btns {
-  grid-row: 1 !important;
-  display: grid !important;
-  grid-template-columns: 1fr 1fr !important;
-  gap: 0.5rem !important;
+  flex: 1 !important;
 }
 .driver-popover-footer button {
   text-shadow: none !important;
 }
 .driver-popover-prev-btn,
-.driver-popover-next-btn {
+.driver-popover-next-btn,
+.driver-popover-close-btn {
   border-radius: 999px !important;
-  font-size: 0.8125rem !important;
-  font-weight: 600 !important;
-  padding: 0.6rem 0.5rem !important;
+  font-size: 0.75rem !important;
+  font-weight: 500 !important;
+  padding: 0.45rem 1rem !important;
   border: none !important;
   cursor: pointer !important;
   transition: opacity 0.15s !important;
-  text-align: center !important;
   white-space: nowrap !important;
-  overflow: hidden !important;
-  min-width: 0 !important;
+  -webkit-font-smoothing: antialiased !important;
   text-shadow: none !important;
-}
-.driver-popover-close-btn {
-  border: none !important;
-  cursor: pointer !important;
-  background: transparent !important;
-  color: #9D8189 !important;
-  font-size: 1rem !important;
 }
 .driver-popover-next-btn {
   background: #9D8189 !important;
@@ -203,8 +171,41 @@ body {
 
 .dark body {
   background-image:
-    radial-gradient(ellipse at 20% 10%, hsl(145 15% 12% / 0.8) 0%, transparent 55%),
-    radial-gradient(ellipse at 80% 85%, hsl(351 20% 14% / 0.7) 0%, transparent 50%);
+    radial-gradient(ellipse at 20% 10%, hsl(345 55% 10% / 0.85) 0%, transparent 55%),
+    radial-gradient(ellipse at 80% 85%, hsl(350 45% 14% / 0.70) 0%, transparent 50%);
+}
+
+/* ── Hero gradient utilities ── */
+/* Main: sage → peach → blush */
+.hero-gradient {
+  background: linear-gradient(135deg, #D8E2DC 0%, #FFE5D9 55%, #FFCAD4 100%);
+}
+.dark .hero-gradient {
+  background: linear-gradient(135deg, #461220 0%, #6B2030 55%, #8C2F39 100%);
+}
+
+/* Shared balance: green (te deben > debés) */
+.hero-gradient-green {
+  background: linear-gradient(135deg, #C8EBD8 0%, #B8E0D0 45%, #A8D5C2 100%);
+}
+.dark .hero-gradient-green {
+  background: linear-gradient(135deg, #2a0d14 0%, #461220 45%, #6B2030 100%);
+}
+
+/* Shared balance: pink (debés > te deben) */
+.hero-gradient-pink {
+  background: linear-gradient(135deg, #FFCAD4 0%, #F4ACB7 45%, #e89aa8 100%);
+}
+.dark .hero-gradient-pink {
+  background: linear-gradient(135deg, #5a1228 0%, #8C2F39 45%, #B23A48 100%);
+}
+
+/* Shared balance: neutral (equilibrado) */
+.hero-gradient-neutral {
+  background: linear-gradient(135deg, #E8E0DC 0%, #D8D0CC 100%);
+}
+.dark .hero-gradient-neutral {
+  background: linear-gradient(135deg, #2e1520 0%, #461220 100%);
 }
 
 /* ── Glass card utility ── */
@@ -216,9 +217,9 @@ body {
   box-shadow: 0 2px 24px rgba(157, 129, 137, 0.07), 0 1px 2px rgba(157, 129, 137, 0.04);
 }
 .dark .glass {
-  background: rgba(36, 24, 32, 0.65);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  box-shadow: 0 2px 24px rgba(0, 0, 0, 0.25);
+  background: rgba(55, 20, 30, 0.60);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  box-shadow: 0 2px 24px rgba(0, 0, 0, 0.30);
 }
 
 /* ── Animations ── */
@@ -249,6 +250,16 @@ body {
   transition: background-color 9999s ease-in-out 0s;
   box-shadow: inset 0 0 20px 20px transparent !important;
   caret-color: white;
+}
+
+/* ── PWA splash screen ── */
+#pwa-splash {
+  animation: splash-fade 0.4s ease-in 0.6s forwards;
+  pointer-events: none;
+}
+@keyframes splash-fade {
+  from { opacity: 1; visibility: visible; }
+  to   { opacity: 0; visibility: hidden; }
 }
 
 /* ── Date inputs ── */
