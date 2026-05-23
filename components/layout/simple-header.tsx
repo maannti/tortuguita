@@ -64,7 +64,8 @@ export function SimpleHeader() {
       className="sticky top-0 z-30 px-4 backdrop-blur-xl border-b border-white/65 dark:border-white/10 bg-[rgba(253,250,249,0.85)] dark:bg-card/85"
     >
       <div className="flex h-14 items-center justify-between">
-        <Link href="/dashboard">
+        {/* Logo: visible on mobile; hidden on desktop (sidebar has it) */}
+        <Link href="/dashboard" className="lg:hidden">
           <LogoWordmark />
         </Link>
 

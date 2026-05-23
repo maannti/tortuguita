@@ -262,6 +262,15 @@ body {
   to   { opacity: 0; visibility: hidden; }
 }
 
+/* ── Desktop: reduce bottom padding + reposition FABs (no floating nav) ── */
+@media (min-width: 1024px) {
+  .pb-28 { padding-bottom: 1.5rem !important; }
+  .pb-24 { padding-bottom: 1.5rem !important; }
+  /* FABs: bring them down since there's no bottom nav */
+  .fixed.bottom-40 { bottom: 5rem !important; }
+  .fixed.bottom-24 { bottom: 1.5rem !important; }
+}
+
 /* ── Date inputs ── */
 input[type="date"],
 input[type="datetime-local"],
