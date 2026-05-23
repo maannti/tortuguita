@@ -69,7 +69,7 @@ export function SimpleHeader() {
           <LogoWordmark />
         </Link>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 ml-auto">
           {/* Notification bell — always visible, tray shows DB history regardless of push support */}
           <button
               onClick={() => setTrayOpen(true)}
