@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react"
 import { useTheme } from "next-themes"
-import { ChevronLeft, ChevronRight, Check, ArrowLeftRight } from "lucide-react"
+import { ChevronLeft, ChevronRight, Check } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { haptic } from "@/lib/haptics"
 import { format, parse } from "date-fns"
@@ -655,21 +655,24 @@ function BillGroup({ person, direction, onSettle, onSettleAll, settlingIds }: Bi
               >
                 {formatARS(person.netAmount)}
               </div>
-              {/* Desktop-only "Saldar todo" button */}
-              {unsettledCount > 0 && (
-                <button
-                  onClick={triggerSettleAll}
-                  disabled={settlingAll}
-                  className="hidden lg:flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold text-white transition-all active:scale-95 disabled:opacity-50"
-                  style={{ background: "#2d7a5a" }}
-                >
-                  {settlingAll
-                    ? <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin" />
-                    : <Check className="w-3 h-3" />
-                  }
-                  Saldar todo
-                </button>
-              )}
+              {/* Tickbox for settle-all — same style as individual rows */}
+              <button
+                onClick={triggerSettleAll}
+                disabled={settlingAll || unsettledCount === 0}
+                className={cn(
+                  "w-7 h-7 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all active:scale-90",
+                  unsettledCount === 0
+                    ? "bg-[#2d7a5a] border-[#2d7a5a] text-white"
+                    : "border-border bg-card"
+                )}
+              >
+                {settlingAll
+                  ? <div className="w-3 h-3 border border-primary border-t-transparent rounded-full animate-spin" />
+                  : unsettledCount === 0
+                  ? <Check className="w-3.5 h-3.5" />
+                  : null
+                }
+              </button>
             </div>
           </div>
         </div>
@@ -813,18 +816,14 @@ function SwipeableBillRow({ bill, canSettle, onSettle, settling }: SwipeableBill
               <Check className="w-3.5 h-3.5" />
             </button>
           ) : (
-            <>
-              {/* Mobile: subtle swipe hint ⟵⟶ */}
-              <ArrowLeftRight className="w-3.5 h-3.5 text-muted-foreground/35 flex-shrink-0 lg:hidden" />
-              {/* Desktop: empty circle button */}
-              <button
-                onClick={triggerSettle}
-                disabled={settling}
-                className="w-7 h-7 rounded-full border-2 border-border bg-card hidden lg:flex items-center justify-center flex-shrink-0 transition-all active:scale-90"
-              >
-                {settling && <div className="w-3 h-3 border border-primary border-t-transparent rounded-full animate-spin" />}
-              </button>
-            </>
+            /* Empty circle — visible on all screen sizes, swipe also works on mobile */
+            <button
+              onClick={triggerSettle}
+              disabled={settling}
+              className="w-7 h-7 rounded-full border-2 border-border bg-card flex items-center justify-center flex-shrink-0 transition-all active:scale-90"
+            >
+              {settling && <div className="w-3 h-3 border border-primary border-t-transparent rounded-full animate-spin" />}
+            </button>
           )
         )}
 
