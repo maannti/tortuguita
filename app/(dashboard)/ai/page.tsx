@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useTheme } from "next-themes";
 import { Card } from "@/components/ui/card";
 import { ConversationSidebar } from "@/components/ai/conversation-sidebar";
 import { MarkdownRenderer } from "@/components/ai/markdown-renderer";
@@ -20,6 +21,11 @@ interface Message {
 }
 
 export default function AIPage() {
+  const { resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const isDark = mounted && resolvedTheme === "dark";
+
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -429,7 +435,12 @@ export default function AIPage() {
     border: "1px solid rgba(255,255,255,0.65)",
   } as React.CSSProperties;
 
-  const GRADIENT = "linear-gradient(135deg, #D8E2DC 0%, #FFE5D9 55%, #FFCAD4 100%)"
+  const GRADIENT = isDark
+    ? "linear-gradient(135deg, #461220 0%, #6B2030 55%, #8C2F39 100%)"
+    : "linear-gradient(135deg, #D8E2DC 0%, #FFE5D9 55%, #FFCAD4 100%)"
+  const heroTextPrimary = isDark ? "#FED0BB" : "#4A3540"
+  const heroTextSecondary = isDark ? "#FCB9B2" : "#6B5159"
+  const heroTextMuted = isDark ? "#FCB9B2" : "#9D8189"
 
   // ── Messages JSX (variable, not component — prevents remount on re-render) ──
   const messagesJsx = messages.length === 0 ? (
@@ -438,7 +449,7 @@ export default function AIPage() {
       <div className="size-14 rounded-2xl flex items-center justify-center mb-3" style={{ background: "rgba(255,255,255,0.55)" }}>
         <TurtleIcon className="size-8" />
       </div>
-      <p className="text-[#6B5159] text-base font-medium tracking-tight">
+      <p className="text-base font-medium tracking-tight" style={{ color: heroTextSecondary }}>
         ¿En qué te ayudo?
       </p>
     </div>
@@ -486,7 +497,7 @@ export default function AIPage() {
           <div className="rounded-2xl rounded-bl-sm px-4 py-3" style={glassBubble}>
             <div className="flex items-center gap-1.5">
               {[0, 1, 2].map(i => (
-                <span key={i} className="block size-2 rounded-full bg-[#9D8189] animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
+                <span key={i} className="block size-2 rounded-full animate-bounce" style={{ backgroundColor: heroTextMuted, animationDelay: `${i * 0.15}s` }} />
               ))}
             </div>
           </div>
@@ -518,7 +529,7 @@ export default function AIPage() {
         <div className="hidden md:flex flex-col flex-1 p-4 md:p-6 pl-0 overflow-hidden">
           <Card className="flex-1 flex flex-col overflow-hidden" style={{ background: "rgba(255,255,255,0.35)", backdropFilter: "blur(12px)", border: "1px solid rgba(216,226,220,0.6)" }}>
             <div className="flex-shrink-0 flex items-center justify-center px-5 pt-5 pb-3 border-b border-[#D8E2DC]/50">
-              <span className="text-base font-semibold text-[#4A3540]" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
+              <span className="text-base font-semibold" style={{ fontFamily: "var(--font-fraunces, serif)", color: heroTextPrimary }}>
                 tortuguita IA
               </span>
             </div>
@@ -538,10 +549,11 @@ export default function AIPage() {
                   onKeyDown={handleKeyDown}
                   placeholder="Preguntame algo..."
                   disabled={isLoading}
-                  className="flex-1 min-w-0 min-h-[24px] max-h-[200px] resize-none overflow-y-auto bg-transparent border-none outline-none py-0 px-0 leading-6 text-[16px] text-[#2A1F24] placeholder:text-[#9D8189]/70"
+                  className="flex-1 min-w-0 min-h-[24px] max-h-[200px] resize-none overflow-y-auto bg-transparent border-none outline-none py-0 px-0 leading-6 text-[16px] placeholder:opacity-60"
+                  style={{ color: heroTextPrimary }}
                   rows={1}
                 />
-                <button type="submit" disabled={isLoading || (!input.trim() && !attachedFile)} className="flex-shrink-0 size-9 rounded-full grid place-items-center transition-all active:scale-90 disabled:opacity-30" style={{ background: "#4A3540" }}>
+                <button type="submit" disabled={isLoading || (!input.trim() && !attachedFile)} className="flex-shrink-0 size-9 rounded-full grid place-items-center transition-all active:scale-90 disabled:opacity-30" style={{ background: heroTextPrimary }}>
                   <ArrowUpIcon className="size-4 text-white" strokeWidth={2.5} />
                 </button>
               </div>
@@ -559,11 +571,12 @@ export default function AIPage() {
           <div className="flex-shrink-0 flex items-center px-4 pt-4 pb-3">
             <button
               onClick={() => { haptic("selection"); window.history.back() }}
-              className="flex items-center justify-center size-11 rounded-2xl text-[#4A3540] active:bg-white/30 active:scale-95 transition-all"
+              className="flex items-center justify-center size-11 rounded-2xl active:bg-white/30 active:scale-95 transition-all"
+            style={{ color: heroTextPrimary }}
             >
               <ChevronLeftIcon className="size-6" strokeWidth={2} />
             </button>
-            <span className="flex-1 text-center text-[15px] font-semibold text-[#4A3540]" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
+            <span className="flex-1 text-center text-[15px] font-semibold" style={{ fontFamily: "var(--font-fraunces, serif)", color: heroTextPrimary }}>
               tortuguita IA
             </span>
             <div className="size-11" />
@@ -592,14 +605,15 @@ export default function AIPage() {
                   enterKeyHint="send"
                   autoComplete="off"
                   autoCorrect="on"
-                  className="flex-1 min-w-0 min-h-[24px] max-h-[120px] resize-none overflow-y-auto bg-transparent border-none outline-none py-0 px-0 leading-6 text-[16px] text-[#2A1F24] placeholder:text-[#9D8189]/70"
+                  className="flex-1 min-w-0 min-h-[24px] max-h-[120px] resize-none overflow-y-auto bg-transparent border-none outline-none py-0 px-0 leading-6 text-[16px] placeholder:opacity-60"
+                  style={{ color: heroTextPrimary }}
                   rows={1}
                 />
                 <button
                   type="submit"
                   disabled={isLoading || (!input.trim() && !attachedFile)}
                   className="flex-shrink-0 size-9 rounded-full grid place-items-center transition-all active:scale-90 disabled:opacity-30"
-                  style={{ background: "#4A3540" }}
+                  style={{ background: heroTextPrimary }}
                 >
                   <ArrowUpIcon className="size-4 text-white" strokeWidth={2.5} />
                 </button>

@@ -1,6 +1,6 @@
 "use client"
 import { CardIcon, isNetworkId, NetworkId, BANKS } from "@/components/ui/card-network"
-import { useState, useCallback } from "react"
+import { useState, useCallback, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react"
@@ -12,6 +12,7 @@ import { TourInviteCard } from "@/components/onboarding/tour-invite-card"
 import { startAppTour } from "@/components/onboarding/app-tour"
 import { AiInsightWidget, InsightData } from "@/components/dashboard/ai-insight-widget"
 import { haptic } from "@/lib/haptics"
+import { useTheme } from "next-themes"
 
 const BANK_COLORS: Record<string, string> = {
   bbva: "#004481", icbc: "#8C8C8C", santander: "#EC0000", galicia: "#E8302E",
@@ -33,11 +34,16 @@ const NETWORK_LOGOS: Record<string, string> = {
   master: "/networks/mastercard.png", amex: "/networks/amex.png", cabal: "/networks/cabal.jpg",
 }
 const BANKS_NEED_WHITE = ["ciudad", "santander"]
-function resolveCardColor(bank: string | null, fallback: string) {
+function resolveCardColor(bank: string | null, fallback: string, dark = false) {
   const base = (bank && BANK_COLORS[bank.toLowerCase()]) || fallback
   const r = parseInt(base.slice(1, 3), 16)
   const g = parseInt(base.slice(3, 5), 16)
   const b = parseInt(base.slice(5, 7), 16)
+  if (dark) {
+    // Darken: mix toward #1a0810 (very dark wine) instead of white
+    const mix = (c: number) => Math.round(c * 0.62).toString(16).padStart(2, "0")
+    return `#${mix(r)}${mix(g)}${mix(b)}`
+  }
   const mix = (c: number) => Math.round(c + (255 - c) * 0.45).toString(16).padStart(2, "0")
   return `#${mix(r)}${mix(g)}${mix(b)}`
 }
@@ -86,13 +92,13 @@ function formatARS(n: number) { return arsFormatter.format(n) }
 function capitalize(s: string) { return s.charAt(0).toUpperCase() + s.slice(1) }
 
 /** Renders a currency amount with superscript cents. Omits cents when they are "00". */
-function HeroAmount({ amount, className }: { amount: number; className?: string }) {
+function HeroAmount({ amount, className, style }: { amount: number; className?: string; style?: React.CSSProperties }) {
   const full = arsFormatterFull.format(amount)
   const commaIdx = full.lastIndexOf(",")
   const intPart = commaIdx >= 0 ? full.slice(0, commaIdx) : full
   const decPart = commaIdx >= 0 ? full.slice(commaIdx + 1) : ""
   return (
-    <span className={className} style={{ fontFamily: "var(--font-fraunces, serif)" }}>
+    <span className={className} style={{ fontFamily: "var(--font-fraunces, serif)", ...style }}>
       {intPart}
       {decPart && decPart !== "00" && (
         <sup className="text-[0.42em] align-super leading-none font-medium">,{decPart}</sup>
@@ -103,6 +109,10 @@ function HeroAmount({ amount, className }: { amount: number; className?: string 
 
 export function HomeDashboard({ month, monthKey, availableMonths, spaces, currentUserId, showOnboarding = false, checklistData, insights }: Props) {
   const router = useRouter()
+  const { resolvedTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+  const isDark = mounted && resolvedTheme === "dark"
   const [showPicker, setShowPicker] = useState(false)
   const [showMyPart, setShowMyPart] = useState(true)
   const [slidesVisible, setSlidesVisible] = useState(showOnboarding)
@@ -170,7 +180,9 @@ export function HomeDashboard({ month, monthKey, availableMonths, spaces, curren
         <div
           data-tour="hero"
           className="relative rounded-3xl overflow-hidden"
-          style={{ background: "linear-gradient(135deg, #D8E2DC 0%, #FFE5D9 55%, #FFCAD4 100%)" }}
+          style={{ background: isDark
+            ? "linear-gradient(135deg, #461220 0%, #6B2030 55%, #8C2F39 100%)"
+            : "linear-gradient(135deg, #D8E2DC 0%, #FFE5D9 55%, #FFCAD4 100%)" }}
         >
           <div className="absolute -top-8 -right-8 size-40 rounded-full bg-white/20 blur-2xl pointer-events-none" />
           <div className="absolute bottom-0 left-0 w-32 h-24 rounded-full bg-[#F4ACB7]/20 blur-xl pointer-events-none" />
@@ -183,12 +195,12 @@ export function HomeDashboard({ month, monthKey, availableMonths, spaces, curren
                 disabled={!prevMonth}
                 className="size-8 flex items-center justify-center rounded-full bg-white/40 backdrop-blur-sm disabled:opacity-30 active:scale-95 transition-all"
               >
-                <ChevronLeft className="size-4 text-[#6B5159]" />
+                <ChevronLeft className="size-4" style={{ color: isDark ? "#FCB9B2" : "#6B5159" }} />
               </button>
               <button
                 onClick={() => { haptic("selection"); setShowPicker(true) }}
-                className="text-sm font-medium text-[#6B5159] px-3 py-1 rounded-full hover:bg-white/30 transition-colors active:scale-95"
-                style={{ fontFamily: "var(--font-fraunces, serif)" }}
+                className="text-sm font-medium px-3 py-1 rounded-full hover:bg-white/30 transition-colors active:scale-95"
+                style={{ fontFamily: "var(--font-fraunces, serif)", color: isDark ? "#FCB9B2" : "#6B5159" }}
               >
                 {capitalize(month)}
               </button>
@@ -197,16 +209,17 @@ export function HomeDashboard({ month, monthKey, availableMonths, spaces, curren
                 disabled={!nextMonth}
                 className="size-8 flex items-center justify-center rounded-full bg-white/40 backdrop-blur-sm disabled:opacity-30 active:scale-95 transition-all"
               >
-                <ChevronRight className="size-4 text-[#6B5159]" />
+                <ChevronRight className="size-4" style={{ color: isDark ? "#FCB9B2" : "#6B5159" }} />
               </button>
             </div>
 
             {/* Big total */}
             <div className="text-center space-y-2">
-              <p className="text-[11px] font-medium text-[#9D8189] uppercase tracking-wide">Total del mes</p>
+              <p className="text-[11px] font-medium uppercase tracking-wide" style={{ color: isDark ? "#FCB9B2" : "#9D8189" }}>Total del mes</p>
               <HeroAmount
                 amount={displayAmount}
-                className="text-5xl font-medium text-[#4A3540] leading-none tracking-tight block"
+                className="text-5xl font-medium leading-none tracking-tight block"
+                style={{ color: isDark ? "#FED0BB" : "#4A3540" }}
               />
               {/* Toggle Total / Mi parte — only shown when a shared space is active */}
               {hasSharedSpace && (
@@ -214,17 +227,19 @@ export function HomeDashboard({ month, monthKey, availableMonths, spaces, curren
                   <div className="flex rounded-full bg-white/40 backdrop-blur-sm p-0.5">
                     <button
                       onClick={() => { haptic("selection"); setShowMyPart(false) }}
-                      className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-all ${
-                        !showMyPart ? "bg-white/80 text-[#4A3540] shadow-sm" : "text-[#9D8189]"
-                      }`}
+                      className="px-3 py-1 rounded-full text-[11px] font-semibold transition-all"
+                      style={!showMyPart
+                        ? { background: "rgba(255,255,255,0.8)", color: isDark ? "#461220" : "#4A3540", boxShadow: "0 1px 2px rgba(0,0,0,0.1)" }
+                        : { color: isDark ? "#FCB9B2" : "#9D8189" }}
                     >
                       Total
                     </button>
                     <button
                       onClick={() => { haptic("selection"); setShowMyPart(true) }}
-                      className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-all ${
-                        showMyPart ? "bg-white/80 text-[#4A3540] shadow-sm" : "text-[#9D8189]"
-                      }`}
+                      className="px-3 py-1 rounded-full text-[11px] font-semibold transition-all"
+                      style={showMyPart
+                        ? { background: "rgba(255,255,255,0.8)", color: isDark ? "#461220" : "#4A3540", boxShadow: "0 1px 2px rgba(0,0,0,0.1)" }
+                        : { color: isDark ? "#FCB9B2" : "#9D8189" }}
                     >
                       Mi parte
                     </button>
@@ -238,15 +253,15 @@ export function HomeDashboard({ month, monthKey, availableMonths, spaces, curren
               <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${members.length}, 1fr)` }}>
                 {members.map((member) => (
                   <div key={member.id} className="flex-1 bg-white/35 backdrop-blur-sm rounded-2xl px-3 py-2.5">
-                    <p className="text-[11px] font-medium text-[#9D8189] text-center">{member.name.split(" ")[0]}</p>
+                    <p className="text-[11px] font-medium text-center" style={{ color: isDark ? "#FCB9B2" : "#9D8189" }}>{member.name.split(" ")[0]}</p>
                     <p
-                      className="text-xl font-medium text-[#4A3540] leading-tight mt-0.5 text-center"
-                      style={{ fontFamily: "var(--font-fraunces, serif)" }}
+                      className="text-xl font-medium leading-tight mt-0.5 text-center"
+                      style={{ fontFamily: "var(--font-fraunces, serif)", color: isDark ? "#FED0BB" : "#4A3540" }}
                     >
                       {formatARS(member.expenses)}
                     </p>
                     {member.percentage > 0 && (
-                      <p className="text-[10px] text-[#9D8189] mt-0.5 text-center">{Math.round(member.percentage)}% ingresos</p>
+                      <p className="text-[10px] mt-0.5 text-center" style={{ color: isDark ? "#FCB9B2" : "#9D8189" }}>{Math.round(member.percentage)}% ingresos</p>
                     )}
                   </div>
                 ))}
@@ -280,13 +295,13 @@ export function HomeDashboard({ month, monthKey, availableMonths, spaces, curren
                 <div className="relative" style={{ height: containerH }}>
                   {backToFront.map((card, ri) => {
                     const isFront = ri === backToFront.length - 1
-                    const bg = resolveCardColor(card.bank, card.color)
+                    const bg = resolveCardColor(card.bank, card.color, isDark)
                     const bankLogo = card.bank ? BANK_LOGOS[card.bank.toLowerCase()] ?? null : null
                     const networkLogo = card.icon ? NETWORK_LOGOS[card.icon.toLowerCase()] ?? null : null
                     const needsInvert = card.bank ? BANKS_NEED_WHITE.includes(card.bank.toLowerCase()) : false
-                    const light = isLightColor(bg)
-                    const txtPrimary = light ? "#2A1F24" : "white"
-                    const txtSecondary = light ? "#4A3540" : "rgba(255,255,255,0.9)"
+                    const light = !isDark && isLightColor(bg)
+                    const txtPrimary = isDark ? "#FED0BB" : (light ? "#2A1F24" : "white")
+                    const txtSecondary = isDark ? "#FCB9B2" : (light ? "#4A3540" : "rgba(255,255,255,0.9)")
                     return (
                       <div
                         key={card.name}
@@ -295,7 +310,9 @@ export function HomeDashboard({ month, monthKey, availableMonths, spaces, curren
                           top: ri * PEEK,
                           height: CARD_H,
                           zIndex: ri + 1,
-                          background: `linear-gradient(145deg, ${bg} 0%, ${bg}cc 100%)`,
+                          background: isDark
+                            ? bg   /* solid color, no transparency in dark mode */
+                            : `linear-gradient(145deg, ${bg} 0%, ${bg}cc 100%)`,
                         }}
                       >
                         {isFront ? (

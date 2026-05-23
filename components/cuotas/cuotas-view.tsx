@@ -1,5 +1,6 @@
 "use client"
 import { useState, useTransition, useCallback, useEffect } from "react"
+import { useTheme } from "next-themes"
 import { useRouter } from "next/navigation"
 import { Plus, ChevronLeft, ChevronRight, FileText, ChevronDown, Check, AlertTriangle, X } from "lucide-react"
 import { isNetworkId, CardIcon, BANKS, NetworkId } from "@/components/ui/card-network"
@@ -161,6 +162,10 @@ function InstallmentGroupCard({ group, cardColor }: { group: InstallmentGroup; c
 // ─── Main view ────────────────────────────────────────────────────────────────
 export function CuotasView({ cards, monthLabel, monthKey, prevMonth, nextMonth, staleCards = [] }: Props) {
   const { push } = useRouter()
+  const { resolvedTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+  const isDark = mounted && resolvedTheme === "dark"
   const [activeCard, setActiveCard] = useState(0)
   const [showPicker, setShowPicker] = useState(false)
   const [staleDismissed, setStaleDismissed] = useState(false)
@@ -179,38 +184,40 @@ export function CuotasView({ cards, monthLabel, monthKey, prevMonth, nextMonth, 
       <div className="px-4 pt-5 pb-2">
         <div
           className="relative rounded-3xl overflow-hidden px-5 py-4"
-          style={{ background: "linear-gradient(135deg, #D8E2DC 0%, #FFE5D9 55%, #FFCAD4 100%)" }}
+          style={{ background: isDark
+            ? "linear-gradient(135deg, #461220 0%, #6B2030 55%, #8C2F39 100%)"
+            : "linear-gradient(135deg, #D8E2DC 0%, #FFE5D9 55%, #FFCAD4 100%)" }}
         >
           <div className="absolute -top-6 -right-6 size-32 rounded-full bg-white/20 blur-2xl pointer-events-none" />
           <div className="flex items-center justify-between">
             <button
-              onClick={() => prevMonth && push(`/tarjetas?month=${prevMonth}`)}
+              onClick={() => prevMonth && push(`/cuotas?month=${prevMonth}`)}
               disabled={!prevMonth}
               className="size-8 flex items-center justify-center rounded-full bg-white/40 backdrop-blur-sm disabled:opacity-30 active:scale-95 transition-all"
             >
-              <ChevronLeft className="size-4 text-[#6B5159]" />
+              <ChevronLeft className="size-4" style={{ color: isDark ? "#FCB9B2" : "#6B5159" }} />
             </button>
             <div className="text-center space-y-0.5">
-              <p className="text-[11px] font-medium text-[#9D8189] uppercase tracking-wide">Tarjetas</p>
+              <p className="text-[11px] font-medium uppercase tracking-wide" style={{ color: isDark ? "#FCB9B2" : "#9D8189" }}>Tarjetas</p>
               <button
                 onClick={() => setShowPicker(true)}
-                className="font-medium text-[#4A3540] px-3 py-1 rounded-full hover:bg-white/30 transition-colors active:scale-95"
-                style={{ fontFamily: "var(--font-fraunces, serif)", fontSize: "1.05rem" }}
+                className="font-medium px-3 py-1 rounded-full hover:bg-white/30 transition-colors active:scale-95"
+                style={{ fontFamily: "var(--font-fraunces, serif)", fontSize: "1.05rem", color: isDark ? "#FCB9B2" : "#4A3540" }}
               >
                 {capitalize(monthLabel)}
               </button>
               {current && current.monthTotal > 0 && (
-                <p className="text-2xl font-medium text-[#4A3540] leading-tight" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
+                <p className="text-2xl font-medium leading-tight" style={{ fontFamily: "var(--font-fraunces, serif)", color: isDark ? "#FED0BB" : "#4A3540" }}>
                   {formatARS(current.monthTotal)}
                 </p>
               )}
             </div>
             <button
-              onClick={() => nextMonth && push(`/tarjetas?month=${nextMonth}`)}
+              onClick={() => nextMonth && push(`/cuotas?month=${nextMonth}`)}
               disabled={!nextMonth}
               className="size-8 flex items-center justify-center rounded-full bg-white/40 backdrop-blur-sm disabled:opacity-30 active:scale-95 transition-all"
             >
-              <ChevronRight className="size-4 text-[#6B5159]" />
+              <ChevronRight className="size-4" style={{ color: isDark ? "#FCB9B2" : "#6B5159" }} />
             </button>
           </div>
         </div>
@@ -334,7 +341,7 @@ export function CuotasView({ cards, monthLabel, monthKey, prevMonth, nextMonth, 
         <FileText className="size-4 text-primary" />
         Importar gastos
       </Link>
-      <Link href="/tarjetas/new"
+      <Link href="/cuotas/new"
         className="fixed bottom-24 right-4 z-30 flex items-center justify-center size-14 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 active:scale-95 transition-transform">
         <Plus className="size-6" />
       </Link>
@@ -342,7 +349,7 @@ export function CuotasView({ cards, monthLabel, monthKey, prevMonth, nextMonth, 
       {showPicker && (
         <MonthPicker
           currentMonthKey={monthKey}
-          onSelect={(key) => push(`/tarjetas?month=${key}`)}
+          onSelect={(key) => push(`/cuotas?month=${key}`)}
           onClose={() => setShowPicker(false)}
         />
       )}

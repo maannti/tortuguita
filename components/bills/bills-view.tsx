@@ -3,6 +3,7 @@
 import { useRouter, useSearchParams, usePathname } from "next/navigation"
 import Link from "next/link"
 import { useState, useEffect, useRef, useTransition } from "react"
+import { useTheme } from "next-themes"
 import { ChevronLeft, ChevronRight, Plus, CreditCard, ChevronDown, Search, X, SlidersHorizontal, Check, User, Home, Loader2, Repeat, Users } from "lucide-react"
 import { MonthPicker } from "@/components/ui/month-picker"
 import { cn } from "@/lib/utils"
@@ -67,6 +68,10 @@ export function BillsView({
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const [isPending, startTransition] = useTransition()
+  const { resolvedTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+  const isDark = mounted && resolvedTheme === "dark"
 
   const [showPicker, setShowPicker] = useState(false)
   const [showMyPart, setShowMyPart] = useState(true)
@@ -237,7 +242,9 @@ export function BillsView({
       <div className="px-4 pt-5">
         <div
           className="relative rounded-3xl overflow-hidden px-5 py-4"
-          style={{ background: "linear-gradient(135deg, #D8E2DC 0%, #FFE5D9 55%, #FFCAD4 100%)" }}
+          style={{ background: isDark
+            ? "linear-gradient(135deg, #461220 0%, #6B2030 55%, #8C2F39 100%)"
+            : "linear-gradient(135deg, #D8E2DC 0%, #FFE5D9 55%, #FFCAD4 100%)" }}
         >
           <div className="absolute -top-6 -right-6 size-32 rounded-full bg-white/20 blur-2xl pointer-events-none" />
 
@@ -251,20 +258,20 @@ export function BillsView({
               router.push(`/bills?${params.toString()}`)
             }} disabled={!prevMonth}
               className="size-8 flex items-center justify-center rounded-full bg-white/40 backdrop-blur-sm disabled:opacity-30 active:scale-95 transition-all">
-              <ChevronLeft className="size-4 text-[#6B5159]" />
+              <ChevronLeft className="size-4" style={{ color: isDark ? "#FCB9B2" : "#6B5159" }} />
             </button>
             <div className="text-center space-y-0.5">
               <button
                 onClick={() => { haptic("selection"); setShowPicker(true) }}
-                className="font-medium text-[#6B5159] px-3 py-1 rounded-full hover:bg-white/30 transition-colors active:scale-95"
-                style={{ fontFamily: "var(--font-fraunces, serif)", fontSize: "1.05rem" }}
+                className="font-medium px-3 py-1 rounded-full hover:bg-white/30 transition-colors active:scale-95"
+                style={{ fontFamily: "var(--font-fraunces, serif)", fontSize: "1.05rem", color: isDark ? "#FCB9B2" : "#6B5159" }}
               >
                 {capitalize(month)}
               </button>
               {grandTotal > 0 && (
                 <p
-                  className="text-2xl font-medium text-[#4A3540] leading-tight"
-                  style={{ fontFamily: "var(--font-fraunces, serif)" }}
+                  className="text-2xl font-medium leading-tight"
+                  style={{ fontFamily: "var(--font-fraunces, serif)", color: isDark ? "#FED0BB" : "#4A3540" }}
                 >
                   {showUSD && grandTotalUSD !== null
                     ? formatUSD(grandTotalUSD)
@@ -277,13 +284,15 @@ export function BillsView({
                   <div className="flex rounded-full bg-white/40 backdrop-blur-sm p-0.5">
                     <button
                       onClick={() => { haptic("selection"); setShowMyPart(true) }}
-                      className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-all ${showMyPart ? "bg-white/80 text-[#4A3540] shadow-sm" : "text-[#9D8189]"}`}
+                      className="px-3 py-1 rounded-full text-[11px] font-semibold transition-all"
+                      style={showMyPart ? { background: "rgba(255,255,255,0.8)", color: isDark ? "#461220" : "#4A3540" } : { color: isDark ? "#FCB9B2" : "#9D8189" }}
                     >
                       Mi parte
                     </button>
                     <button
                       onClick={() => { haptic("selection"); setShowMyPart(false) }}
-                      className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-all ${!showMyPart ? "bg-white/80 text-[#4A3540] shadow-sm" : "text-[#9D8189]"}`}
+                      className="px-3 py-1 rounded-full text-[11px] font-semibold transition-all"
+                      style={!showMyPart ? { background: "rgba(255,255,255,0.8)", color: isDark ? "#461220" : "#4A3540" } : { color: isDark ? "#FCB9B2" : "#9D8189" }}
                     >
                       Total
                     </button>
@@ -299,7 +308,7 @@ export function BillsView({
               router.push(`/bills?${params.toString()}`)
             }} disabled={!nextMonth}
               className="size-8 flex items-center justify-center rounded-full bg-white/40 backdrop-blur-sm disabled:opacity-30 active:scale-95 transition-all">
-              <ChevronRight className="size-4 text-[#6B5159]" />
+              <ChevronRight className="size-4" style={{ color: isDark ? "#FCB9B2" : "#6B5159" }} />
             </button>
           </div>
         </div>
@@ -310,11 +319,13 @@ export function BillsView({
         <div
           data-tour="action-bar"
           className="rounded-2xl overflow-hidden"
-          style={{ background: "linear-gradient(135deg, #D8E2DC 0%, #FFE5D9 55%, #FFCAD4 100%)" }}
+          style={{ background: isDark
+            ? "linear-gradient(135deg, #461220 0%, #6B2030 55%, #8C2F39 100%)"
+            : "linear-gradient(135deg, #D8E2DC 0%, #FFE5D9 55%, #FFCAD4 100%)" }}
         >
           {searchExpanded ? (
             <div className="flex items-center gap-2 px-3 py-2">
-              <Search className="size-4 text-[#6B5159] flex-shrink-0" />
+              <Search className="size-4 flex-shrink-0" style={{ color: isDark ? "#FCB9B2" : "#6B5159" }} />
               <input
                 ref={searchInputRef}
                 type="text"
@@ -322,14 +333,15 @@ export function BillsView({
                 onChange={(e) => handleSearchChange(e.target.value)}
                 onKeyDown={(e) => e.key === "Escape" && clearSearch()}
                 placeholder="Buscar gastos..."
-                className="flex-1 bg-transparent text-sm text-[#4A3540] placeholder:text-[#9D8189] focus:outline-none"
+                className="flex-1 bg-transparent text-sm focus:outline-none"
+                style={{ color: isDark ? "#FED0BB" : "#4A3540" }}
               />
               <div className="size-6 flex items-center justify-center flex-shrink-0">
                 {isPending ? (
-                  <Loader2 className="size-4 text-[#9D8189] animate-spin" />
+                  <Loader2 className="size-4 animate-spin" style={{ color: isDark ? "#FCB9B2" : "#9D8189" }} />
                 ) : (
                   <button onClick={() => { haptic("light"); localSearch ? clearSearch() : setSearchExpanded(false) }} className="size-6 flex items-center justify-center rounded-full hover:bg-white/30 active:scale-95 transition-all">
-                    <X className="size-4 text-[#6B5159]" />
+                    <X className="size-4" style={{ color: isDark ? "#FCB9B2" : "#6B5159" }} />
                   </button>
                 )}
               </div>
@@ -343,8 +355,8 @@ export function BillsView({
                   searchQuery && "bg-white/30"
                 )}
               >
-                <Search className="size-4 text-[#6B5159]" />
-                <span className="text-sm font-medium text-[#4A3540]">
+                <Search className="size-4" style={{ color: isDark ? "#FCB9B2" : "#6B5159" }} />
+                <span className="text-sm font-medium" style={{ color: isDark ? "#FED0BB" : "#4A3540" }}>
                   {searchQuery ? `"${searchQuery}"` : "Buscar"}
                 </span>
               </button>
@@ -356,8 +368,8 @@ export function BillsView({
                   hasActiveFilters && "bg-white/30"
                 )}
               >
-                <SlidersHorizontal className="size-4 text-[#6B5159]" />
-                <span className="text-sm font-medium text-[#4A3540]">
+                <SlidersHorizontal className="size-4" style={{ color: isDark ? "#FCB9B2" : "#6B5159" }} />
+                <span className="text-sm font-medium" style={{ color: isDark ? "#FED0BB" : "#4A3540" }}>
                   Filtros{totalActiveFilters > 0 && ` (${totalActiveFilters})`}
                 </span>
               </button>
@@ -371,24 +383,24 @@ export function BillsView({
         <Link
           href="/bills/recurring"
           className="flex-1 flex items-center justify-between px-3.5 py-3 rounded-2xl active:opacity-80 active:scale-[0.99] transition-all"
-          style={{ background: "#EAE4F2" }}
+          style={{ background: isDark ? "#3a0e18" : "#EAE4F2" }}
         >
           <div className="flex items-center gap-2">
-            <Repeat className="size-4 text-[#6B5A8A]" />
-            <span className="text-sm text-[#3d2f5a]"><em className="italic font-normal">gastos</em> <strong className="font-bold not-italic">recurrentes</strong></span>
+            <Repeat className="size-4" style={{ color: isDark ? "#FCB9B2" : "#6B5A8A" }} />
+            <span className="text-sm" style={{ color: isDark ? "#FCB9B2" : "#3d2f5a" }}><em className="italic font-normal">gastos</em> <strong className="font-bold not-italic">recurrentes</strong></span>
           </div>
-          <ChevronRight className="size-3.5 text-[#6B5A8A]" />
+          <ChevronRight className="size-3.5" style={{ color: isDark ? "#FCB9B2" : "#6B5A8A" }} />
         </Link>
         <Link
           href="/bills/shared"
           className="flex-1 flex items-center justify-between px-3.5 py-3 rounded-2xl active:opacity-80 active:scale-[0.99] transition-all"
-          style={{ background: "#FFE0E8" }}
+          style={{ background: isDark ? "#461220" : "#FFE0E8" }}
         >
           <div className="flex items-center gap-2">
-            <Users className="size-4 text-[#7a3040]" />
-            <span className="text-sm text-[#5a1828]"><em className="italic font-normal">gastos</em> <strong className="font-bold not-italic">compartidos</strong></span>
+            <Users className="size-4" style={{ color: isDark ? "#FED0BB" : "#7a3040" }} />
+            <span className="text-sm" style={{ color: isDark ? "#FED0BB" : "#5a1828" }}><em className="italic font-normal">gastos</em> <strong className="font-bold not-italic">compartidos</strong></span>
           </div>
-          <ChevronRight className="size-3.5 text-[#7a3040]" />
+          <ChevronRight className="size-3.5" style={{ color: isDark ? "#FED0BB" : "#7a3040" }} />
         </Link>
       </div>
 
