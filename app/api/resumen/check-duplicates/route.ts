@@ -10,6 +10,7 @@ const txSchema = z.object({
   descripcion: z.string(),
   montoARS: z.number().nullable(),
   billTypeId: z.string(),
+  comprobante: z.string().nullable().optional(),
 })
 
 const bodySchema = z.object({
@@ -70,7 +71,7 @@ export async function POST(request: NextRequest) {
         billTypeId: { in: billTypeIds },
         paymentDate: { gte: since },
       },
-      select: { id: true, label: true, amount: true, paymentDate: true, billTypeId: true },
+      select: { id: true, label: true, amount: true, paymentDate: true, billTypeId: true, externalRef: true, sourceDescription: true },
       orderBy: { paymentDate: "desc" },
     })
 
@@ -81,6 +82,21 @@ export async function POST(request: NextRequest) {
       if (txAmount <= 0) { matches[tx.id] = null; continue }
 
       const candidates = existingBills.filter(b => b.billTypeId === tx.billTypeId)
+      const txDate = new Date(tx.fecha)
+
+      // Path 0: exact comprobante match — highest confidence, no fuzzy logic needed
+      if (tx.comprobante) {
+        const exactMatch = candidates.find(b => b.externalRef === tx.comprobante)
+        if (exactMatch) {
+          matches[tx.id] = {
+            billId: exactMatch.id,
+            label: exactMatch.label,
+            amount: Number(exactMatch.amount),
+            paymentDate: exactMatch.paymentDate.toISOString(),
+          }
+          continue
+        }
+      }
 
       let bestMatch: DuplicateMatch | null = null
       let bestScore = 0
@@ -90,10 +106,28 @@ export async function POST(request: NextRequest) {
         const amountDiff = Math.abs(billAmount - txAmount) / Math.max(txAmount, 1)
         if (amountDiff > 0.05) continue // more than 5% difference → skip
 
-        const lscore = labelSimilarity(tx.descripcion, bill.label)
-        if (lscore < 0.5) continue // not similar enough
+        const daysDiff = Math.abs(
+          (txDate.getTime() - new Date(bill.paymentDate).getTime()) / (1000 * 60 * 60 * 24)
+        )
+        // Compare against both user label and stored raw bank description
+        const lscore = Math.max(
+          labelSimilarity(tx.descripcion, bill.label),
+          bill.sourceDescription ? labelSimilarity(tx.descripcion, bill.sourceDescription) : 0
+        )
 
-        const totalScore = (1 - amountDiff) * 0.3 + lscore * 0.7
+        let totalScore = 0
+
+        if (daysDiff <= 3) {
+          // Strong signal: same amount + close date → duplicate even if label differs
+          // (user likely renamed the transaction when entering manually)
+          totalScore = (1 - amountDiff) * 0.55 + (1 - Math.min(daysDiff, 3) / 3) * 0.35 + lscore * 0.10
+        } else if (lscore >= 0.5) {
+          // Fallback: same amount + similar label or raw bank description
+          totalScore = (1 - amountDiff) * 0.3 + lscore * 0.7
+        } else {
+          continue // neither condition met → not a duplicate
+        }
+
         if (totalScore > bestScore) {
           bestScore = totalScore
           bestMatch = {

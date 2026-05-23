@@ -162,6 +162,7 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
           descripcion: tx.descripcion,
           montoARS: tx.montoARS,
           billTypeId: cardMap[tx.titular] ?? orgCcCards[0]?.id ?? "",
+          comprobante: tx.comprobante ?? null,
         }))
       if (payload.length === 0) { setDuplicatesLoading(false); return }
       const res = await fetch("/api/resumen/check-duplicates", {
@@ -300,6 +301,7 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
         organizationId: txOrgId,
         userId,
         comprobante: tx.comprobante ?? null,
+        descripcionRaw: tx.descripcionRaw ?? null,
       })
     }
 
