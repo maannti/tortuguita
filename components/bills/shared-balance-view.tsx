@@ -403,61 +403,97 @@ export function SharedBalanceView({ organizations, currentUserId }: Props) {
         </div>
       </div>
 
-      {/* ── Member chips ── */}
+      {/* ── Member chips / avatars ── */}
       {otherMembers.length > 0 && (
-        <div className={cn(
-          "flex gap-2 px-4 py-3",
-          otherMembers.length >= 4 ? "overflow-x-auto" : ""
-        )}>
-          {otherMembers.map((member) => {
-            const owes = iOweMap[member.id]
-            const owed = owedToMeMap[member.id]
-            // ≤3 members: divide equally; ≥4: fixed width + horizontal scroll
-            const chipStyle = otherMembers.length <= 3
-              ? { flex: `0 0 calc(${100 / otherMembers.length}% - ${(otherMembers.length - 1) * 8 / otherMembers.length}px)` }
-              : { flexShrink: 0, width: 120 }
-            return (
-              <div
-                key={member.id}
-                className={cn(
-                  "rounded-xl px-3 py-2 border",
-                  owes && owes.netAmount > 0
-                    ? "border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/30"
-                    : owed && owed.netAmount > 0
-                    ? "border-green-300 dark:border-green-800 bg-green-50 dark:bg-green-950/30"
-                    : "border-border bg-card"
-                )}
-                style={chipStyle}
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-[12px] font-semibold text-foreground truncate">
-                    {member.name.split(" ")[0]}
-                  </span>
-                  {owes && owes.netAmount > 0 ? (
-                    <div className="text-right flex-shrink-0">
-                      <div className="text-[13px] font-semibold text-[#9D3050]" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
-                        −{formatARS(owes.netAmount)}
-                      </div>
-                      <div className="text-[9px] text-muted-foreground">le debés</div>
-                    </div>
-                  ) : owed && owed.netAmount > 0 ? (
-                    <div className="text-right flex-shrink-0">
-                      <div className="text-[13px] font-semibold text-[#2d7a5a]" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
-                        +{formatARS(owed.netAmount)}
-                      </div>
-                      <div className="text-[9px] text-muted-foreground">te debe</div>
-                    </div>
-                  ) : (
-                    <div className="text-right flex-shrink-0">
-                      <div className="text-[13px] font-medium text-muted-foreground" style={{ fontFamily: "var(--font-fraunces, serif)" }}>$0</div>
-                      <div className="text-[9px] text-muted-foreground">al día ✓</div>
-                    </div>
+        otherMembers.length <= 2 ? (
+          /* 1–2 members: full-width chips */
+          <div className="flex gap-2 px-4 py-3">
+            {otherMembers.map((member) => {
+              const owes = iOweMap[member.id]
+              const owed = owedToMeMap[member.id]
+              return (
+                <div
+                  key={member.id}
+                  className={cn(
+                    "flex-1 rounded-xl px-3 py-2 border",
+                    owes && owes.netAmount > 0
+                      ? "border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/30"
+                      : owed && owed.netAmount > 0
+                      ? "border-green-300 dark:border-green-800 bg-green-50 dark:bg-green-950/30"
+                      : "border-border bg-card"
                   )}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[12px] font-semibold text-foreground truncate">
+                      {member.name.split(" ")[0]}
+                    </span>
+                    {owes && owes.netAmount > 0 ? (
+                      <div className="text-right flex-shrink-0">
+                        <div className="text-[13px] font-semibold text-[#9D3050]" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
+                          −{formatARS(owes.netAmount)}
+                        </div>
+                        <div className="text-[9px] text-muted-foreground">le debés</div>
+                      </div>
+                    ) : owed && owed.netAmount > 0 ? (
+                      <div className="text-right flex-shrink-0">
+                        <div className="text-[13px] font-semibold text-[#2d7a5a]" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
+                          +{formatARS(owed.netAmount)}
+                        </div>
+                        <div className="text-[9px] text-muted-foreground">te debe</div>
+                      </div>
+                    ) : (
+                      <div className="text-right flex-shrink-0">
+                        <div className="text-[13px] font-medium text-muted-foreground" style={{ fontFamily: "var(--font-fraunces, serif)" }}>$0</div>
+                        <div className="text-[9px] text-muted-foreground">al día ✓</div>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            )
-          })}
-        </div>
+              )
+            })}
+          </div>
+        ) : (
+          /* 3+ members: avatar style, wraps to fit */
+          <div className="flex flex-wrap justify-center gap-x-3 gap-y-3 px-4 py-3">
+            {otherMembers.map((member) => {
+              const owes = iOweMap[member.id]
+              const owed = owedToMeMap[member.id]
+              const hasDebt = !!(owes && owes.netAmount > 0)
+              const isOwed = !!(owed && owed.netAmount > 0)
+              const amount = hasDebt ? owes!.netAmount : isOwed ? owed!.netAmount : 0
+              const parts = member.name.trim().split(" ")
+              const initials = parts.length >= 2
+                ? (parts[0][0] + parts[1][0]).toUpperCase()
+                : parts[0].slice(0, 2).toUpperCase()
+              return (
+                <div key={member.id} className="flex flex-col items-center gap-1 w-[60px]">
+                  <div
+                    className={cn(
+                      "size-10 rounded-full flex items-center justify-center text-xs font-semibold ring-2 flex-shrink-0",
+                      hasDebt ? "ring-rose-300 bg-rose-50 dark:bg-rose-950/30 text-[#9D3050]"
+                        : isOwed ? "ring-green-300 bg-green-50 dark:bg-green-950/30 text-[#2d7a5a]"
+                        : "ring-transparent bg-muted text-muted-foreground"
+                    )}
+                  >
+                    {initials}
+                  </div>
+                  <p className="text-[10px] font-medium text-center leading-tight text-foreground w-full truncate">
+                    {parts[0]}
+                  </p>
+                  <p
+                    className={cn(
+                      "text-[11px] font-semibold text-center leading-tight",
+                      hasDebt ? "text-[#9D3050]" : isOwed ? "text-[#2d7a5a]" : "text-muted-foreground"
+                    )}
+                    style={{ fontFamily: "var(--font-fraunces, serif)" }}
+                  >
+                    {hasDebt ? `−${formatARS(amount)}` : isOwed ? `+${formatARS(amount)}` : "$0"}
+                  </p>
+                </div>
+              )
+            })}
+          </div>
+        )
       )}
 
       {/* ── Loading ── */}

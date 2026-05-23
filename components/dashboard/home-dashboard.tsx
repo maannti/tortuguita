@@ -248,25 +248,51 @@ export function HomeDashboard({ month, monthKey, availableMonths, spaces, curren
               )}
             </div>
 
-            {/* Member split — only shown when exactly 1 space is active */}
-            {members.length > 1 && (
-              <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${members.length}, 1fr)` }}>
+            {/* Member split */}
+            {members.length === 2 ? (
+              /* 2 members — original chip style */
+              <div className="grid grid-cols-2 gap-3">
                 {members.map((member) => (
-                  <div key={member.id} className="flex-1 bg-white/35 backdrop-blur-sm rounded-2xl px-3 py-2.5">
-                    <p className="text-[11px] font-medium text-center" style={{ color: isDark ? "#FCB9B2" : "#9D8189" }}>{member.name.split(" ")[0]}</p>
-                    <p
-                      className="text-xl font-medium leading-tight mt-0.5 text-center"
-                      style={{ fontFamily: "var(--font-fraunces, serif)", color: isDark ? "#FED0BB" : "#4A3540" }}
-                    >
+                  <div key={member.id} className="bg-white/35 backdrop-blur-sm rounded-2xl px-3 py-2.5">
+                    <p className="text-[11px] font-medium text-center truncate" style={{ color: isDark ? "#FCB9B2" : "#9D8189" }}>
+                      {member.name.split(" ")[0]}
+                    </p>
+                    <p className="text-xl font-medium leading-tight mt-0.5 text-center"
+                      style={{ fontFamily: "var(--font-fraunces, serif)", color: isDark ? "#FED0BB" : "#4A3540" }}>
                       {formatARS(member.expenses)}
                     </p>
-                    {member.percentage > 0 && (
-                      <p className="text-[10px] mt-0.5 text-center" style={{ color: isDark ? "#FCB9B2" : "#9D8189" }}>{Math.round(member.percentage)}% ingresos</p>
-                    )}
                   </div>
                 ))}
               </div>
-            )}
+            ) : members.length > 2 ? (
+              /* 3+ members — avatar style, wraps to fit */
+              <div className="flex flex-wrap justify-center gap-x-2 gap-y-2.5">
+                {members.map((member) => {
+                  const parts = member.name.trim().split(" ")
+                  const initials = parts.length >= 2
+                    ? (parts[0][0] + parts[1][0]).toUpperCase()
+                    : parts[0].slice(0, 2).toUpperCase()
+                  return (
+                    <div key={member.id} className="flex flex-col items-center gap-1 w-[60px]">
+                      <div
+                        className="size-10 rounded-full flex items-center justify-center text-xs font-semibold backdrop-blur-sm flex-shrink-0"
+                        style={{ background: "rgba(255,255,255,0.35)", color: isDark ? "#FED0BB" : "#4A3540" }}
+                      >
+                        {initials}
+                      </div>
+                      <p className="text-[10px] font-medium text-center leading-tight w-full truncate"
+                        style={{ color: isDark ? "#FCB9B2" : "#9D8189" }}>
+                        {parts[0]}
+                      </p>
+                      <p className="text-[11px] font-medium text-center leading-tight"
+                        style={{ fontFamily: "var(--font-fraunces, serif)", color: isDark ? "#FED0BB" : "#4A3540" }}>
+                        {formatARS(member.expenses)}
+                      </p>
+                    </div>
+                  )
+                })}
+              </div>
+            ) : null}
           </div>
         </div>
       </div>
