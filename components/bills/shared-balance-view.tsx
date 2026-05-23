@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react"
 import { useTheme } from "next-themes"
-import { ChevronLeft, ChevronRight, Check } from "lucide-react"
+import { ChevronLeft, ChevronRight, Check, ArrowLeftRight } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { haptic } from "@/lib/haptics"
 import { format, parse } from "date-fns"
@@ -453,8 +453,11 @@ export function SharedBalanceView({ organizations, currentUserId }: Props) {
             })}
           </div>
         ) : (
-          /* 3+ members: avatar style, wraps to fit */
-          <div className="flex flex-wrap justify-center gap-x-3 gap-y-3 px-4 py-3">
+          /* 3+ members: rounded-square tiles, fill width evenly */
+          <div
+            className="grid gap-x-1 gap-y-2 px-4 py-3"
+            style={{ gridTemplateColumns: `repeat(${Math.min(otherMembers.length, 5)}, 1fr)` }}
+          >
             {otherMembers.map((member) => {
               const owes = iOweMap[member.id]
               const owed = owedToMeMap[member.id]
@@ -466,10 +469,10 @@ export function SharedBalanceView({ organizations, currentUserId }: Props) {
                 ? (parts[0][0] + parts[1][0]).toUpperCase()
                 : parts[0].slice(0, 2).toUpperCase()
               return (
-                <div key={member.id} className="flex flex-col items-center gap-1 w-[60px]">
+                <div key={member.id} className="flex flex-col items-center gap-1">
                   <div
                     className={cn(
-                      "size-10 rounded-full flex items-center justify-center text-xs font-semibold ring-2 flex-shrink-0",
+                      "size-11 rounded-2xl flex items-center justify-center text-xs font-semibold ring-2",
                       hasDebt ? "ring-rose-300 bg-rose-50 dark:bg-rose-950/30 text-[#9D3050]"
                         : isOwed ? "ring-green-300 bg-green-50 dark:bg-green-950/30 text-[#2d7a5a]"
                         : "ring-transparent bg-muted text-muted-foreground"
@@ -482,7 +485,7 @@ export function SharedBalanceView({ organizations, currentUserId }: Props) {
                   </p>
                   <p
                     className={cn(
-                      "text-[11px] font-semibold text-center leading-tight",
+                      "text-[11px] font-semibold text-center leading-tight w-full truncate",
                       hasDebt ? "text-[#9D3050]" : isOwed ? "text-[#2d7a5a]" : "text-muted-foreground"
                     )}
                     style={{ fontFamily: "var(--font-fraunces, serif)" }}
@@ -523,6 +526,10 @@ export function SharedBalanceView({ organizations, currentUserId }: Props) {
           person={person}
           direction="iOwe"
           onSettle={handleSettle}
+          onSettleAll={async () => {
+            const unsettled = person.bills.filter(b => !b.isSettled)
+            await Promise.all(unsettled.map(b => handleSettle(b.id)))
+          }}
           settlingIds={settlingIds}
         />
       ))}
@@ -534,6 +541,10 @@ export function SharedBalanceView({ organizations, currentUserId }: Props) {
           person={person}
           direction="owedToMe"
           onSettle={handleSettle}
+          onSettleAll={async () => {
+            const unsettled = person.bills.filter(b => !b.isSettled)
+            await Promise.all(unsettled.map(b => handleSettle(b.id, b.debtorId)))
+          }}
           settlingIds={settlingIds}
         />
       ))}
@@ -547,10 +558,11 @@ interface BillGroupProps {
   person: PersonBalance
   direction: "iOwe" | "owedToMe"
   onSettle: (billId: string, debtorId?: string) => Promise<void>
+  onSettleAll: () => Promise<void>
   settlingIds: Set<string>
 }
 
-function BillGroup({ person, direction, onSettle, settlingIds }: BillGroupProps) {
+function BillGroup({ person, direction, onSettle, onSettleAll, settlingIds }: BillGroupProps) {
   const initials = getInitials(person.memberName)
   const avatarColor = getAvatarColor(person.memberName)
   const settledCount = person.bills.filter((b) => b.isSettled).length
@@ -558,33 +570,107 @@ function BillGroup({ person, direction, onSettle, settlingIds }: BillGroupProps)
   const sectionLabel =
     direction === "iOwe" ? `Le debés a ${firstName}` : `Te debe ${firstName}`
 
+  // Swipeable header state
+  const headerStartXRef = useRef<number>(0)
+  const [headerDeltaX, setHeaderDeltaX] = useState(0)
+  const [settlingAll, setSettlingAll] = useState(false)
+  const unsettledCount = person.bills.filter(b => !b.isSettled).length
+  const headerSwipeProgress = Math.min(Math.abs(headerDeltaX) / SWIPE_THRESHOLD, 1)
+
+  const triggerSettleAll = useCallback(async () => {
+    if (settlingAll || unsettledCount === 0) return
+    setSettlingAll(true)
+    haptic("medium")
+    await onSettleAll()
+    setSettlingAll(false)
+  }, [settlingAll, unsettledCount, onSettleAll])
+
+  const handleHeaderTouchStart = (e: React.TouchEvent) => {
+    headerStartXRef.current = e.touches[0].clientX
+  }
+  const handleHeaderTouchMove = (e: React.TouchEvent) => {
+    if (unsettledCount === 0 || settlingAll) return
+    const dx = e.touches[0].clientX - headerStartXRef.current
+    setHeaderDeltaX(Math.max(-140, Math.min(dx, 140)))
+  }
+  const handleHeaderTouchEnd = () => {
+    if (Math.abs(headerDeltaX) >= SWIPE_THRESHOLD) {
+      setHeaderDeltaX(0)
+      triggerSettleAll()
+    } else {
+      setHeaderDeltaX(0)
+    }
+  }
+
   return (
     <>
       <div className="px-4 pt-4 pb-2 text-[11px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
         {sectionLabel}
       </div>
       <div className="mx-4 mb-3 bg-card rounded-[18px] overflow-hidden border">
-        {/* Header */}
-        <div className="flex items-center justify-between px-3.5 py-3 bg-muted/40 border-b border-border">
-          <div className="flex items-center gap-2">
+        {/* Swipeable header */}
+        <div className="relative overflow-hidden">
+          {/* Green layer revealed on swipe */}
+          {unsettledCount > 0 && (
             <div
-              className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold text-white flex-shrink-0"
-              style={{ background: avatarColor }}
+              className="absolute inset-0 flex items-center justify-center gap-2 text-white text-[13px] font-semibold"
+              style={{
+                background: "#2d7a5a",
+                opacity: headerSwipeProgress,
+                transition: headerDeltaX === 0 ? "opacity 0.2s" : "none",
+              }}
             >
-              {initials}
+              <Check className="w-4 h-4" />
+              Saldar todo
             </div>
-            <div>
-              <div className="text-[13px] font-semibold text-foreground">{firstName}</div>
-              <div className="text-[11px] text-muted-foreground">
-                {person.bills.length} {person.bills.length === 1 ? "gasto" : "gastos"} · {settledCount} saldados
+          )}
+          <div
+            className="flex items-center justify-between px-3.5 py-3 bg-muted/40 border-b border-border relative z-10"
+            style={{
+              transform: `translateX(${headerDeltaX}px)`,
+              transition: headerDeltaX === 0 ? "transform 0.25s ease-out" : "none",
+            }}
+            onTouchStart={handleHeaderTouchStart}
+            onTouchMove={handleHeaderTouchMove}
+            onTouchEnd={handleHeaderTouchEnd}
+          >
+            <div className="flex items-center gap-2">
+              <div
+                className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold text-white flex-shrink-0"
+                style={{ background: avatarColor }}
+              >
+                {initials}
+              </div>
+              <div>
+                <div className="text-[13px] font-semibold text-foreground">{firstName}</div>
+                <div className="text-[11px] text-muted-foreground">
+                  {person.bills.length} {person.bills.length === 1 ? "gasto" : "gastos"} · {settledCount} saldados
+                </div>
               </div>
             </div>
-          </div>
-          <div
-            className="text-[15px] font-semibold text-[#9D3050]"
-            style={{ fontFamily: "var(--font-fraunces, serif)" }}
-          >
-            {formatARS(person.netAmount)}
+            <div className="flex items-center gap-2">
+              <div
+                className="text-[15px] font-semibold text-[#9D3050]"
+                style={{ fontFamily: "var(--font-fraunces, serif)" }}
+              >
+                {formatARS(person.netAmount)}
+              </div>
+              {/* Desktop-only "Saldar todo" button */}
+              {unsettledCount > 0 && (
+                <button
+                  onClick={triggerSettleAll}
+                  disabled={settlingAll}
+                  className="hidden lg:flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold text-white transition-all active:scale-95 disabled:opacity-50"
+                  style={{ background: "#2d7a5a" }}
+                >
+                  {settlingAll
+                    ? <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin" />
+                    : <Check className="w-3 h-3" />
+                  }
+                  Saldar todo
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
@@ -640,11 +726,12 @@ function SwipeableBillRow({ bill, canSettle, onSettle, settling }: SwipeableBill
   const handleTouchMove = (e: React.TouchEvent) => {
     if (!canSettle) return
     const dx = e.touches[0].clientX - startXRef.current
-    setDeltaX(Math.max(0, Math.min(dx, 140)))
+    // Bidirectional: allow both left→right and right→left swipe
+    setDeltaX(Math.max(-140, Math.min(dx, 140)))
   }
 
   const handleTouchEnd = () => {
-    if (deltaX >= SWIPE_THRESHOLD) {
+    if (Math.abs(deltaX) >= SWIPE_THRESHOLD) {
       setDeltaX(0)
       triggerSettle()
     } else {
@@ -654,14 +741,14 @@ function SwipeableBillRow({ bill, canSettle, onSettle, settling }: SwipeableBill
 
   const dotColor = bill.categoryColor ?? "#9D8189"
   const dateStr = format(new Date(bill.paymentDate), "d MMM", { locale: es })
-  const swipeProgress = Math.min(deltaX / SWIPE_THRESHOLD, 1)
+  const swipeProgress = Math.min(Math.abs(deltaX) / SWIPE_THRESHOLD, 1)
 
   return (
     <div className="relative overflow-hidden border-b border-border last:border-b-0">
-      {/* Green settle layer (revealed on swipe) */}
+      {/* Green settle layer — shown on swipe in either direction */}
       {canSettle && (
         <div
-          className="absolute inset-0 flex items-center pl-4 gap-2 text-white text-[13px] font-semibold"
+          className="absolute inset-0 flex items-center justify-center gap-2 text-white text-[13px] font-semibold"
           style={{
             background: "#2d7a5a",
             opacity: swipeProgress,
@@ -714,24 +801,31 @@ function SwipeableBillRow({ bill, canSettle, onSettle, settling }: SwipeableBill
           {formatARS(bill.amount)}
         </div>
 
-        {/* Settle circle button */}
+        {/* Right side indicator */}
         {canSettle && (
-          <button
-            onClick={triggerSettle}
-            disabled={settling}
-            className={cn(
-              "w-7 h-7 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all active:scale-90",
-              localSettled
-                ? "bg-[#2d7a5a] border-[#2d7a5a] text-white"
-                : "border-border bg-card"
-            )}
-          >
-            {settling ? (
-              <div className="w-3 h-3 border border-primary border-t-transparent rounded-full animate-spin" />
-            ) : localSettled ? (
+          localSettled ? (
+            // Settled → green circle ✓ always visible (mobile + desktop)
+            <button
+              onClick={triggerSettle}
+              disabled={settling}
+              className="w-7 h-7 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all active:scale-90 bg-[#2d7a5a] border-[#2d7a5a] text-white"
+            >
               <Check className="w-3.5 h-3.5" />
-            ) : null}
-          </button>
+            </button>
+          ) : (
+            <>
+              {/* Mobile: subtle swipe hint ⟵⟶ */}
+              <ArrowLeftRight className="w-3.5 h-3.5 text-muted-foreground/35 flex-shrink-0 lg:hidden" />
+              {/* Desktop: empty circle button */}
+              <button
+                onClick={triggerSettle}
+                disabled={settling}
+                className="w-7 h-7 rounded-full border-2 border-border bg-card hidden lg:flex items-center justify-center flex-shrink-0 transition-all active:scale-90"
+              >
+                {settling && <div className="w-3 h-3 border border-primary border-t-transparent rounded-full animate-spin" />}
+              </button>
+            </>
+          )
         )}
 
       </div>
