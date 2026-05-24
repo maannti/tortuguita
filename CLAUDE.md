@@ -110,6 +110,9 @@ components/
 
 ## Reglas críticas
 
+### 🚫 Flujo de trabajo — LOCAL primero, prod solo cuando el usuario lo pide
+**Nunca pushear a producción sin instrucción explícita.** Todo el trabajo va en local primero. Solo se hace `git push` cuando el usuario dice "pushea" o "mandá a prod". Si hay dudas, preguntar.
+
 ### ⚠️ home-dashboard.tsx — NO TOCAR sin instrucción explícita
 El diseño del dashboard principal está aprobado. Antes de cualquier cambio:
 ```bash
