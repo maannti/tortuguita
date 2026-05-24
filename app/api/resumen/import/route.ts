@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
         const externalRef = tx.comprobante ?? null
 
         // ── Dedup check ──────────────────────────────────────────────────────
-        // Skip if a bill with the same card + comprobante + this installment already exists
+        // Path 1: exact comprobante match (no time limit)
         if (externalRef) {
           const existing = await prisma.bill.findUnique({
             where: {
@@ -102,6 +102,26 @@ export async function POST(request: NextRequest) {
           })
           if (existing) {
             errors.push(`Duplicado ignorado: ${tx.descripcion} (comprobante ${externalRef})`)
+            continue
+          }
+        }
+        // Path 2: fallback — same card + exact amount + same date + same installment
+        // Catches re-imports of old bills that were loaded before comprobante support
+        {
+          const txPaymentDate = new Date(tx.fecha + "T12:00:00")
+          const dayStart = new Date(txPaymentDate); dayStart.setHours(0, 0, 0, 0)
+          const dayEnd = new Date(txPaymentDate); dayEnd.setHours(23, 59, 59, 999)
+          const fallback = await prisma.bill.findFirst({
+            where: {
+              billTypeId: tx.billTypeId,
+              amount: Math.abs(finalAmount),
+              paymentDate: { gte: dayStart, lte: dayEnd },
+              currentInstallment: totalInstallments > 1 ? cuotaActual : null,
+            },
+            select: { id: true },
+          })
+          if (fallback) {
+            errors.push(`Duplicado ignorado: ${tx.descripcion} (monto+fecha)`)
             continue
           }
         }
