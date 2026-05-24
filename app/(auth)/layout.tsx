@@ -5,7 +5,7 @@ export default function AuthLayout({
 }) {
   return (
     <div
-      className="min-h-dvh flex flex-col items-center justify-center px-5 py-12"
+      className="min-h-dvh flex flex-col items-center justify-start px-5 py-12"
       style={{
         background: "linear-gradient(to bottom, #D8E2DC 0%, #FFFFFF 30%, #FFE5D9 55%, #FFCAD4 75%, #F4ACB7 100%)",
       }}
