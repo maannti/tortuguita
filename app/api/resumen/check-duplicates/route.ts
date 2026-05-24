@@ -61,15 +61,11 @@ export async function POST(request: NextRequest) {
     const billTypeIds = [...new Set(transacciones.map(t => t.billTypeId).filter(Boolean))]
     if (billTypeIds.length === 0) return NextResponse.json({ matches: {} })
 
-    // Look back 90 days
-    const since = new Date()
-    since.setDate(since.getDate() - 90)
-
+    // No time limit — covers bills loaded before comprobante support existed
     const existingBills = await prisma.bill.findMany({
       where: {
         organizationId: { in: userOrgIds },
         billTypeId: { in: billTypeIds },
-        paymentDate: { gte: since },
       },
       select: { id: true, label: true, amount: true, paymentDate: true, billTypeId: true, externalRef: true, sourceDescription: true },
       orderBy: { paymentDate: "desc" },
