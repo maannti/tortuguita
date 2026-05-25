@@ -51,8 +51,7 @@ export function CardsList({ cards, alertCardIds = [] }: CardsListProps) {
               return (
                 <div
                   key={card.id}
-                  className="flex items-center gap-3 px-4 py-3.5 transition-colors"
-                  style={hasAlert ? { backgroundColor: "#FFFBEB" } : undefined}
+                  className={`flex items-center gap-3 px-4 py-3.5 transition-colors ${hasAlert ? "bg-amber-50 dark:bg-amber-950/30" : ""}`}
                 >
                   <CardIcon
                     bankId={bankId}
@@ -63,7 +62,7 @@ export function CardsList({ cards, alertCardIds = [] }: CardsListProps) {
                   />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{card.name}</p>
-                    <p className={`text-xs mt-0.5 ${hasAlert ? "" : "text-muted-foreground"}`} style={{ color: hasAlert ? "#D97706" : undefined }}>
+                    <p className={`text-xs mt-0.5 ${hasAlert ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground"}`}>
                       {hasAlert
                         ? "Período sin configurar"
                         : netLabel && bankName ? `${netLabel} · ${bankName}` : "Tarjeta de crédito"}
