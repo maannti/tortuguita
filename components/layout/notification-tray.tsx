@@ -136,27 +136,23 @@ function BillingAlertRow({ alert, onDismiss }: { alert: BillingAlert; onDismiss:
   const copy = BILLING_ALERT_COPY[alert.alertType] ?? BILLING_ALERT_COPY.no_period
 
   return (
-    <div className="flex items-start gap-3 px-4 py-3" style={{ backgroundColor: "#FFFBEB" }}>
+    <div className="flex items-start gap-3 px-4 py-3 bg-amber-50 dark:bg-amber-900/20">
       {/* Icon */}
-      <div
-        className="size-8 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5"
-        style={{ backgroundColor: "#FEF3C7" }}
-      >
-        <AlertTriangle className="size-3.5" style={{ color: "#D97706" }} strokeWidth={2} />
+      <div className="size-8 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5 bg-amber-100 dark:bg-amber-800/40">
+        <AlertTriangle className="size-3.5 text-amber-600 dark:text-amber-400" strokeWidth={2} />
       </div>
 
       {/* Content */}
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium leading-snug" style={{ color: "#92400E" }}>
+        <p className="text-sm font-medium leading-snug text-amber-900 dark:text-amber-200">
           {copy.title}
         </p>
-        <p className="text-sm leading-snug mt-0.5" style={{ color: "#B45309" }}>
+        <p className="text-sm leading-snug mt-0.5 text-amber-800 dark:text-amber-300">
           {copy.body(alert.name)}
         </p>
         <Link
           href={`/cards/${alert.id}/edit`}
-          className="inline-block mt-1.5 text-xs font-medium underline underline-offset-2"
-          style={{ color: "#D97706" }}
+          className="inline-block mt-1.5 text-xs font-medium underline underline-offset-2 text-amber-600 dark:text-amber-400"
         >
           Configurar tarjeta →
         </Link>
@@ -165,10 +161,10 @@ function BillingAlertRow({ alert, onDismiss }: { alert: BillingAlert; onDismiss:
       {/* Dismiss */}
       <button
         onClick={onDismiss}
-        className="size-6 flex items-center justify-center rounded-full flex-shrink-0 mt-0.5 transition-colors hover:bg-amber-200/60"
+        className="size-6 flex items-center justify-center rounded-full flex-shrink-0 mt-0.5 transition-colors hover:bg-amber-200/60 dark:hover:bg-amber-700/40"
         aria-label="Desestimar"
       >
-        <X className="size-3.5" style={{ color: "#D97706" }} />
+        <X className="size-3.5 text-amber-600 dark:text-amber-400" />
       </button>
     </div>
   )
@@ -213,13 +209,12 @@ export function NotificationTray({ isOpen, onClose, onRead, billingAlerts = [], 
 
       {/* Top sheet — slides down from header */}
       <div
-        className="fixed top-14 right-3 z-50 rounded-2xl transition-all duration-300 ease-out"
+        className="fixed top-14 right-3 z-50 rounded-2xl transition-all duration-300 ease-out bg-background/[0.97] dark:bg-card/[0.97]"
         style={{
-          background: "rgba(255,255,255,0.97)",
           backdropFilter: "blur(24px)",
           WebkitBackdropFilter: "blur(24px)",
           boxShadow: "0 8px 32px rgba(157,129,137,0.18), 0 2px 12px rgba(157,129,137,0.10)",
-          border: "1px solid rgba(255,255,255,0.8)",
+          border: "1px solid rgba(255,255,255,0.12)",
           width: "min(340px, calc(100vw - 24px))",
           maxHeight: "70dvh",
           transform: isOpen ? "translateY(0) scale(1)" : "translateY(-8px) scale(0.97)",
@@ -241,7 +236,7 @@ export function NotificationTray({ isOpen, onClose, onRead, billingAlerts = [], 
         <div className="overflow-y-auto" style={{ maxHeight: "calc(70dvh - 80px)" }}>
           {/* Billing alerts — shown before regular notifications, dismissible */}
           {billingAlerts.length > 0 && (
-            <div className="divide-y" style={{ borderColor: "#FDE68A" }}>
+            <div className="divide-y divide-amber-200 dark:divide-amber-800/40">
               {billingAlerts.map(alert => (
                 <BillingAlertRow
                   key={alert.id}
