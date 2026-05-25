@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { ChevronLeft, Pencil, Trash2 } from "lucide-react"
 import {
@@ -61,6 +61,8 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
 
 export function BillDetail({ bill }: BillDetailProps) {
   const { push } = useRouter()
+  const searchParams = useSearchParams()
+  const returnTo = searchParams.get("returnTo") ?? "/bills"
   const accentColor = (bill.category?.color || bill.billType.color) ?? "#9D8189"
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -76,7 +78,7 @@ export function BillDetail({ bill }: BillDetailProps) {
         setDeleteError(data.error || "Error al eliminar")
         return
       }
-      push("/bills")
+      push(returnTo)
     } catch {
       setDeleteError("Error al eliminar")
     } finally {
@@ -90,7 +92,7 @@ export function BillDetail({ bill }: BillDetailProps) {
       <div className="flex items-center justify-between px-4 py-3 border-b sticky top-0 bg-background/95 backdrop-blur-sm z-10">
         <button
           type="button"
-          onClick={() => push("/bills")}
+          onClick={() => push(returnTo)}
           className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           <ChevronLeft className="size-4" />
@@ -98,7 +100,7 @@ export function BillDetail({ bill }: BillDetailProps) {
         </button>
         <div className="flex items-center gap-2">
           <Link
-            href={`/bills/${bill.id}/edit`}
+            href={`/bills/${bill.id}/edit?returnTo=${encodeURIComponent(returnTo)}`}
             className="size-9 flex items-center justify-center rounded-2xl bg-muted/80 text-muted-foreground hover:text-foreground active:scale-95 transition-all"
           >
             <Pencil className="size-4" />
