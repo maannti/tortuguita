@@ -239,15 +239,16 @@ function InstallmentGroupRow({ group, cardColor }: { group: InstallmentGroup; ca
 
 // ─── Single bill row ──────────────────────────────────────────────────────────
 function SingleBillRow({ bill }: { bill: SingleBill }) {
+  const [isPaid, setIsPaid] = useState(bill.isPaid)
   return (
     <div className={cn(
       "flex items-center gap-2.5 px-4 py-3 transition-colors",
-      bill.isPaid && "bg-emerald-50/60 dark:bg-emerald-950/20"
+      isPaid && "bg-emerald-50/60 dark:bg-emerald-950/20"
     )}>
-      <PaidToggle billId={bill.id} isPaid={bill.isPaid} />
+      <PaidToggle billId={bill.id} isPaid={isPaid} onToggle={setIsPaid} />
       <Link href={`/bills/${bill.id}`} className="flex-1 min-w-0 flex items-center justify-between gap-2">
         <div className="min-w-0">
-          <p className={cn("text-sm font-medium truncate", bill.isPaid && "text-muted-foreground line-through")}>
+          <p className={cn("text-sm font-medium truncate", isPaid && "text-muted-foreground line-through")}>
             {bill.label}
           </p>
           <div className="flex items-center gap-1.5 mt-0.5">
@@ -261,7 +262,7 @@ function SingleBillRow({ bill }: { bill: SingleBill }) {
             )}
           </div>
         </div>
-        <span className={cn("text-sm font-medium tabular-nums flex-shrink-0", bill.isPaid && "text-muted-foreground line-through")}
+        <span className={cn("text-sm font-medium tabular-nums flex-shrink-0", isPaid && "text-muted-foreground line-through")}
           style={{ fontFamily: "var(--font-fraunces, serif)" }}>
           {formatARS(bill.amount)}
         </span>
