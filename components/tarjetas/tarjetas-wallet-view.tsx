@@ -2,7 +2,7 @@
 import { useState, useTransition, useCallback, useEffect } from "react"
 import { useTheme } from "next-themes"
 import { useRouter } from "next/navigation"
-import { ChevronLeft, ChevronRight, ChevronDown, Check, X, FileText, CreditCard } from "lucide-react"
+import { ChevronLeft, ChevronRight, ChevronDown, Check, X, FileText, CreditCard, Clock } from "lucide-react"
 import Link from "next/link"
 import { haptic } from "@/lib/haptics"
 import { cn } from "@/lib/utils"
@@ -86,20 +86,26 @@ function PaidToggle({ billId, isPaid: initialIsPaid }: { billId: string; isPaid:
 // ─── Installment group row ────────────────────────────────────────────────────
 function InstallmentGroupRow({ group, cardColor }: { group: InstallmentGroup; cardColor: string }) {
   const [expanded, setExpanded] = useState(false)
-
-  const priorPaid = group.minInstallment - 1
-  const paidCount = priorPaid + group.bills.filter(b => b.isPast || b.isPaid).length
-  const progress = Math.min(paidCount / group.totalInstallments, 1)
+  const [historyExpanded, setHistoryExpanded] = useState(false)
 
   const sorted = [...group.bills].sort((a, b) => a.currentInstallment - b.currentInstallment)
-  const currentBill = sorted.find(b => !b.isPast && !b.isPaid) ?? sorted[sorted.length - 1]
-  const monthAmount = currentBill?.amount ?? (sorted[0]?.amount ?? 0)
+
+  // Split: past (auto-cobradas) vs active/future
+  const pastBills = sorted.filter(b => b.isPast || b.isPaid)
+  const pendingBills = sorted.filter(b => !b.isPast && !b.isPaid)
+
+  // paidCount: past bills in DB + cuotas that existed before first DB record
+  const priorPaid = group.minInstallment - 1
+  const paidCount = priorPaid + pastBills.length
+  const progress = Math.min(paidCount / group.totalInstallments, 1)
+
+  // Amount shown on header = next pending, or last bill if all done
+  const currentBill = pendingBills[0] ?? sorted[sorted.length - 1]
+  const monthAmount = currentBill?.amount ?? 0
 
   return (
-    <div className={cn(
-      "overflow-hidden transition-all",
-      sorted.some(b => b.isPaid) && "ring-1 ring-emerald-400/30 rounded-xl"
-    )}>
+    <div className="overflow-hidden transition-all">
+      {/* Header */}
       <button
         className="w-full px-4 py-3 flex items-start gap-3 active:bg-black/5 dark:active:bg-white/10 transition-colors"
         onClick={() => { haptic("light"); setExpanded(v => !v) }}
@@ -115,12 +121,8 @@ function InstallmentGroupRow({ group, cardColor }: { group: InstallmentGroup; ca
           <p className="text-[11px] text-muted-foreground mt-0.5">
             {paidCount}/{group.totalInstallments} cuotas
           </p>
-          {/* Progress bar */}
           <div className="mt-1.5 w-full h-1 bg-black/8 dark:bg-white/15 rounded-full overflow-hidden">
-            <div
-              className="h-full rounded-full transition-all duration-500"
-              style={{ width: `${progress * 100}%`, backgroundColor: cardColor }}
-            />
+            <div className="h-full rounded-full transition-all duration-500" style={{ width: `${progress * 100}%`, backgroundColor: cardColor }} />
           </div>
         </div>
         <div className="flex items-center gap-1.5 flex-shrink-0 pt-0.5">
@@ -132,28 +134,78 @@ function InstallmentGroupRow({ group, cardColor }: { group: InstallmentGroup; ca
       </button>
 
       {expanded && (
-        <div className="border-t border-black/5 dark:border-white/10 divide-y divide-black/5 dark:divide-white/10 bg-black/[0.02] dark:bg-white/[0.03]">
-          {sorted.map(bill => (
-            <div
-              key={bill.id}
-              className={cn(
-                "flex items-center gap-2.5 px-4 py-2.5 transition-colors",
-                bill.isPaid && "bg-emerald-50/60 dark:bg-emerald-950/20"
-              )}
-            >
-              <PaidToggle billId={bill.id} isPaid={bill.isPaid} />
-              <Link href={`/bills/${bill.id}`} className="flex-1 min-w-0 flex items-center justify-between gap-2">
-                <div>
-                  <span className="text-xs text-muted-foreground">{bill.paymentDate}</span>
-                  <span className="text-xs text-muted-foreground ml-1">· #{bill.currentInstallment}</span>
+        <div className="border-t border-black/5 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.03]">
+
+          {/* Pending / active cuotas */}
+          <div className="divide-y divide-black/5 dark:divide-white/10">
+            {pendingBills.map(bill => (
+              <div key={bill.id} className="flex items-center gap-2.5 px-4 py-2.5">
+                <PaidToggle billId={bill.id} isPaid={bill.isPaid} />
+                <Link href={`/bills/${bill.id}`} className="flex-1 min-w-0 flex items-center justify-between gap-2">
+                  <div>
+                    <span className="text-xs text-muted-foreground">{bill.paymentDate}</span>
+                    <span className="text-xs text-muted-foreground ml-1">· #{bill.currentInstallment}</span>
+                  </div>
+                  <span className="text-sm tabular-nums" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
+                    {formatARS(bill.amount)}
+                  </span>
+                </Link>
+              </div>
+            ))}
+          </div>
+
+          {/* Historial colapsado */}
+          {(paidCount > 0) && (
+            <div className="border-t border-black/5 dark:border-white/10">
+              <button
+                type="button"
+                onClick={() => { haptic("light"); setHistoryExpanded(v => !v) }}
+                className="w-full flex items-center gap-2 px-4 py-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <Clock className="size-3 flex-shrink-0" />
+                <span>{historyExpanded ? "Ocultar historial" : `Ver ${paidCount} cuota${paidCount !== 1 ? "s" : ""} pagada${paidCount !== 1 ? "s" : ""}`}</span>
+                <ChevronDown className={cn("size-3 ml-auto transition-transform duration-200", historyExpanded && "rotate-180")} />
+              </button>
+
+              {historyExpanded && (
+                <div className="divide-y divide-black/5 dark:divide-white/10">
+                  {/* Prior paid cuotas that aren't in DB */}
+                  {priorPaid > 0 && Array.from({ length: priorPaid }).map((_, i) => (
+                    <div key={`prior-${i}`} className="flex items-center gap-2.5 px-4 py-2 opacity-50">
+                      <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+                        <Clock className="h-2.5 w-2.5 text-muted-foreground" />
+                      </div>
+                      <span className="text-xs text-muted-foreground flex-1">#{group.minInstallment - priorPaid + i} · cobrada</span>
+                    </div>
+                  ))}
+                  {/* Past bills in DB */}
+                  {pastBills.map(bill => (
+                    <div key={bill.id} className="flex items-center gap-2.5 px-4 py-2">
+                      <div className={cn(
+                        "w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0",
+                        bill.isPaid ? "bg-emerald-500" : "bg-muted"
+                      )}>
+                        {bill.isPaid
+                          ? <Check className="h-2.5 w-2.5 stroke-[3] text-white" />
+                          : <Clock className="h-2.5 w-2.5 text-muted-foreground" />
+                        }
+                      </div>
+                      <Link href={`/bills/${bill.id}`} className="flex-1 min-w-0 flex items-center justify-between gap-2">
+                        <div>
+                          <span className="text-xs text-muted-foreground">{bill.paymentDate}</span>
+                          <span className="text-xs text-muted-foreground ml-1">· #{bill.currentInstallment}</span>
+                          {!bill.isPaid && <span className="text-[10px] text-muted-foreground/60 ml-1">cobrada</span>}
+                        </div>
+                        <span className="text-sm tabular-nums text-muted-foreground line-through" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
+                          {formatARS(bill.amount)}
+                        </span>
+                      </Link>
+                    </div>
+                  ))}
                 </div>
-                <span className={cn("text-sm tabular-nums", bill.isPaid && "text-muted-foreground line-through")}
-                  style={{ fontFamily: "var(--font-fraunces, serif)" }}>
-                  {formatARS(bill.amount)}
-                </span>
-              </Link>
+              )}
             </div>
-          ))}
+          )}
         </div>
       )}
     </div>
@@ -492,7 +544,7 @@ export function TarjetasWalletView({ cards, monthLabel, monthKey, prevMonth, nex
           <div className="absolute -top-6 -right-6 size-32 rounded-full bg-white/20 blur-2xl pointer-events-none" />
           <div className="flex items-center justify-between">
             <button
-              onClick={() => { if (prevMonth) { haptic("selection"); push(`/tarjetas?month=${prevMonth}`) } }}
+              onClick={() => { if (prevMonth) { haptic("selection"); push(`/wallet?month=${prevMonth}`) } }}
               disabled={!prevMonth}
               className="size-8 flex items-center justify-center rounded-full bg-white/40 backdrop-blur-sm disabled:opacity-30 active:scale-95 transition-all"
             >
@@ -519,7 +571,7 @@ export function TarjetasWalletView({ cards, monthLabel, monthKey, prevMonth, nex
               )}
             </div>
             <button
-              onClick={() => { if (nextMonth) { haptic("selection"); push(`/tarjetas?month=${nextMonth}`) } }}
+              onClick={() => { if (nextMonth) { haptic("selection"); push(`/wallet?month=${nextMonth}`) } }}
               disabled={!nextMonth}
               className="size-8 flex items-center justify-center rounded-full bg-white/40 backdrop-blur-sm disabled:opacity-30 active:scale-95 transition-all"
             >
@@ -582,7 +634,7 @@ export function TarjetasWalletView({ cards, monthLabel, monthKey, prevMonth, nex
       {showPicker && (
         <MonthPicker
           currentMonthKey={monthKey}
-          onSelect={(key) => push(`/tarjetas?month=${key}`)}
+          onSelect={(key) => push(`/wallet?month=${key}`)}
           onClose={() => setShowPicker(false)}
         />
       )}

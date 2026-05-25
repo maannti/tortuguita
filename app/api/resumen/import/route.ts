@@ -134,36 +134,54 @@ export async function POST(request: NextRequest) {
         // ─────────────────────────────────────────────────────────────────────
 
         if (totalInstallments > 1) {
-          // Create from cuotaActual onward — handles both cuota 1 (full series)
-          // and mid-series imports (e.g. cuota 3/6 for new users with no prior imports)
           const installmentGroupId = randomUUID()
-          // The parser already extracts the per-cuota amount (see parse route:
-          // "El monto es el de UNA cuota (no el total)"), so we use finalAmount directly.
           const amountPerCuota = finalAmount
-
-          // Calculate budgetDate for the FIRST cuota in this import (cuotaActual).
-          // Each subsequent cuota gets that same base date + N months, so they
-          // land in consecutive billing cycles instead of all piling into the same month.
           const { budgetDate: baseBudgetDate } = calculateBudgetDate(paymentDate, true, billingPeriod)
+          const billAssignments = tx.assignments?.length
+            ? tx.assignments
+            : [{ userId: tx.userId, percentage: 100 }]
 
           const promises = []
-          for (let i = cuotaActual; i <= totalInstallments; i++) {
+
+          // Create prior cuotas (1 to cuotaActual-1) as isPaid:true
+          // so they appear in the history as "already paid"
+          for (let i = 1; i < cuotaActual; i++) {
             const cuotaPaymentDate = new Date(paymentDate)
             cuotaPaymentDate.setMonth(cuotaPaymentDate.getMonth() + (i - cuotaActual))
-
-            // Offset budgetDate by the same number of months as paymentDate
             const cuotaBudgetDate = new Date(baseBudgetDate)
             cuotaBudgetDate.setMonth(cuotaBudgetDate.getMonth() + (i - cuotaActual))
-
-            const usdPerCuota = tx.montoUSD ?? null
-            const billAssignments = tx.assignments?.length
-              ? tx.assignments
-              : [{ userId: tx.userId, percentage: 100 }]
             promises.push(prisma.bill.create({
               data: {
                 label: tx.descripcion,
                 amount: amountPerCuota,
-                amountUSD: usdPerCuota,
+                amountUSD: tx.montoUSD ?? null,
+                paymentDate: cuotaPaymentDate,
+                budgetDate: cuotaBudgetDate,
+                billTypeId: tx.billTypeId,
+                categoryId: tx.categoryId || null,
+                organizationId: tx.organizationId,
+                userId: tx.userId,
+                totalInstallments,
+                currentInstallment: i,
+                installmentGroupId,
+                isPaid: true,
+                sourceDescription: tx.descripcionRaw ?? undefined,
+                assignments: { create: billAssignments },
+              },
+            }))
+          }
+
+          // Create cuotaActual onward normally
+          for (let i = cuotaActual; i <= totalInstallments; i++) {
+            const cuotaPaymentDate = new Date(paymentDate)
+            cuotaPaymentDate.setMonth(cuotaPaymentDate.getMonth() + (i - cuotaActual))
+            const cuotaBudgetDate = new Date(baseBudgetDate)
+            cuotaBudgetDate.setMonth(cuotaBudgetDate.getMonth() + (i - cuotaActual))
+            promises.push(prisma.bill.create({
+              data: {
+                label: tx.descripcion,
+                amount: amountPerCuota,
+                amountUSD: tx.montoUSD ?? null,
                 paymentDate: cuotaPaymentDate,
                 budgetDate: cuotaBudgetDate,
                 billTypeId: tx.billTypeId,
@@ -175,9 +193,7 @@ export async function POST(request: NextRequest) {
                 installmentGroupId,
                 externalRef: externalRef ?? undefined,
                 sourceDescription: tx.descripcionRaw ?? undefined,
-                assignments: {
-                  create: billAssignments,
-                },
+                assignments: { create: billAssignments },
               },
             }))
           }

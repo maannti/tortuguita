@@ -316,11 +316,11 @@ export function HomeDashboard({ month, monthKey, availableMonths, spaces, curren
                 <h2 className="text-base font-medium text-foreground" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
                   Tarjetas
                 </h2>
-                <Link href="/tarjetas" className="text-sm text-muted-foreground">
+                <Link href="/wallet" className="text-sm text-muted-foreground">
                   Ver todas →
                 </Link>
               </div>
-              <Link href="/tarjetas" className="block active:scale-[0.99] transition-transform">
+              <Link href="/wallet" className="block active:scale-[0.99] transition-transform">
                 <div className="relative" style={{ height: containerH }}>
                   {backToFront.map((card, ri) => {
                     const isFront = ri === backToFront.length - 1
@@ -339,9 +339,8 @@ export function HomeDashboard({ month, monthKey, availableMonths, spaces, curren
                           top: ri * PEEK,
                           height: CARD_H,
                           zIndex: ri + 1,
-                          background: isDark
-                            ? bg   /* solid color, no transparency in dark mode */
-                            : `linear-gradient(145deg, ${bg} 0%, ${bg}cc 100%)`,
+                          background: bg,
+                          boxShadow: "0 -3px 10px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.10)",
                         }}
                       >
                         {isFront ? (
