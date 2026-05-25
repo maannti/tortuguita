@@ -243,7 +243,7 @@ export function RecurringBillsView({ recurringBills }: Props) {
                 <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground px-1 mb-2">
                   Activas · {active.length}
                 </p>
-                <div className="rounded-2xl border border-border bg-background overflow-hidden">
+                <div className="rounded-2xl border border-border bg-background divide-y divide-border/50">
                   {active.map(rb => <RecurringItem key={rb.id} rb={rb} />)}
                 </div>
               </section>
@@ -255,7 +255,7 @@ export function RecurringBillsView({ recurringBills }: Props) {
                 <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground px-1 mb-2">
                   Pausadas · {paused.length}
                 </p>
-                <div className="rounded-2xl border border-border bg-background overflow-hidden">
+                <div className="rounded-2xl border border-border bg-background divide-y divide-border/50">
                   {paused.map(rb => <RecurringItem key={rb.id} rb={rb} />)}
                 </div>
               </section>
