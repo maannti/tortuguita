@@ -447,7 +447,7 @@ export function BillsView({
                     return (
                       <Link
                         key={bill.id}
-                        href={`/bills/${bill.id}`}
+                        href={`/bills/${bill.id}?returnTo=${encodeURIComponent(`${pathname}?${searchParams.toString()}`)}`}
                         className="flex items-center justify-between px-4 py-3.5 active:bg-white/20 transition-colors"
                       >
                         <div className="min-w-0 flex-1">
