@@ -162,8 +162,8 @@ model BillType {
 model Bill {
   id                  String       @id @default(cuid())
   label               String
-  amount              Decimal      @db.Decimal(10, 2)
-  amountUSD           Decimal?     @db.Decimal(10, 2)  // original USD amount (stored when known, e.g. CC imports)
+  amount              Decimal      @db.Decimal(14, 2)
+  amountUSD           Decimal?     @db.Decimal(14, 2)  // original USD amount (stored when known, e.g. CC imports)
   paymentDate         DateTime
   budgetDate          DateTime     // Budget impact date (for credit cards: due date of billing cycle)
   dueDate             DateTime?
@@ -211,8 +211,8 @@ model Bill {
 model RecurringBill {
   id              String    @id @default(cuid())
   label           String
-  amount          Decimal   @db.Decimal(10, 2)
-  amountUSD       Decimal?  @db.Decimal(10, 2)
+  amount          Decimal   @db.Decimal(14, 2)
+  amountUSD       Decimal?  @db.Decimal(14, 2)
   notes           String?   @db.Text
   billTypeId      String
   categoryId      String?
@@ -323,7 +323,7 @@ model IncomeType {
 model Income {
   id             String   @id @default(cuid())
   label          String
-  amount         Decimal  @db.Decimal(10, 2)
+  amount         Decimal  @db.Decimal(14, 2)
   incomeDate     DateTime
   incomeTypeId   String
   organizationId String
