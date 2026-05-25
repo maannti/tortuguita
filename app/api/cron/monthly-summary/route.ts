@@ -89,6 +89,25 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Shared bills assigned to this user last month (created by someone else)
+    const sharedAssignments = await prisma.billAssignment.findMany({
+      where: {
+        userId: user.id,
+        bill: {
+          userId: { not: user.id },  // someone else created it
+          budgetDate: { gte: lastMonthStart, lte: lastMonthEnd },
+        },
+      },
+      include: { bill: { select: { amount: true } } },
+    })
+    if (sharedAssignments.length > 0) {
+      const sharedTotal = sharedAssignments.reduce(
+        (sum, a) => sum + Number(a.bill.amount) * (Number(a.percentage) / 100),
+        0
+      )
+      body += ` · ${arsFormatter.format(Math.round(sharedTotal))} en gastos compartidos`
+    }
+
     const ok = await sendPushNotification(
       user.fcmToken,
       {

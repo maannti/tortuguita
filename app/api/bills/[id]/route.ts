@@ -5,6 +5,7 @@ import { billSchema } from "@/lib/validations/bill"
 import { z } from "zod"
 import { calculateBudgetDate, type BillingPeriod } from "@/lib/budget-date"
 import { getUserOrganizations } from "@/lib/organization-utils"
+import { notifySharedBillMembers } from "@/lib/shared-bill-notifications"
 
 export async function GET(
   request: NextRequest,
@@ -231,6 +232,22 @@ export async function PATCH(
     }
     // ─────────────────────────────────────────────────────────────────────────
 
+    // Notify other assigned members (fire-and-forget)
+    const otherAssignees = updated.assignments
+      .filter(a => a.userId !== session.user.id)
+      .map(a => ({ userId: a.userId, percentage: Number(a.percentage) }))
+    if (otherAssignees.length > 0) {
+      notifySharedBillMembers({
+        billId: updated.id,
+        billLabel: updated.label,
+        billAmount: Number(updated.amount),
+        actorId: session.user.id,
+        actorName: session.user.name ?? "Alguien",
+        action: "updated",
+        assignments: otherAssignees,
+      }).catch(console.error)
+    }
+
     return NextResponse.json(updated)
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -267,22 +284,31 @@ export async function DELETE(
     const orgIds = userOrgs.map(o => o.id)
 
     const bill = await prisma.bill.findFirst({
-      where: {
-        id,
-        organizationId: { in: orgIds },
-      },
+      where: { id, organizationId: { in: orgIds } },
+      include: { assignments: { select: { userId: true, percentage: true } } },
     })
 
     if (!bill) {
-      return NextResponse.json(
-        { error: "Gasto no encontrado" },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: "Gasto no encontrado" }, { status: 404 })
     }
 
-    await prisma.bill.delete({
-      where: { id },
-    })
+    await prisma.bill.delete({ where: { id } })
+
+    // Notify other assigned members (fire-and-forget)
+    const otherAssignees = bill.assignments
+      .filter(a => a.userId !== session.user.id)
+      .map(a => ({ userId: a.userId, percentage: Number(a.percentage) }))
+    if (otherAssignees.length > 0) {
+      notifySharedBillMembers({
+        billId: id,
+        billLabel: bill.label,
+        billAmount: Number(bill.amount),
+        actorId: session.user.id,
+        actorName: session.user.name ?? "Alguien",
+        action: "deleted",
+        assignments: otherAssignees,
+      }).catch(console.error)
+    }
 
     return NextResponse.json({ message: "Gasto eliminado correctamente" })
   } catch (error) {
