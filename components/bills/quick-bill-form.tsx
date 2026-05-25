@@ -256,7 +256,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
       })
       if (!res.ok) { const err = await res.json(); throw new Error(err.error || "Error al guardar") }
       try { sessionStorage.removeItem(DRAFT_KEY) } catch {}
-      const dest = isEdit ? `/bills/${initialData!.id}` : "/bills"
+      const dest = isEdit ? (backHref ?? `/bills/${initialData!.id}`) : "/bills"
       push(dest); refresh()
     } catch (err) {
       if (err instanceof TypeError && err.message.includes("fetch")) {
@@ -354,7 +354,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
                       onClick={() => { setSelectedOrgId(org.id); setCategoryId(""); setCardId("") }}
                       className={`flex items-center gap-3 px-4 py-3.5 rounded-2xl border-2 text-sm font-medium transition-all active:scale-[0.97] ${
                         isSelected
-                          ? "border-primary bg-primary/8 text-foreground shadow-sm"
+                          ? "border-primary bg-primary/8 dark:bg-primary/25 text-foreground shadow-sm"
                           : "border-border bg-background text-muted-foreground hover:border-foreground/20"
                       }`}
                     >
@@ -468,7 +468,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
                     if (pm.value !== "credit") { setCardId(""); setInstallments(1); setCustomInstallments("") }
                     // categoryId se mantiene al cambiar medio de pago para no perder la selección
                   }}
-                  className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 text-sm text-left transition-colors ${paymentMethod === pm.value ? "border-primary bg-primary/5 font-medium text-foreground" : "border-border bg-background text-muted-foreground hover:border-foreground/30"}`}>
+                  className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 text-sm text-left transition-colors ${paymentMethod === pm.value ? "border-primary bg-primary/5 dark:bg-primary/20 font-medium text-foreground" : "border-border bg-background text-muted-foreground hover:border-foreground/30"}`}>
                   {pm.icon}
                   <span>{pm.label}</span>
                   {paymentMethod === pm.value && <Check className="h-3.5 w-3.5 ml-auto text-primary flex-shrink-0" />}
@@ -499,7 +499,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
               <div className="grid grid-cols-2 gap-2">
                 {ccCards.map((cat) => (
                   <button key={cat.id} type="button" onClick={() => setCardId(cat.id)}
-                    className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 text-sm text-left transition-colors ${cardId === cat.id ? "border-primary bg-primary/5 font-medium" : "border-border bg-background text-muted-foreground hover:border-foreground/30"}`}>
+                    className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 text-sm text-left transition-colors ${cardId === cat.id ? "border-primary bg-primary/5 dark:bg-primary/20 font-medium text-foreground" : "border-border bg-background text-muted-foreground hover:border-foreground/30"}`}>
                     <CardIcon bankId={BANKS.find(b => b.color === cat.color)?.id ?? null} bankColor={cat.color || "#9D8189"} bankName={cat.name} network={isNetworkId(cat.icon) ? cat.icon as NetworkId : null} size="sm" />
                     <span className="truncate">{cat.name}</span>
                     {cardId === cat.id && <Check className="h-3.5 w-3.5 ml-auto text-primary flex-shrink-0" />}
@@ -623,7 +623,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
                     {n === 1 ? "1 pago" : `${n}x`}
                   </button>
                 ))}
-                <div className={`flex items-center gap-1 rounded-xl border px-3 py-2 text-sm transition-colors ${customInstallments ? "border-primary bg-primary/5" : "border-border"}`}>
+                <div className={`flex items-center gap-1 rounded-xl border px-3 py-2 text-sm transition-colors ${customInstallments ? "border-primary bg-primary/5 dark:bg-primary/20" : "border-border"}`}>
                   <input type="text" inputMode="numeric" value={customInstallments}
                     onChange={(e) => { const v = e.target.value.replace(/\D/g, ""); setCustomInstallments(v); const n = parseInt(v); if (n > 0) setInstallments(n) }}
                     placeholder="otro" className="w-12 bg-transparent text-center focus:outline-none text-muted-foreground placeholder:text-muted-foreground/50" />
@@ -657,7 +657,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
                   { value: "mine",   label: "Solo mío",          desc: "100% a mi cargo" },
                 ].map((opt) => (
                   <button key={opt.value} type="button" onClick={() => setSplitMode(opt.value)}
-                    className={`w-full flex items-center justify-between rounded-xl border px-4 py-3 text-left transition-colors ${splitMode === opt.value ? "border-primary bg-primary/5" : "border-border bg-background hover:border-foreground/30"}`}>
+                    className={`w-full flex items-center justify-between rounded-xl border px-4 py-3 text-left transition-colors ${splitMode === opt.value ? "border-primary bg-primary/5 dark:bg-primary/20" : "border-border bg-background hover:border-foreground/30"}`}>
                     <div><p className="text-sm font-medium">{opt.label}</p><p className="text-xs text-muted-foreground">{opt.desc}</p></div>
                     {splitMode === opt.value && <Check className="size-4 text-primary flex-shrink-0" />}
                   </button>
@@ -667,7 +667,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
                   const isSolo = otherMembers.some(m => m.id === splitMode)
                   const selectedSolo = otherMembers.find(m => m.id === splitMode) ?? otherMembers.find(m => m.id === soloMemberId) ?? otherMembers[0]
                   return (
-                    <div className={`rounded-xl border transition-colors ${isSolo ? "border-primary bg-primary/5" : "border-border bg-background"}`}>
+                    <div className={`rounded-xl border transition-colors ${isSolo ? "border-primary bg-primary/5 dark:bg-primary/20" : "border-border bg-background"}`}>
                       <button type="button"
                         onClick={() => { const target = soloMemberId || otherMembers[0]?.id || ""; setSoloMemberId(target); setSplitMode(target) }}
                         className="w-full flex items-center justify-between px-4 py-3 text-left">
@@ -760,7 +760,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
                 {isCreditCard && (
                   <button type="button"
                     onClick={() => { setCategoryId(""); setCatSheetOpen(false) }}
-                    className={`w-full flex items-center px-3 py-2.5 rounded-xl text-sm transition-colors ${!categoryId ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-muted/60"}`}>
+                    className={`w-full flex items-center px-3 py-2.5 rounded-xl text-sm transition-colors ${!categoryId ? "bg-primary/10 dark:bg-primary/25 text-primary font-medium" : "text-muted-foreground hover:bg-muted/60"}`}>
                     Sin categoría
                   </button>
                 )}
@@ -798,7 +798,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
                                 setCatSheetOpen(false)
                                 applyDefaultAssignments(cat.id)
                               }}
-                              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition-colors ${isSelected ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted/60 text-foreground"}`}>
+                              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition-colors ${isSelected ? "bg-primary/10 dark:bg-primary/25 text-primary font-medium" : "hover:bg-muted/60 text-foreground"}`}>
                               <span className="flex items-center gap-2.5">
                                 {cat.icon
                                   ? <span className="text-base leading-none">{cat.icon}</span>
