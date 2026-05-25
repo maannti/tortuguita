@@ -5,6 +5,12 @@ import { recurringBillSchema } from "@/lib/validations/recurring-bill"
 import { getUserOrganizations } from "@/lib/organization-utils"
 import { setDate, startOfMonth, addMonths } from "date-fns"
 import { ZodError } from "zod"
+import {
+  createBillFromRecurring,
+  notifyRecurringBillCreated,
+  advanceNextDate,
+  fetchRecurringBillForCreation,
+} from "@/lib/recurring-bill-utils"
 
 async function getRecurringBillForUser(id: string, userId: string) {
   const userOrgs = await getUserOrganizations(userId)
@@ -44,16 +50,24 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     const body = await request.json()
     const data = recurringBillSchema.parse({ ...body, organizationId: recurring.organizationId })
 
+    const now = new Date()
+    const isReactivating = data.isActive && !recurring.isActive
+    const dayChanged = data.dayOfMonth !== recurring.dayOfMonth
+
     // Recalculate nextDate if dayOfMonth changed or if reactivating
+    let firstOccurrence: Date | null = null
     let nextDate = recurring.nextDate
-    if (data.dayOfMonth !== recurring.dayOfMonth || (data.isActive && !recurring.isActive)) {
-      const now = new Date()
+
+    if (dayChanged || isReactivating) {
       const thisMonthCandidate = setDate(startOfMonth(now), data.dayOfMonth)
-      nextDate = thisMonthCandidate >= now ? thisMonthCandidate : setDate(startOfMonth(addMonths(now, 1)), data.dayOfMonth)
+      firstOccurrence = thisMonthCandidate >= now
+        ? thisMonthCandidate
+        : setDate(startOfMonth(addMonths(now, 1)), data.dayOfMonth)
+      // nextDate points to the SECOND occurrence (first is created immediately)
+      nextDate = advanceNextDate(firstOccurrence, data.dayOfMonth)
     }
 
     const updated = await prisma.$transaction(async (tx) => {
-      // Replace assignments
       await tx.recurringBillAssignment.deleteMany({ where: { recurringBillId: id } })
       return tx.recurringBill.update({
         where: { id },
@@ -80,6 +94,22 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         },
       })
     })
+
+    // If reactivating or day changed → immediately create the first Bill
+    if ((isReactivating || dayChanged) && data.isActive && firstOccurrence) {
+      const rbFull = await fetchRecurringBillForCreation(id)
+      if (rbFull) {
+        const rbForCreation = { ...rbFull, nextDate: firstOccurrence }
+        const bill = await createBillFromRecurring(rbForCreation, firstOccurrence, now)
+        if (bill) {
+          notifyRecurringBillCreated(rbForCreation, bill.id, firstOccurrence, now).catch(console.error)
+          await prisma.recurringBill.update({
+            where: { id },
+            data: { lastGeneratedAt: now },
+          })
+        }
+      }
+    }
 
     return NextResponse.json(updated)
   } catch (error) {
