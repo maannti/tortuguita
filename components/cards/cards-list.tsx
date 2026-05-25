@@ -51,7 +51,7 @@ export function CardsList({ cards, alertCardIds = [] }: CardsListProps) {
               return (
                 <div
                   key={card.id}
-                  className={`flex items-center gap-3 px-4 py-3.5 transition-colors ${hasAlert ? "bg-amber-50 dark:bg-amber-950/30" : ""}`}
+                  className={`flex items-center gap-3 px-4 py-3.5 transition-colors ${hasAlert ? "bg-amber-50 dark:bg-amber-500/10" : ""}`}
                 >
                   <CardIcon
                     bankId={bankId}
