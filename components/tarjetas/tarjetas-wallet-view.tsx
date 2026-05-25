@@ -11,7 +11,7 @@ import { MonthPicker } from "@/components/ui/month-picker"
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface InstallmentBill {
   id: string; amount: number; amountUSD: number | null; budgetDate: string; paymentDate: string
-  currentInstallment: number; isPast: boolean; isPaid: boolean
+  currentInstallment: number; isPast: boolean; isPaid: boolean; isCurrentMonth: boolean
 }
 interface InstallmentGroup {
   groupId: string; label: string; totalInstallments: number; minInstallment: number
@@ -46,7 +46,7 @@ function formatARS(n: number) { return arsFormatter.format(Math.round(n)) }
 function capitalize(s: string) { return s.charAt(0).toUpperCase() + s.slice(1) }
 
 // ─── Paid toggle button ───────────────────────────────────────────────────────
-function PaidToggle({ billId, isPaid: initialIsPaid }: { billId: string; isPaid: boolean }) {
+function PaidToggle({ billId, isPaid: initialIsPaid, onToggle }: { billId: string; isPaid: boolean; onToggle?: (newPaid: boolean) => void }) {
   const [isPaid, setIsPaid] = useState(initialIsPaid)
   const [isPending, startTransition] = useTransition()
 
@@ -60,10 +60,11 @@ function PaidToggle({ billId, isPaid: initialIsPaid }: { billId: string; isPaid:
         if (res.ok) {
           const data = await res.json()
           setIsPaid(data.isPaid)
+          onToggle?.(data.isPaid)
         }
       } catch {}
     })
-  }, [billId])
+  }, [billId, onToggle])
 
   return (
     <button
@@ -87,14 +88,23 @@ function PaidToggle({ billId, isPaid: initialIsPaid }: { billId: string; isPaid:
 function InstallmentGroupRow({ group, cardColor }: { group: InstallmentGroup; cardColor: string }) {
   const [expanded, setExpanded] = useState(false)
   const [historyExpanded, setHistoryExpanded] = useState(false)
+  // Local paid-state overrides so counter/progress update immediately on toggle
+  const [localPaid, setLocalPaid] = useState<Record<string, boolean>>({})
+
+  const getEffectivePaid = useCallback((bill: InstallmentBill) =>
+    localPaid[bill.id] !== undefined ? localPaid[bill.id] : bill.isPaid, [localPaid])
+
+  const handleToggle = useCallback((billId: string, newPaid: boolean) => {
+    setLocalPaid(prev => ({ ...prev, [billId]: newPaid }))
+  }, [])
 
   const sorted = [...group.bills].sort((a, b) => a.currentInstallment - b.currentInstallment)
 
-  // Split: past (auto-cobradas) vs active/future
-  const pastBills = sorted.filter(b => b.isPast || b.isPaid)
-  const pendingBills = sorted.filter(b => !b.isPast && !b.isPaid)
+  // Split: past (auto-cobradas o pagadas) vs pendientes
+  const pastBills = sorted.filter(b => b.isPast || getEffectivePaid(b))
+  const pendingBills = sorted.filter(b => !b.isPast && !getEffectivePaid(b))
 
-  // paidCount: past bills in DB + cuotas that existed before first DB record
+  // paidCount: cuotas previas al primer registro + las del historial
   const priorPaid = group.minInstallment - 1
   const paidCount = priorPaid + pastBills.length
   const progress = Math.min(paidCount / group.totalInstallments, 1)
@@ -102,6 +112,9 @@ function InstallmentGroupRow({ group, cardColor }: { group: InstallmentGroup; ca
   // Amount shown on header = next pending, or last bill if all done
   const currentBill = pendingBills[0] ?? sorted[sorted.length - 1]
   const monthAmount = currentBill?.amount ?? 0
+
+  // Show just the month name ("Mayo") instead of the purchase date ("17 may")
+  const billMonth = (bill: InstallmentBill) => capitalize(bill.budgetDate.split(" ")[0])
 
   return (
     <div className="overflow-hidden transition-all">
@@ -140,11 +153,16 @@ function InstallmentGroupRow({ group, cardColor }: { group: InstallmentGroup; ca
           <div className="divide-y divide-black/5 dark:divide-white/10">
             {pendingBills.map(bill => (
               <div key={bill.id} className="flex items-center gap-2.5 px-4 py-2.5">
-                <PaidToggle billId={bill.id} isPaid={bill.isPaid} />
+                <PaidToggle billId={bill.id} isPaid={getEffectivePaid(bill)} onToggle={(p) => handleToggle(bill.id, p)} />
                 <Link href={`/bills/${bill.id}`} className="flex-1 min-w-0 flex items-center justify-between gap-2">
-                  <div>
-                    <span className="text-xs text-muted-foreground">{bill.paymentDate}</span>
-                    <span className="text-xs text-muted-foreground ml-1">· #{bill.currentInstallment}</span>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-xs text-muted-foreground">{billMonth(bill)}</span>
+                    <span className="text-xs text-muted-foreground">· #{bill.currentInstallment}</span>
+                    {bill.isCurrentMonth && (
+                      <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-primary/10 text-primary leading-none">
+                        este mes
+                      </span>
+                    )}
                   </div>
                   <span className="text-sm tabular-nums" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
                     {formatARS(bill.amount)}
@@ -181,22 +199,29 @@ function InstallmentGroupRow({ group, cardColor }: { group: InstallmentGroup; ca
                   {/* Past bills in DB */}
                   {pastBills.map(bill => (
                     <div key={bill.id} className="flex items-center gap-2.5 px-4 py-2">
-                      <div className={cn(
-                        "w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0",
-                        bill.isPaid ? "bg-emerald-500" : "bg-muted"
-                      )}>
-                        {bill.isPaid
-                          ? <Check className="h-2.5 w-2.5 stroke-[3] text-white" />
-                          : <Clock className="h-2.5 w-2.5 text-muted-foreground" />
-                        }
-                      </div>
-                      <Link href={`/bills/${bill.id}`} className="flex-1 min-w-0 flex items-center justify-between gap-2">
-                        <div>
-                          <span className="text-xs text-muted-foreground">{bill.paymentDate}</span>
-                          <span className="text-xs text-muted-foreground ml-1">· #{bill.currentInstallment}</span>
-                          {!bill.isPaid && <span className="text-[10px] text-muted-foreground/60 ml-1">cobrada</span>}
+                      {/* Paid manually → show toggle so user can unmark; auto-cobrada → static clock */}
+                      {getEffectivePaid(bill) ? (
+                        <PaidToggle billId={bill.id} isPaid={getEffectivePaid(bill)} onToggle={(p) => handleToggle(bill.id, p)} />
+                      ) : (
+                        <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+                          <Clock className="h-2.5 w-2.5 text-muted-foreground" />
                         </div>
-                        <span className="text-sm tabular-nums text-muted-foreground line-through" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
+                      )}
+                      <Link href={`/bills/${bill.id}`} className="flex-1 min-w-0 flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-xs text-muted-foreground">{billMonth(bill)}</span>
+                          <span className="text-xs text-muted-foreground">· #{bill.currentInstallment}</span>
+                          {bill.isCurrentMonth && (
+                            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-primary/10 text-primary leading-none">
+                              este mes
+                            </span>
+                          )}
+                          {!getEffectivePaid(bill) && <span className="text-[10px] text-muted-foreground/60">cobrada</span>}
+                        </div>
+                        <span className={cn(
+                          "text-sm tabular-nums text-muted-foreground",
+                          getEffectivePaid(bill) && "line-through"
+                        )} style={{ fontFamily: "var(--font-fraunces, serif)" }}>
                           {formatARS(bill.amount)}
                         </span>
                       </Link>
