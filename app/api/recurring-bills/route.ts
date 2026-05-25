@@ -5,6 +5,12 @@ import { recurringBillSchema } from "@/lib/validations/recurring-bill"
 import { getUserOrganizations } from "@/lib/organization-utils"
 import { setDate, startOfMonth, addMonths } from "date-fns"
 import { ZodError } from "zod"
+import {
+  createBillFromRecurring,
+  notifyRecurringBillCreated,
+  advanceNextDate,
+  fetchRecurringBillForCreation,
+} from "@/lib/recurring-bill-utils"
 
 // GET — list all recurring bills for the user's orgs
 export async function GET() {
@@ -27,7 +33,7 @@ export async function GET() {
   return NextResponse.json(recurringBills)
 }
 
-// POST — create a new recurring bill
+// POST — create a new recurring bill and immediately generate the first Bill
 export async function POST(request: Request) {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -40,10 +46,16 @@ export async function POST(request: Request) {
     const validOrg = userOrgs.find(o => o.id === data.organizationId)
     if (!validOrg) return NextResponse.json({ error: "Organización inválida" }, { status: 403 })
 
-    // Calculate nextDate: if dayOfMonth hasn't arrived yet this month → this month, else → next month
     const now = new Date()
+
+    // First occurrence: if dayOfMonth hasn't arrived yet this month → this month, else → next month
     const thisMonthCandidate = setDate(startOfMonth(now), data.dayOfMonth)
-    const nextDate = thisMonthCandidate >= now ? thisMonthCandidate : setDate(startOfMonth(addMonths(now, 1)), data.dayOfMonth)
+    const firstOccurrence = thisMonthCandidate >= now
+      ? thisMonthCandidate
+      : setDate(startOfMonth(addMonths(now, 1)), data.dayOfMonth)
+
+    // nextDate starts at the SECOND occurrence (first bill is created immediately below)
+    const secondOccurrence = advanceNextDate(firstOccurrence, data.dayOfMonth)
 
     const recurring = await prisma.recurringBill.create({
       data: {
@@ -57,7 +69,7 @@ export async function POST(request: Request) {
         userId: session.user.id,
         dayOfMonth: data.dayOfMonth,
         isActive: data.isActive,
-        nextDate,
+        nextDate: secondOccurrence,
         assignments: {
           create: data.assignments.map(a => ({
             userId: a.userId,
@@ -70,6 +82,23 @@ export async function POST(request: Request) {
         assignments: { include: { user: { select: { id: true, name: true } } } },
       },
     })
+
+    // Immediately create the first Bill — fire & forget notification
+    if (data.isActive) {
+      const rbFull = await fetchRecurringBillForCreation(recurring.id)
+      if (rbFull) {
+        // Temporarily set nextDate to firstOccurrence so createBillFromRecurring uses the right date
+        const rbForCreation = { ...rbFull, nextDate: firstOccurrence }
+        const bill = await createBillFromRecurring(rbForCreation, firstOccurrence, now)
+        if (bill) {
+          notifyRecurringBillCreated(rbForCreation, bill.id, firstOccurrence, now).catch(console.error)
+          await prisma.recurringBill.update({
+            where: { id: recurring.id },
+            data: { lastGeneratedAt: now },
+          })
+        }
+      }
+    }
 
     return NextResponse.json(recurring, { status: 201 })
   } catch (error) {
