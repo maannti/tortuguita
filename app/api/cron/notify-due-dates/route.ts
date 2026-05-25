@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
             ? `Tu resumen vence el ${dueDateStr}. Total: ${arsFormatter.format(totalAmount)}`
             : `Tu resumen de ${cc.name} vence el ${dueDateStr}.`,
           type: "due_date",
-          url: "/tarjetas",
+          url: "/wallet",
           data: { cardTypeId: cc.id, type: "due_date" },
         }, user.id)
 
@@ -175,7 +175,7 @@ export async function GET(request: NextRequest) {
           title,
           body,
           type: "closing_date",
-          url: "/tarjetas",
+          url: "/wallet",
           data: { cardTypeId: cc.id, type: "closing_date" },
         }, user.id)
 

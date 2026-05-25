@@ -44,7 +44,7 @@ export default async function NewCuotaPage() {
       memberIncomes={memberIncomes}
       currentUserId={session.user.id}
       organizations={organizations}
-      backHref="/tarjetas"
+      backHref="/wallet"
       defaultInstallments={3}
     />
   )

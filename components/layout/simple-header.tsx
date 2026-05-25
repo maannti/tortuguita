@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils"
 import { NotificationTray } from "@/components/layout/notification-tray"
 
 // Pages where the global space selector should be hidden (form has its own)
-const HIDE_SELECTOR_PATHS = ["/bills/new", "/tarjetas/new"]
+const HIDE_SELECTOR_PATHS = ["/bills/new", "/wallet/new"]
 function hideSelector(pathname: string) {
   return HIDE_SELECTOR_PATHS.some(p => pathname === p) ||
     /^\/bills\/[^/]+\/edit$/.test(pathname)

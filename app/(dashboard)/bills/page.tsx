@@ -66,7 +66,7 @@ export default async function BillsPage({ searchParams }: PageProps) {
         }),
       },
       include: { billType: true, category: true, assignments: true },
-      orderBy: { budgetDate: "asc" },
+      orderBy: { budgetDate: "desc" },
     }),
     // Get all bill types for filter options (include organizationId for grouping)
     prisma.billType.findMany({
