@@ -7,11 +7,15 @@ import { getUserOrganizations } from "@/lib/organization-utils"
 
 export default async function EditBillPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>
+  searchParams: Promise<{ returnTo?: string }>
 }) {
   const session = await auth()
   const { id } = await params
+  const { returnTo } = await searchParams
+  const backHref = returnTo ? `/bills/${id}?returnTo=${encodeURIComponent(returnTo)}` : `/bills/${id}`
 
   if (!session?.user?.id) {
     return <div>Unauthorized</div>
@@ -67,7 +71,7 @@ export default async function EditBillPage({
       memberIncomes={memberIncomes}
       currentUserId={session.user.id}
       organizations={organizations}
-      backHref={`/bills/${id}`}
+      backHref={backHref}
       initialData={{
         id: bill.id,
         label: bill.label,
