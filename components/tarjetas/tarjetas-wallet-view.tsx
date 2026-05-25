@@ -10,7 +10,7 @@ import { MonthPicker } from "@/components/ui/month-picker"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface InstallmentBill {
-  id: string; amount: number; amountUSD: number | null; budgetDate: string
+  id: string; amount: number; amountUSD: number | null; budgetDate: string; paymentDate: string
   currentInstallment: number; isPast: boolean; isPaid: boolean
 }
 interface InstallmentGroup {
@@ -20,7 +20,7 @@ interface InstallmentGroup {
 }
 interface SingleBill {
   id: string; label: string; amount: number; amountUSD: number | null
-  budgetDate: string; isPaid: boolean
+  budgetDate: string; paymentDate: string; isPaid: boolean
   categoryName: string | null; categoryColor: string | null; categoryIcon: string | null
 }
 export interface CardData {
@@ -144,7 +144,7 @@ function InstallmentGroupRow({ group, cardColor }: { group: InstallmentGroup; ca
               <PaidToggle billId={bill.id} isPaid={bill.isPaid} />
               <Link href={`/bills/${bill.id}`} className="flex-1 min-w-0 flex items-center justify-between gap-2">
                 <div>
-                  <span className="text-xs text-muted-foreground capitalize">{bill.budgetDate}</span>
+                  <span className="text-xs text-muted-foreground">{bill.paymentDate}</span>
                   <span className="text-xs text-muted-foreground ml-1">· #{bill.currentInstallment}</span>
                 </div>
                 <span className={cn("text-sm tabular-nums", bill.isPaid && "text-muted-foreground line-through")}
@@ -173,12 +173,16 @@ function SingleBillRow({ bill }: { bill: SingleBill }) {
           <p className={cn("text-sm font-medium truncate", bill.isPaid && "text-muted-foreground line-through")}>
             {bill.label}
           </p>
-          {bill.categoryName && (
-            <span className="inline-flex items-center gap-1 mt-0.5">
-              <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: bill.categoryColor ?? "#9D8189" }} />
-              <span className="text-[10px] text-muted-foreground">{bill.categoryName}</span>
-            </span>
-          )}
+          <div className="flex items-center gap-1.5 mt-0.5">
+            <span className="text-[10px] text-muted-foreground">{bill.paymentDate}</span>
+            {bill.categoryName && (
+              <>
+                <span className="text-[10px] text-muted-foreground">·</span>
+                <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: bill.categoryColor ?? "#9D8189" }} />
+                <span className="text-[10px] text-muted-foreground">{bill.categoryName}</span>
+              </>
+            )}
+          </div>
         </div>
         <span className={cn("text-sm font-medium tabular-nums flex-shrink-0", bill.isPaid && "text-muted-foreground line-through")}
           style={{ fontFamily: "var(--font-fraunces, serif)" }}>
@@ -525,6 +529,24 @@ export function TarjetasWalletView({ cards, monthLabel, monthKey, prevMonth, nex
         </div>
       </div>
 
+      {/* Action links */}
+      <div className="mx-4 mt-2 flex gap-2">
+        <Link href="/cards"
+          className="flex-1 flex items-center justify-center gap-2 px-3.5 py-3 rounded-2xl active:opacity-80 active:scale-[0.99] transition-all"
+          style={{ background: isDark ? "#1a1a2e" : "#E0E8FF" }}
+        >
+          <CreditCard className="size-4" style={{ color: isDark ? "#b0c4ff" : "#3a4a8a" }} />
+          <span className="text-sm" style={{ color: isDark ? "#b0c4ff" : "#2a3570" }}><em className="italic font-normal">gestionar</em> <strong className="font-bold not-italic">tarjetas</strong></span>
+        </Link>
+        <Link href="/resumen"
+          className="flex-1 flex items-center justify-center gap-2 px-3.5 py-3 rounded-2xl active:opacity-80 active:scale-[0.99] transition-all"
+          style={{ background: isDark ? "#0e2a1a" : "#D8EFE3" }}
+        >
+          <FileText className="size-4" style={{ color: isDark ? "#9ee6b8" : "#2d6a4a" }} />
+          <span className="text-sm" style={{ color: isDark ? "#9ee6b8" : "#1e4a32" }}><em className="italic font-normal">importar</em> <strong className="font-bold not-italic">gastos</strong></span>
+        </Link>
+      </div>
+
       {/* Cards stack */}
       {cards.length > 0 ? (
         <div className="px-4 pt-3">
@@ -555,17 +577,6 @@ export function TarjetasWalletView({ cards, monthLabel, monthKey, prevMonth, nex
         </div>
       )}
 
-      {/* FABs */}
-      <Link href="/resumen"
-        className="fixed bottom-40 right-4 z-30 flex items-center gap-2 px-4 h-11 rounded-full glass text-foreground text-sm font-medium shadow-sm active:scale-95 transition-transform">
-        <FileText className="size-4 text-primary" />
-        Importar gastos
-      </Link>
-      <Link href="/cards"
-        className="fixed bottom-24 right-4 z-30 flex items-center gap-2 px-4 h-11 rounded-full glass text-foreground text-sm font-medium shadow-sm active:scale-95 transition-transform">
-        <CreditCard className="size-4 text-primary" />
-        Gestionar tarjetas
-      </Link>
 
       {/* Month picker */}
       {showPicker && (

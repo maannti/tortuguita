@@ -6,6 +6,11 @@ import { calculateBudgetDate, type BillingPeriod } from "@/lib/budget-date"
 import { randomUUID } from "crypto"
 import { z } from "zod"
 
+const assignmentSchema = z.object({
+  userId: z.string().min(1),
+  percentage: z.number().min(1).max(100),
+})
+
 const transactionSchema = z.object({
   fecha: z.string(),
   descripcion: z.string().min(1),
@@ -19,6 +24,7 @@ const transactionSchema = z.object({
   categoryId: z.string().nullable(),
   organizationId: z.string().min(1), // per-transaction: derived from chosen category's org
   userId: z.string().min(1),
+  assignments: z.array(assignmentSchema).nullable().optional(),
   comprobante: z.string().nullable().optional(), // banco voucher/ID for deduplication
   descripcionRaw: z.string().nullable().optional(), // raw bank description for future duplicate detection
 })
@@ -150,6 +156,9 @@ export async function POST(request: NextRequest) {
             cuotaBudgetDate.setMonth(cuotaBudgetDate.getMonth() + (i - cuotaActual))
 
             const usdPerCuota = tx.montoUSD ?? null
+            const billAssignments = tx.assignments?.length
+              ? tx.assignments
+              : [{ userId: tx.userId, percentage: 100 }]
             promises.push(prisma.bill.create({
               data: {
                 label: tx.descripcion,
@@ -167,7 +176,7 @@ export async function POST(request: NextRequest) {
                 externalRef: externalRef ?? undefined,
                 sourceDescription: tx.descripcionRaw ?? undefined,
                 assignments: {
-                  create: [{ userId: tx.userId, percentage: 100 }],
+                  create: billAssignments,
                 },
               },
             }))
@@ -175,6 +184,9 @@ export async function POST(request: NextRequest) {
           const bills = await Promise.all(promises)
           created.push(...bills.map(b => b.id))
         } else {
+          const singleAssignments = tx.assignments?.length
+            ? tx.assignments
+            : [{ userId: tx.userId, percentage: 100 }]
           const bill = await prisma.bill.create({
             data: {
               label: tx.descripcion,
@@ -189,7 +201,7 @@ export async function POST(request: NextRequest) {
               externalRef: externalRef ?? undefined,
               sourceDescription: tx.descripcionRaw ?? undefined,
               assignments: {
-                create: [{ userId: tx.userId, percentage: 100 }],
+                create: singleAssignments,
               },
             },
           })
