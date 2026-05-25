@@ -40,6 +40,8 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   // Category sheet: which transaction's picker is open
   const [categorySheetFor, setCategorySheetFor] = useState<string | null>(null)
+  // Distribution sheet: which transaction's picker is open
+  const [distribSheetFor, setDistribSheetFor] = useState<string | null>(null)
   // Space picker for new category (shown inside the sheet header)
   const [newCatSpacePicker, setNewCatSpacePicker] = useState(false)
 
@@ -55,7 +57,8 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
     descripcion?: string
     categoria?: string | null
     usarUSD?: boolean
-    userId?: string
+    splitMode?: string        // "mine" | "equal" | "<memberId>"
+    soloMemberId?: string     // used when splitMode is a member id
   }>>({})
 
   // Exchange rate
@@ -101,16 +104,10 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
   function getTx(tx: ParsedTransaction) {
     const ov = txOverrides[tx.id] ?? {}
     const defaultUsarUSD = tx.montoARS === null && tx.montoUSD !== null
-    // Only pre-select Claude's suggestion if it exactly matches an existing user category
-    const suggestedCat = (() => {
-      if (!tx.categoriaSugerida) return null
-      const match = categories.find(c => c.name.toLowerCase() === tx.categoriaSugerida!.toLowerCase())
-      return match ? match.name : null
-    })()
     return {
       incluir: ov.incluir ?? tx.incluir,
       descripcion: ov.descripcion ?? tx.descripcion,
-      categoria: "categoria" in ov ? ov.categoria : suggestedCat,
+      categoria: "categoria" in ov ? ov.categoria : null,
       usarUSD: ov.usarUSD ?? defaultUsarUSD,
     }
   }
@@ -172,7 +169,22 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
       })
       if (res.ok) {
         const data = await res.json()
-        setDuplicateMatches(data.matches ?? {})
+        const matches: Record<string, DuplicateMatch | null> = data.matches ?? {}
+        setDuplicateMatches(matches)
+        // Auto-uncheck transactions with exact comprobante match (high confidence)
+        const autoUncheck: Record<string, { incluir: boolean }> = {}
+        for (const [txId, match] of Object.entries(matches)) {
+          if (match?.matchType === "exact") autoUncheck[txId] = { incluir: false }
+        }
+        if (Object.keys(autoUncheck).length > 0) {
+          setTxOverrides(prev => {
+            const next = { ...prev }
+            for (const [txId, patch] of Object.entries(autoUncheck)) {
+              next[txId] = { ...next[txId], ...patch }
+            }
+            return next
+          })
+        }
       }
     } catch { /* non-blocking: ignore errors */ }
     setDuplicatesLoading(false)
@@ -270,8 +282,6 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
         continue
       }
 
-      const userId = txOverrides[tx.id]?.userId ?? titularMap[tx.titular] ?? currentUserId
-
       // Resolve categoryId + org from category name → UUID
       const matchedCat = categories.find(
         c => c.name.toLowerCase() === (ov.categoria ?? "").toLowerCase()
@@ -280,6 +290,24 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
       // Org: derived from category's org; fallback to personal space
       const personalOrg = organizations.find(o => o.isPersonal) ?? organizations[0]
       const txOrgId = matchedCat?.organizationId ?? personalOrg?.id ?? ""
+      const txOrgMembers = matchedCat ? members.filter(m => m.organizationId === matchedCat.organizationId) : []
+
+      // Derive userId + assignments from splitMode
+      const splitMode = txOverrides[tx.id]?.splitMode ?? "mine"
+      let userId = titularMap[tx.titular] ?? currentUserId
+      let assignments: { userId: string; percentage: number }[]
+      if (splitMode === "equal" && txOrgMembers.length > 1) {
+        const n = txOrgMembers.length
+        const base = Math.floor(100 / n); const rem = 100 - base * n
+        assignments = txOrgMembers.map((m, i) => ({ userId: m.id, percentage: i < rem ? base + 1 : base }))
+        userId = currentUserId
+      } else if (splitMode !== "mine") {
+        const member = txOrgMembers.find(m => m.id === splitMode)
+        if (member) { userId = member.id; assignments = [{ userId: member.id, percentage: 100 }] }
+        else assignments = [{ userId, percentage: 100 }]
+      } else {
+        assignments = [{ userId, percentage: 100 }]
+      }
 
       // Determine final ARS amount — convert USD at official rate if user chose that path
       let finalMontoARS = tx.montoARS
@@ -300,6 +328,7 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
         categoryId,
         organizationId: txOrgId,
         userId,
+        assignments,
         comprobante: tx.comprobante ?? null,
         descripcionRaw: tx.descripcionRaw ?? null,
       })
@@ -589,7 +618,13 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
                           return (
                             <div
                               key={tx.id}
-                              className={`rounded-2xl border transition-all ${ov.incluir ? "border-border bg-background" : "border-border/40 bg-muted/20 opacity-60"}`}
+                              className={`rounded-2xl border transition-all ${
+                                (duplicateMatches[tx.id] || tx.nota) && ov.incluir
+                                  ? "border-amber-300 bg-amber-50/60"
+                                  : ov.incluir
+                                    ? "border-border bg-background"
+                                    : "border-border/40 bg-muted/20 opacity-60"
+                              }`}
                             >
                               <div className="flex items-start gap-3 px-4 py-3.5">
                                 {/* Toggle */}
@@ -633,55 +668,64 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
                                     )}
                                   </div>
 
-                                  {/* Categoría + moneda + user override */}
-                                  {ov.incluir && (
-                                    <div className="flex items-center gap-2 flex-wrap pt-0.5">
-                                      {/* Categoría — button opens bottom sheet */}
-                                      {(() => {
-                                        const matchedCat = categories.find(c => c.name.toLowerCase() === (ov.categoria ?? "").toLowerCase())
-                                        const orgName = matchedCat ? (organizations.find(o => o.id === matchedCat.organizationId)?.name ?? "") : ""
-                                        return (
+                                  {/* Categoría + distribución */}
+                                  {ov.incluir && (() => {
+                                    const matchedCat = categories.find(c => c.name.toLowerCase() === (ov.categoria ?? "").toLowerCase())
+                                    const txOrgMembers = matchedCat ? members.filter(m => m.organizationId === matchedCat.organizationId) : []
+                                    const isShared = txOrgMembers.length > 1
+                                    const splitMode = txOverrides[tx.id]?.splitMode ?? "mine"
+
+                                    const splitLabel = (() => {
+                                      if (splitMode === "equal") return "Compartido"
+                                      if (splitMode === "mine") return "Solo mío"
+                                      const m = txOrgMembers.find(m => m.id === splitMode)
+                                      return m ? `Solo ${(m.name || "?").split(" ")[0]}` : "Solo mío"
+                                    })()
+
+                                    return (
+                                      <div className="flex items-center gap-2 flex-wrap pt-1">
+                                        {/* Categoría */}
+                                        <div className="flex items-center gap-1.5">
+                                          <span className="text-[10px] text-muted-foreground uppercase tracking-wide">Categoría</span>
                                           <button
                                             type="button"
                                             onClick={() => setCategorySheetFor(tx.id)}
-                                            className="flex items-center gap-1.5 text-xs bg-muted/50 border border-border/60 rounded-lg px-2 py-1 hover:border-foreground/30 transition-colors"
+                                            className="flex items-center gap-1 text-xs bg-muted/50 border border-border/60 rounded-lg px-2 py-1 hover:border-foreground/30 transition-colors"
                                           >
                                             <span className={ov.categoria ? "text-foreground" : "text-muted-foreground"}>
                                               {ov.categoria ?? "Sin categoría"}
                                             </span>
-                                            {orgName && <span className="text-muted-foreground/60">· {orgName}</span>}
                                             <ChevronDown className="size-3 text-muted-foreground" />
                                           </button>
-                                        )
-                                      })()}
-
-                                      {/* USD toggle — solo cuando hay ambas monedas */}
-                                      {hasUSD && hasARS && (
-                                        <button type="button"
-                                          onClick={() => setTxOv(tx.id, { usarUSD: !ov.usarUSD })}
-                                          className={`text-xs px-2 py-1 rounded-lg border transition-colors ${ov.usarUSD ? "bg-blue-50 border-blue-200 text-blue-700" : "border-border text-muted-foreground"}`}
-                                        >
-                                          {ov.usarUSD ? `U$S ${tx.montoUSD?.toFixed(2)} → oficial` : "ARS del resumen"}
-                                        </button>
-                                      )}
-
-                                      {/* Per-transaction user override — only when multiple members */}
-                                      {orgMembers.length > 1 && (
-                                        <div className="relative">
-                                          <select
-                                            value={txOverrides[tx.id]?.userId ?? titularMap[tx.titular] ?? currentUserId}
-                                            onChange={e => setTxOv(tx.id, { userId: e.target.value })}
-                                            className="appearance-none text-xs bg-muted/50 border border-border/60 rounded-lg px-2 py-1 pr-5 focus:outline-none"
-                                          >
-                                            {orgMembers.map(m => (
-                                              <option key={m.id} value={m.id}>{m.name || m.email}</option>
-                                            ))}
-                                          </select>
-                                          <ChevronDown className="size-3 absolute right-1.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
                                         </div>
-                                      )}
-                                    </div>
-                                  )}
+
+                                        {/* Distribución — solo en espacios compartidos */}
+                                        {isShared && (
+                                          <div className="flex items-center gap-1.5">
+                                            <span className="text-[10px] text-muted-foreground uppercase tracking-wide">Distribución</span>
+                                            <button
+                                              type="button"
+                                              onClick={() => setDistribSheetFor(tx.id)}
+                                              className="flex items-center gap-1 text-xs bg-muted/50 border border-border/60 rounded-lg px-2 py-1 hover:border-foreground/30 transition-colors"
+                                            >
+                                              <span className="text-foreground">{splitLabel}</span>
+                                              <ChevronDown className="size-3 text-muted-foreground" />
+                                            </button>
+                                          </div>
+                                        )}
+
+                                        {/* USD toggle */}
+                                        {hasUSD && hasARS && (
+                                          <button type="button"
+                                            onClick={() => setTxOv(tx.id, { usarUSD: !ov.usarUSD })}
+                                            className={`text-xs px-2 py-1 rounded-lg border transition-colors ${ov.usarUSD ? "bg-blue-50 border-blue-200 text-blue-700" : "border-border text-muted-foreground"}`}
+                                          >
+                                            {ov.usarUSD ? `U$S ${tx.montoUSD?.toFixed(2)} → oficial` : "ARS del resumen"}
+                                          </button>
+                                        )}
+                                      </div>
+                                    )
+                                  })()}
                                 </div>
 
                                 {/* Monto */}
@@ -835,6 +879,80 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
         </div>
       </div>
 
+      {/* ── Distribution bottom sheet ────────────────────────────────────── */}
+      {distribSheetFor && (() => {
+        const txId = distribSheetFor
+        const matchedCat = categories.find(c => c.name.toLowerCase() === (txOverrides[txId]?.categoria ?? "").toLowerCase())
+        const txOrgMembers = matchedCat ? members.filter(m => m.organizationId === matchedCat.organizationId) : []
+        const otherMembers = txOrgMembers.filter(m => m.id !== currentUserId)
+        const splitMode = txOverrides[txId]?.splitMode ?? "mine"
+        const soloMemberId = txOverrides[txId]?.soloMemberId ?? otherMembers[0]?.id
+        const isSolo = splitMode !== "mine" && splitMode !== "equal"
+
+        return (
+          <div className="fixed inset-0 z-50 flex flex-col justify-end">
+            <div className="absolute inset-0 bg-black/40" onClick={() => setDistribSheetFor(null)} />
+            <div className="relative bg-background rounded-t-3xl max-h-[75vh] flex flex-col">
+              <div className="flex-shrink-0 flex items-center justify-between px-5 pt-5 pb-3 border-b border-border/50">
+                <p className="text-sm font-semibold">División</p>
+                <button onClick={() => setDistribSheetFor(null)} className="size-7 flex items-center justify-center rounded-full bg-muted text-muted-foreground hover:bg-muted/80 transition-colors">
+                  <X className="size-4" />
+                </button>
+              </div>
+              <div className="overflow-y-auto p-4 space-y-2">
+                {/* Compartido — equal split */}
+                <button type="button"
+                  onClick={() => { setTxOv(txId, { splitMode: "equal" }); setDistribSheetFor(null) }}
+                  className={`w-full flex items-center justify-between rounded-xl border px-4 py-3 text-left transition-colors ${splitMode === "equal" ? "border-primary bg-primary/5" : "border-border bg-background hover:border-foreground/30"}`}>
+                  <div>
+                    <p className="text-sm font-medium">Gasto compartido</p>
+                    <p className="text-xs text-muted-foreground">A partes iguales</p>
+                  </div>
+                  {splitMode === "equal" && <Check className="size-4 text-primary flex-shrink-0" />}
+                </button>
+                {/* Solo mío */}
+                <button type="button"
+                  onClick={() => { setTxOv(txId, { splitMode: "mine" }); setDistribSheetFor(null) }}
+                  className={`w-full flex items-center justify-between rounded-xl border px-4 py-3 text-left transition-colors ${splitMode === "mine" ? "border-primary bg-primary/5" : "border-border bg-background hover:border-foreground/30"}`}>
+                  <div>
+                    <p className="text-sm font-medium">Solo mío</p>
+                    <p className="text-xs text-muted-foreground">100% a mi cargo</p>
+                  </div>
+                  {splitMode === "mine" && <Check className="size-4 text-primary flex-shrink-0" />}
+                </button>
+                {/* Solo de... */}
+                {otherMembers.length > 0 && (
+                  <div className={`rounded-xl border transition-colors ${isSolo ? "border-primary bg-primary/5" : "border-border bg-background"}`}>
+                    <button type="button"
+                      onClick={() => { const target = soloMemberId || otherMembers[0]?.id || ""; setTxOv(txId, { splitMode: target, soloMemberId: target }) }}
+                      className="w-full flex items-center justify-between px-4 py-3 text-left">
+                      <div>
+                        <p className="text-sm font-medium">Solo de…</p>
+                        <p className="text-xs text-muted-foreground">
+                          {isSolo ? `100% a cargo de ${txOrgMembers.find(m => m.id === splitMode)?.name?.split(" ")[0]}` : "Elegir persona"}
+                        </p>
+                      </div>
+                      {isSolo && <Check className="size-4 text-primary flex-shrink-0" />}
+                    </button>
+                    {isSolo && (
+                      <div className="border-t border-primary/10 px-4 pb-3 pt-2 flex flex-wrap gap-2">
+                        {otherMembers.map(m => (
+                          <button key={m.id} type="button"
+                            onClick={() => { setTxOv(txId, { splitMode: m.id, soloMemberId: m.id }); setDistribSheetFor(null) }}
+                            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${splitMode === m.id ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"}`}>
+                            {m.name?.split(" ")[0]}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )
+      })()}
+
       {/* ── Category bottom sheet ────────────────────────────────────────── */}
       {categorySheetFor && (() => {
         const sheetCatName = txOverrides[categorySheetFor]?.categoria ?? parsed?.transacciones.find(t => t.id === categorySheetFor)?.categoriaSugerida ?? null
@@ -903,20 +1021,20 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
                 </button>
 
                 {/* Categories grouped by space */}
-                {organizations.map(org => {
+                {organizations.map((org, orgIdx) => {
                   const orgCats = categories.filter(c => c.organizationId === org.id)
                   if (orgCats.length === 0) return null
+                  const SPACE_COLORS = ["#9D8189", "#5B8DB8", "#5B9B6A", "#B87A5B", "#7A5BB8"]
+                  const spaceColor = org.isPersonal ? SPACE_COLORS[0] : (SPACE_COLORS[1 + (orgIdx % (SPACE_COLORS.length - 1))])
                   return (
                     <div key={org.id}>
                       {/* Space header with color + icon + "Nueva" shortcut */}
-                      <div className="flex items-center justify-between mb-1.5 px-1">
+                      <div className="flex items-center justify-between mb-1.5 px-3 py-2 rounded-xl" style={{ backgroundColor: `${spaceColor}15` }}>
                         <div className="flex items-center gap-2">
-                          <div className="size-5 rounded-md flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${MAUVE}25` }}>
-                            {org.isPersonal
-                              ? <User className="size-3" style={{ color: MAUVE }} />
-                              : <Home className="size-3" style={{ color: MAUVE }} />}
-                          </div>
-                          <p className="text-xs font-bold uppercase tracking-wider" style={{ color: MAUVE }}>{org.name}</p>
+                          {org.isPersonal
+                            ? <User className="size-3.5 flex-shrink-0" style={{ color: spaceColor }} />
+                            : <Home className="size-3.5 flex-shrink-0" style={{ color: spaceColor }} />}
+                          <p className="text-xs font-bold uppercase tracking-wider" style={{ color: spaceColor }}>{org.name}</p>
                         </div>
                         <button
                           onClick={() => openNewCategory(org.id)}

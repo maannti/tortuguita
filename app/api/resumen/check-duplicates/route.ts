@@ -22,6 +22,7 @@ export interface DuplicateMatch {
   label: string
   amount: number
   paymentDate: string
+  matchType: "exact" | "fuzzy"
 }
 
 function normalizeLabel(s: string): string {
@@ -89,6 +90,7 @@ export async function POST(request: NextRequest) {
             label: exactMatch.label,
             amount: Number(exactMatch.amount),
             paymentDate: exactMatch.paymentDate.toISOString(),
+            matchType: "exact",
           }
           continue
         }
@@ -131,6 +133,7 @@ export async function POST(request: NextRequest) {
             label: bill.label,
             amount: billAmount,
             paymentDate: bill.paymentDate.toISOString(),
+            matchType: "fuzzy",
           }
         }
       }

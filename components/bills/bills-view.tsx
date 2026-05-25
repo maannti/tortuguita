@@ -382,25 +382,19 @@ export function BillsView({
       <div className="mx-4 mt-2 flex gap-2">
         <Link
           href="/bills/recurring"
-          className="flex-1 flex items-center justify-between px-3.5 py-3 rounded-2xl active:opacity-80 active:scale-[0.99] transition-all"
+          className="flex-1 flex items-center justify-center gap-2 px-3.5 py-3 rounded-2xl active:opacity-80 active:scale-[0.99] transition-all"
           style={{ background: isDark ? "#3a0e18" : "#EAE4F2" }}
         >
-          <div className="flex items-center gap-2">
-            <Repeat className="size-4" style={{ color: isDark ? "#FCB9B2" : "#6B5A8A" }} />
-            <span className="text-sm" style={{ color: isDark ? "#FCB9B2" : "#3d2f5a" }}><em className="italic font-normal">gastos</em> <strong className="font-bold not-italic">recurrentes</strong></span>
-          </div>
-          <ChevronRight className="size-3.5" style={{ color: isDark ? "#FCB9B2" : "#6B5A8A" }} />
+          <Repeat className="size-4" style={{ color: isDark ? "#FCB9B2" : "#6B5A8A" }} />
+          <span className="text-sm" style={{ color: isDark ? "#FCB9B2" : "#3d2f5a" }}><em className="italic font-normal">gastos</em> <strong className="font-bold not-italic">recurrentes</strong></span>
         </Link>
         <Link
           href="/bills/shared"
-          className="flex-1 flex items-center justify-between px-3.5 py-3 rounded-2xl active:opacity-80 active:scale-[0.99] transition-all"
+          className="flex-1 flex items-center justify-center gap-2 px-3.5 py-3 rounded-2xl active:opacity-80 active:scale-[0.99] transition-all"
           style={{ background: isDark ? "#461220" : "#FFE0E8" }}
         >
-          <div className="flex items-center gap-2">
-            <Users className="size-4" style={{ color: isDark ? "#FED0BB" : "#7a3040" }} />
-            <span className="text-sm" style={{ color: isDark ? "#FED0BB" : "#5a1828" }}><em className="italic font-normal">gastos</em> <strong className="font-bold not-italic">compartidos</strong></span>
-          </div>
-          <ChevronRight className="size-3.5" style={{ color: isDark ? "#FED0BB" : "#7a3040" }} />
+          <Users className="size-4" style={{ color: isDark ? "#FED0BB" : "#7a3040" }} />
+          <span className="text-sm" style={{ color: isDark ? "#FED0BB" : "#5a1828" }}><em className="italic font-normal">gastos</em> <strong className="font-bold not-italic">compartidos</strong></span>
         </Link>
       </div>
 

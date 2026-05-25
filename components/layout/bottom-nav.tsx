@@ -81,10 +81,10 @@ export function BottomNav() {
           )}
         >
           <div className={cn(
-            "size-7 rounded-full flex items-center justify-center text-[11px] font-semibold transition-all ring-2 overflow-hidden",
+            "size-6 rounded-full flex items-center justify-center text-[10px] font-semibold transition-all overflow-hidden",
             isSettingsActive
-              ? "bg-primary text-primary-foreground ring-primary/30"
-              : "bg-muted text-muted-foreground ring-transparent"
+              ? "bg-primary text-primary-foreground"
+              : "bg-muted text-muted-foreground"
           )}>
             {session?.user?.image
               ? <img src={session.user.image} alt="" className="size-full object-cover" />

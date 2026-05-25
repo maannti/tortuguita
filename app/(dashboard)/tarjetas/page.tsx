@@ -7,7 +7,7 @@ import { getUserOrganizations } from "@/lib/organization-utils"
 import { cookies } from "next/headers"
 
 type InstallmentBillSummary = {
-  id: string; amount: number; amountUSD: number | null; budgetDate: string; currentInstallment: number; isPast: boolean; isPaid: boolean
+  id: string; amount: number; amountUSD: number | null; budgetDate: string; paymentDate: string; currentInstallment: number; isPast: boolean; isPaid: boolean
 }
 type InstallmentGroup = {
   groupId: string; label: string; totalInstallments: number; minInstallment: number; bills: InstallmentBillSummary[]; memberNames: string[]
@@ -95,7 +95,7 @@ export default async function CuotasPage({ searchParams }: PageProps) {
         category: true,
         assignments: { include: { user: { select: { id: true, name: true } } } },
       },
-      orderBy: { budgetDate: "asc" },
+      orderBy: { paymentDate: "asc" },
     }),
     prisma.billType.findMany({
       where: { organizationId: { in: allOrgIds }, isCreditCard: true },
@@ -108,7 +108,7 @@ export default async function CuotasPage({ searchParams }: PageProps) {
   const groupIds = [...new Set(installmentBills.map(b => b.installmentGroupId!))]
   const allGroupBills = groupIds.length > 0 ? await prisma.bill.findMany({
     where: { organizationId: { in: orgIds }, installmentGroupId: { in: groupIds } },
-    select: { id: true, amount: true, amountUSD: true, budgetDate: true, currentInstallment: true, installmentGroupId: true, totalInstallments: true, label: true, isPaid: true },
+    select: { id: true, amount: true, amountUSD: true, budgetDate: true, paymentDate: true, currentInstallment: true, installmentGroupId: true, totalInstallments: true, label: true, isPaid: true },
     orderBy: { currentInstallment: "asc" },
   }) : []
 
@@ -148,6 +148,7 @@ export default async function CuotasPage({ searchParams }: PageProps) {
       amount: Number(bill.amount),
       amountUSD: bill.amountUSD ? Number(bill.amountUSD) : null,
       budgetDate: format(new Date(bill.budgetDate), "MMMM yyyy", { locale: es }),
+      paymentDate: format(new Date(bill.paymentDate), "d MMM", { locale: es }),
       currentInstallment: bill.currentInstallment!,
       isPast: new Date(bill.budgetDate) < now,
       isPaid: bill.isPaid,
@@ -169,6 +170,8 @@ export default async function CuotasPage({ searchParams }: PageProps) {
     })
   }
 
+  // Track paymentDate per group (from the bill in the current month) for sorting
+  const groupPaymentDate = new Map<string, Date>()
   for (const bill of installmentBills) {
     const cardData = byCard.get(bill.billTypeId)
     if (!cardData) continue
@@ -177,14 +180,34 @@ export default async function CuotasPage({ searchParams }: PageProps) {
     if (!cardData.installmentGroups.find((g) => g.groupId === group.groupId)) {
       cardData.installmentGroups.push(group)
       cardData.monthTotal += Number(bill.amount)
+      groupPaymentDate.set(group.groupId, new Date(bill.paymentDate))
     }
   }
+  // Sort installment groups by payment date of current month's bill
+  for (const cardData of byCard.values()) {
+    cardData.installmentGroups.sort((a, b) => {
+      const da = groupPaymentDate.get(a.groupId)?.getTime() ?? 0
+      const db = groupPaymentDate.get(b.groupId)?.getTime() ?? 0
+      return da - db
+    })
+  }
+
   for (const bill of singleCCBills) {
     const cardData = byCard.get(bill.billTypeId)
     if (!cardData) continue
-    cardData.singleBills.push({ id: bill.id, label: bill.label, amount: Number(bill.amount), amountUSD: bill.amountUSD ? Number(bill.amountUSD) : null, budgetDate: format(new Date(bill.budgetDate), "MMMM yyyy", { locale: es }), isPaid: bill.isPaid, categoryName: bill.category?.name ?? null, categoryColor: bill.category?.color ?? null, categoryIcon: bill.category?.icon ?? null })
+    cardData.singleBills.push({
+      id: bill.id, label: bill.label, amount: Number(bill.amount),
+      amountUSD: bill.amountUSD ? Number(bill.amountUSD) : null,
+      budgetDate: format(new Date(bill.budgetDate), "MMMM yyyy", { locale: es }),
+      paymentDate: format(new Date(bill.paymentDate), "d MMM", { locale: es }),
+      isPaid: bill.isPaid,
+      categoryName: bill.category?.name ?? null,
+      categoryColor: bill.category?.color ?? null,
+      categoryIcon: bill.category?.icon ?? null,
+    })
     cardData.monthTotal += Number(bill.amount)
   }
+  // Single bills already ordered by paymentDate asc from the query
 
   // Auto-roll: if current period expired AND next period is already configured, promote it silently
   const toRoll = creditCardTypes.filter(ct =>
