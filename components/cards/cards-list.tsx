@@ -1,6 +1,6 @@
 "use client"
 import { useRouter } from "next/navigation"
-import { ChevronLeft, Plus, Pencil } from "lucide-react"
+import { ChevronLeft, Plus, Pencil, AlertTriangle } from "lucide-react"
 import { DeleteCategoryButton } from "@/components/categories/delete-category-button"
 import { CardIcon, isNetworkId, NetworkId, BANKS } from "@/components/ui/card-network"
 
@@ -10,11 +10,13 @@ interface Card {
 
 interface CardsListProps {
   cards: Card[]
+  alertCardIds?: string[]
 }
 
-export function CardsList({ cards }: CardsListProps) {
+export function CardsList({ cards, alertCardIds = [] }: CardsListProps) {
   const { push, replace } = useRouter()
   const newHref = `/cards/new`
+  const alertSet = new Set(alertCardIds)
 
   return (
     <div className="pb-28">
@@ -44,8 +46,14 @@ export function CardsList({ cards }: CardsListProps) {
                 ? network.charAt(0).toUpperCase() + network.slice(1)
                 : ""
 
+              const hasAlert = alertSet.has(card.id)
+
               return (
-                <div key={card.id} className="flex items-center gap-3 px-4 py-3.5">
+                <div
+                  key={card.id}
+                  className="flex items-center gap-3 px-4 py-3.5 transition-colors"
+                  style={hasAlert ? { backgroundColor: "#FFFBEB" } : undefined}
+                >
                   <CardIcon
                     bankId={bankId}
                     bankColor={card.color || "#9D8189"}
@@ -55,11 +63,16 @@ export function CardsList({ cards }: CardsListProps) {
                   />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{card.name}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {netLabel && bankName ? `${netLabel} · ${bankName}` : "Tarjeta de crédito"}
+                    <p className={`text-xs mt-0.5 ${hasAlert ? "" : "text-muted-foreground"}`} style={{ color: hasAlert ? "#D97706" : undefined }}>
+                      {hasAlert
+                        ? "Período sin configurar"
+                        : netLabel && bankName ? `${netLabel} · ${bankName}` : "Tarjeta de crédito"}
                     </p>
                   </div>
                   <div className="flex items-center gap-1 flex-shrink-0">
+                    {hasAlert && (
+                      <AlertTriangle className="size-4 mr-0.5 flex-shrink-0" style={{ color: "#D97706" }} />
+                    )}
                     <button onClick={() => replace(`/cards/${card.id}/edit`)}
                       className="p-2 rounded-lg hover:bg-black/5 text-muted-foreground hover:text-foreground transition-colors">
                       <Pencil className="size-4" />

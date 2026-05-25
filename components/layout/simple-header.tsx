@@ -46,17 +46,37 @@ export function SimpleHeader() {
   const showSpaces = spaces.length > 1 && isHydrated && !hideSelector(pathname)
   const { isEnabled: notifEnabled, isSupported: notifSupported } = usePushNotifications()
   const [trayOpen, setTrayOpen] = useState(false)
-  const [unreadCount, setUnreadCount] = useState(0)
+  const [dbUnreadCount, setDbUnreadCount] = useState(0)
+  const [billingAlerts, setBillingAlerts] = useState<{ id: string; name: string; alertType: "no_period" | "stale" | "no_next_period" }[]>([])
+  const [dismissedAlertIds, setDismissedAlertIds] = useState<Set<string>>(new Set())
 
-  // Fetch unread count on mount
+  // Load dismissed IDs from sessionStorage + fetch both APIs on mount
   useEffect(() => {
-    fetch("/api/notifications")
-      .then((r) => r.json())
-      .then((data) => {
-        setUnreadCount(data.unreadCount ?? 0)
-      })
-      .catch(() => {})
+    try {
+      const raw = sessionStorage.getItem("dismissed-billing-alerts")
+      if (raw) setDismissedAlertIds(new Set(JSON.parse(raw) as string[]))
+    } catch {}
+
+    Promise.all([
+      fetch("/api/notifications").then(r => r.json()),
+      fetch("/api/billing-alerts").then(r => r.json()),
+    ]).then(([notifData, alertData]) => {
+      setDbUnreadCount(notifData.unreadCount ?? 0)
+      setBillingAlerts(alertData.alerts ?? [])
+    }).catch(() => {})
   }, [])
+
+  const activeBillingAlerts = billingAlerts.filter(a => !dismissedAlertIds.has(a.id))
+  const unreadCount = dbUnreadCount + activeBillingAlerts.length
+
+  const handleDismissAlert = (id: string) => {
+    setDismissedAlertIds(prev => {
+      const next = new Set(prev)
+      next.add(id)
+      try { sessionStorage.setItem("dismissed-billing-alerts", JSON.stringify([...next])) } catch {}
+      return next
+    })
+  }
 
   return (
     <>
@@ -170,7 +190,13 @@ export function SimpleHeader() {
         </div>
       </div>
     </header>
-    <NotificationTray isOpen={trayOpen} onClose={() => setTrayOpen(false)} onRead={() => setUnreadCount(0)} />
+    <NotificationTray
+      isOpen={trayOpen}
+      onClose={() => setTrayOpen(false)}
+      onRead={() => setDbUnreadCount(0)}
+      billingAlerts={activeBillingAlerts}
+      onDismissAlert={handleDismissAlert}
+    />
     </>
   )
 }

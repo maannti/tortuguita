@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { Bell } from "lucide-react"
+import { Bell, AlertTriangle, X } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { es } from "date-fns/locale"
 
@@ -19,10 +19,18 @@ interface Notification {
   createdAt: string
 }
 
+interface BillingAlert {
+  id: string
+  name: string
+  alertType: "no_period" | "stale" | "no_next_period"
+}
+
 interface NotificationTrayProps {
   isOpen: boolean
   onClose: () => void
   onRead?: () => void
+  billingAlerts?: BillingAlert[]
+  onDismissAlert?: (id: string) => void
 }
 
 function groupNotifications(notifications: Notification[]) {
@@ -106,7 +114,67 @@ function SectionLabel({ label }: { label: string }) {
   )
 }
 
-export function NotificationTray({ isOpen, onClose, onRead }: NotificationTrayProps) {
+const BILLING_ALERT_COPY = {
+  no_period: {
+    title: "Período sin configurar",
+    body: (name: string) =>
+      `${name} no tiene cierre ni vencimiento. Sin esto no podés importar gastos.`,
+  },
+  stale: {
+    title: "Período vencido",
+    body: (name: string) =>
+      `El período actual de ${name} venció. Configurá el nuevo período para seguir operando.`,
+  },
+  no_next_period: {
+    title: "Próximo período sin configurar",
+    body: (name: string) =>
+      `${name} no tiene próximo cierre cargado. Configuralo antes de que venza el actual.`,
+  },
+} as const
+
+function BillingAlertRow({ alert, onDismiss }: { alert: BillingAlert; onDismiss: () => void }) {
+  const copy = BILLING_ALERT_COPY[alert.alertType] ?? BILLING_ALERT_COPY.no_period
+
+  return (
+    <div className="flex items-start gap-3 px-4 py-3" style={{ backgroundColor: "#FFFBEB" }}>
+      {/* Icon */}
+      <div
+        className="size-8 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5"
+        style={{ backgroundColor: "#FEF3C7" }}
+      >
+        <AlertTriangle className="size-3.5" style={{ color: "#D97706" }} strokeWidth={2} />
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium leading-snug" style={{ color: "#92400E" }}>
+          {copy.title}
+        </p>
+        <p className="text-sm leading-snug mt-0.5" style={{ color: "#B45309" }}>
+          {copy.body(alert.name)}
+        </p>
+        <Link
+          href={`/cards/${alert.id}/edit`}
+          className="inline-block mt-1.5 text-xs font-medium underline underline-offset-2"
+          style={{ color: "#D97706" }}
+        >
+          Configurar tarjeta →
+        </Link>
+      </div>
+
+      {/* Dismiss */}
+      <button
+        onClick={onDismiss}
+        className="size-6 flex items-center justify-center rounded-full flex-shrink-0 mt-0.5 transition-colors hover:bg-amber-200/60"
+        aria-label="Desestimar"
+      >
+        <X className="size-3.5" style={{ color: "#D97706" }} />
+      </button>
+    </div>
+  )
+}
+
+export function NotificationTray({ isOpen, onClose, onRead, billingAlerts = [], onDismissAlert }: NotificationTrayProps) {
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [loading, setLoading] = useState(false)
 
@@ -171,6 +239,19 @@ export function NotificationTray({ isOpen, onClose, onRead }: NotificationTrayPr
 
         {/* Scrollable content */}
         <div className="overflow-y-auto" style={{ maxHeight: "calc(70dvh - 80px)" }}>
+          {/* Billing alerts — shown before regular notifications, dismissible */}
+          {billingAlerts.length > 0 && (
+            <div className="divide-y" style={{ borderColor: "#FDE68A" }}>
+              {billingAlerts.map(alert => (
+                <BillingAlertRow
+                  key={alert.id}
+                  alert={alert}
+                  onDismiss={() => onDismissAlert?.(alert.id)}
+                />
+              ))}
+            </div>
+          )}
+
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <div
@@ -178,7 +259,7 @@ export function NotificationTray({ isOpen, onClose, onRead }: NotificationTrayPr
                 style={{ borderColor: `${MAUVE}40`, borderTopColor: "transparent" }}
               />
             </div>
-          ) : !hasNotifications ? (
+          ) : !hasNotifications && billingAlerts.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 gap-3">
               <div
                 className="size-12 rounded-2xl flex items-center justify-center"

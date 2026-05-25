@@ -7,7 +7,7 @@ import { getUserOrganizations } from "@/lib/organization-utils"
 import { cookies } from "next/headers"
 
 type InstallmentBillSummary = {
-  id: string; amount: number; amountUSD: number | null; budgetDate: string; paymentDate: string; currentInstallment: number; isPast: boolean; isPaid: boolean
+  id: string; amount: number; amountUSD: number | null; budgetDate: string; paymentDate: string; currentInstallment: number; isPast: boolean; isPaid: boolean; isCurrentMonth: boolean
 }
 type InstallmentGroup = {
   groupId: string; label: string; totalInstallments: number; minInstallment: number; bills: InstallmentBillSummary[]; memberNames: string[]
@@ -105,6 +105,7 @@ export default async function CuotasPage({ searchParams }: PageProps) {
   ])
 
   // For each installment group found in this month, also fetch the full plan
+  const currentMonthBillIds = new Set(installmentBills.map(b => b.id))
   const groupIds = [...new Set(installmentBills.map(b => b.installmentGroupId!))]
   const allGroupBills = groupIds.length > 0 ? await prisma.bill.findMany({
     where: { organizationId: { in: orgIds }, installmentGroupId: { in: groupIds } },
@@ -152,6 +153,7 @@ export default async function CuotasPage({ searchParams }: PageProps) {
       currentInstallment: bill.currentInstallment!,
       isPast: new Date(bill.budgetDate) < now,
       isPaid: bill.isPaid,
+      isCurrentMonth: currentMonthBillIds.has(bill.id),
     })
   }
 
