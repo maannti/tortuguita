@@ -28,6 +28,7 @@ interface InitialData {
   notes: string | null
   assignments: Array<{ userId: string; percentage: number }>
   organizationId?: string
+  recurringBillId?: string | null
 }
 interface Props {
   categories: Category[]
@@ -114,6 +115,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
 
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [updateRecurring, setUpdateRecurring] = useState(false)
   const [label, setLabel] = useState(initialData?.label ?? "")
   const [amountDisplay, setAmountDisplay] = useState(initialData ? formatDisplay(initialData.amount) : "")
   const [amountUSDDisplay, setAmountUSDDisplay] = useState(initialData?.amountUSD ? String(initialData.amountUSD) : "")
@@ -252,6 +254,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
           assignments: buildAssignments(),
           notes: notes.trim() || "",
           organizationId: selectedOrgId,
+          ...(isEdit && updateRecurring ? { updateRecurring: true } : {}),
         }),
       })
       if (!res.ok) { const err = await res.json(); throw new Error(err.error || "Error al guardar") }
@@ -406,6 +409,33 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
               />
             </div>
           </div>
+
+          {/* "Aplicar de acá en adelante" — solo al editar bills generados por recurrentes */}
+          {isEdit && initialData?.recurringBillId && (
+            <button
+              type="button"
+              onClick={() => setUpdateRecurring(v => !v)}
+              className={`flex items-center gap-3 w-full rounded-xl border px-4 py-3 text-left transition-colors ${
+                updateRecurring
+                  ? "border-primary bg-primary/5 dark:bg-primary/20"
+                  : "border-border bg-background"
+              }`}
+            >
+              <div className={`size-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+                updateRecurring ? "bg-primary border-primary" : "border-muted-foreground/30"
+              }`}>
+                {updateRecurring && <Check className="size-3 text-primary-foreground stroke-[3]" />}
+              </div>
+              <div>
+                <p className="text-sm font-medium">Actualizar también los meses siguientes</p>
+                <p className="text-xs text-muted-foreground">
+                  {updateRecurring
+                    ? `El recurrente queda en ${formatARS(parseAmount(amountDisplay) || initialData.amount)}/mes`
+                    : "Solo cambia este mes"}
+                </p>
+              </div>
+            </button>
+          )}
 
           {/* Monto en USD — opcional, visible siempre */}
           <div className="space-y-1.5">
