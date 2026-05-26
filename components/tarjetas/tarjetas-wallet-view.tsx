@@ -2,7 +2,7 @@
 import { useState, useTransition, useCallback, useEffect } from "react"
 import { useTheme } from "next-themes"
 import { useRouter } from "next/navigation"
-import { ChevronLeft, ChevronRight, ChevronDown, Check, X, FileText, CreditCard, Clock } from "lucide-react"
+import { ChevronLeft, ChevronRight, ChevronDown, Check, X, FileText, CreditCard, Clock, Users } from "lucide-react"
 import Link from "next/link"
 import { haptic } from "@/lib/haptics"
 import { cn } from "@/lib/utils"
@@ -17,17 +17,20 @@ interface InstallmentGroup {
   groupId: string; label: string; totalInstallments: number; minInstallment: number
   bills: InstallmentBill[]; memberNames: string[]
   categoryName: string | null; categoryColor: string | null; categoryIcon: string | null
+  myPercentage: number; isShared: boolean
 }
 interface SingleBill {
   id: string; label: string; amount: number; amountUSD: number | null
   budgetDate: string; paymentDate: string; isPaid: boolean
   categoryName: string | null; categoryColor: string | null; categoryIcon: string | null
+  myShare: number; isShared: boolean
 }
 export interface CardData {
   typeName: string; typeColor: string; typeIcon: string | null; typeBank: string | null
   installmentGroups: InstallmentGroup[]
   singleBills: SingleBill[]
   monthTotal: number
+  myMonthTotal: number
   // Billing period info
   closingDate?: string | null
   dueDate?: string | null
@@ -85,7 +88,7 @@ function PaidToggle({ billId, isPaid: initialIsPaid, onToggle }: { billId: strin
 }
 
 // ─── Installment group row ────────────────────────────────────────────────────
-function InstallmentGroupRow({ group, cardColor }: { group: InstallmentGroup; cardColor: string }) {
+function InstallmentGroupRow({ group, cardColor, showMyPart }: { group: InstallmentGroup; cardColor: string; showMyPart: boolean }) {
   const [expanded, setExpanded] = useState(false)
   const [historyExpanded, setHistoryExpanded] = useState(false)
   // Local paid-state overrides so counter/progress update immediately on toggle
@@ -116,6 +119,9 @@ function InstallmentGroupRow({ group, cardColor }: { group: InstallmentGroup; ca
   // Show just the month name ("Mayo") instead of the purchase date ("17 may")
   const billMonth = (bill: InstallmentBill) => capitalize(bill.budgetDate.split(" ")[0])
 
+  const displayAmount = (amount: number) =>
+    showMyPart ? formatARS(amount * group.myPercentage / 100) : formatARS(amount)
+
   return (
     <div className="overflow-hidden transition-all">
       {/* Header */}
@@ -124,7 +130,12 @@ function InstallmentGroupRow({ group, cardColor }: { group: InstallmentGroup; ca
         onClick={() => { haptic("light"); setExpanded(v => !v) }}
       >
         <div className="flex-1 min-w-0 text-left">
-          <p className="text-sm font-medium truncate">{group.label}</p>
+          <div className="flex items-center gap-1.5">
+            <p className="text-sm font-medium truncate">{group.label}</p>
+            {group.isShared && (
+              <Users className="size-3 text-primary flex-shrink-0" />
+            )}
+          </div>
           {group.categoryName && (
             <span className="inline-flex items-center gap-1 mt-0.5">
               <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: group.categoryColor ?? "#9D8189" }} />
@@ -140,7 +151,7 @@ function InstallmentGroupRow({ group, cardColor }: { group: InstallmentGroup; ca
         </div>
         <div className="flex items-center gap-1.5 flex-shrink-0 pt-0.5">
           <span className="text-sm font-medium tabular-nums" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
-            {formatARS(monthAmount)}
+            {displayAmount(monthAmount)}
           </span>
           <ChevronDown className={cn("h-3.5 w-3.5 text-muted-foreground transition-transform duration-200", expanded && "rotate-180")} />
         </div>
@@ -165,7 +176,7 @@ function InstallmentGroupRow({ group, cardColor }: { group: InstallmentGroup; ca
                     )}
                   </div>
                   <span className="text-sm tabular-nums" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
-                    {formatARS(bill.amount)}
+                    {displayAmount(bill.amount)}
                   </span>
                 </Link>
               </div>
@@ -222,7 +233,7 @@ function InstallmentGroupRow({ group, cardColor }: { group: InstallmentGroup; ca
                           "text-sm tabular-nums text-muted-foreground",
                           getEffectivePaid(bill) && "line-through"
                         )} style={{ fontFamily: "var(--font-fraunces, serif)" }}>
-                          {formatARS(bill.amount)}
+                          {displayAmount(bill.amount)}
                         </span>
                       </Link>
                     </div>
@@ -238,8 +249,9 @@ function InstallmentGroupRow({ group, cardColor }: { group: InstallmentGroup; ca
 }
 
 // ─── Single bill row ──────────────────────────────────────────────────────────
-function SingleBillRow({ bill }: { bill: SingleBill }) {
+function SingleBillRow({ bill, showMyPart }: { bill: SingleBill; showMyPart: boolean }) {
   const [isPaid, setIsPaid] = useState(bill.isPaid)
+  const displayAmount = showMyPart ? bill.myShare : bill.amount
   return (
     <div className={cn(
       "flex items-center gap-2.5 px-4 py-3 transition-colors",
@@ -248,9 +260,12 @@ function SingleBillRow({ bill }: { bill: SingleBill }) {
       <PaidToggle billId={bill.id} isPaid={isPaid} onToggle={setIsPaid} />
       <Link href={`/bills/${bill.id}`} className="flex-1 min-w-0 flex items-center justify-between gap-2">
         <div className="min-w-0">
-          <p className={cn("text-sm font-medium truncate", isPaid && "text-muted-foreground line-through")}>
-            {bill.label}
-          </p>
+          <div className="flex items-center gap-1.5">
+            <p className={cn("text-sm font-medium truncate", isPaid && "text-muted-foreground line-through")}>
+              {bill.label}
+            </p>
+            {bill.isShared && <Users className="size-3 text-primary flex-shrink-0" />}
+          </div>
           <div className="flex items-center gap-1.5 mt-0.5">
             <span className="text-[10px] text-muted-foreground">{bill.paymentDate}</span>
             {bill.categoryName && (
@@ -264,7 +279,7 @@ function SingleBillRow({ bill }: { bill: SingleBill }) {
         </div>
         <span className={cn("text-sm font-medium tabular-nums flex-shrink-0", isPaid && "text-muted-foreground line-through")}
           style={{ fontFamily: "var(--font-fraunces, serif)" }}>
-          {formatARS(bill.amount)}
+          {formatARS(displayAmount)}
         </span>
       </Link>
     </div>
@@ -373,11 +388,12 @@ function getNetworkLogo(icon: string | null): string | null {
 }
 
 // ─── Card visual (Apple Wallet style) ─────────────────────────────────────────
-function CardVisual({ card, isExpanded, onClick, style }: {
+function CardVisual({ card, isExpanded, onClick, style, displayTotal }: {
   card: CardData
   isExpanded: boolean
   onClick: () => void
   style?: React.CSSProperties
+  displayTotal?: number
 }) {
   const { resolvedTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
@@ -457,7 +473,7 @@ function CardVisual({ card, isExpanded, onClick, style }: {
             className={cn("font-medium leading-none transition-all", isExpanded ? "text-2xl" : "text-xl")}
             style={{ color: txtPrimary, fontFamily: "var(--font-fraunces, serif)" }}
           >
-            {formatARS(card.monthTotal)}
+            {formatARS(displayTotal ?? card.monthTotal)}
           </p>
         </div>
       </div>
@@ -466,7 +482,7 @@ function CardVisual({ card, isExpanded, onClick, style }: {
 }
 
 // ─── Expanded card content ────────────────────────────────────────────────────
-function ExpandedCardContent({ card }: { card: CardData }) {
+function ExpandedCardContent({ card, showMyPart }: { card: CardData; showMyPart: boolean }) {
   const [cuotasCollapsed, setCuotasCollapsed] = useState(false)
   const [singlesCollapsed, setSinglesCollapsed] = useState(false)
 
@@ -507,7 +523,7 @@ function ExpandedCardContent({ card }: { card: CardData }) {
           </button>
         )}
         {!cuotasCollapsed && card.installmentGroups.map(group => (
-          <InstallmentGroupRow key={group.groupId} group={group} cardColor={card.typeColor} />
+          <InstallmentGroupRow key={group.groupId} group={group} cardColor={card.typeColor} showMyPart={showMyPart} />
         ))}
 
         {/* Single bills */}
@@ -521,7 +537,7 @@ function ExpandedCardContent({ card }: { card: CardData }) {
           </button>
         )}
         {!singlesCollapsed && card.singleBills.map(bill => (
-          <SingleBillRow key={bill.id} bill={bill} />
+          <SingleBillRow key={bill.id} bill={bill} showMyPart={showMyPart} />
         ))}
 
         {/* Empty state */}
@@ -544,13 +560,20 @@ export function TarjetasWalletView({ cards, monthLabel, monthKey, prevMonth, nex
   const isDark = mountedView && resolvedTheme === "dark"
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null)
   const [showPicker, setShowPicker] = useState(false)
+  const [showMyPart, setShowMyPart] = useState(false)
 
   const handleCardClick = (index: number) => {
     haptic("light")
     setExpandedIndex(prev => prev === index ? null : index)
   }
 
-  const grandTotal = cards.reduce((sum, c) => sum + c.monthTotal, 0)
+  const hasSharedBills = cards.some(c =>
+    c.singleBills.some(b => b.isShared) || c.installmentGroups.some(g => g.isShared)
+  )
+
+  const grandTotal = showMyPart
+    ? cards.reduce((sum, c) => sum + c.myMonthTotal, 0)
+    : cards.reduce((sum, c) => sum + c.monthTotal, 0)
 
   // Stack dimensions
   const COLLAPSED_HEIGHT = 56 // px per collapsed card
@@ -595,6 +618,42 @@ export function TarjetasWalletView({ cards, monthLabel, monthKey, prevMonth, nex
                   Gastos que vencen en {cycleLabel}
                 </p>
               )}
+              {hasSharedBills && grandTotal > 0 && (
+                <div className="flex items-center justify-center mt-1">
+                  <div
+                    className="flex items-center rounded-full p-0.5"
+                    style={{ background: isDark ? "rgba(0,0,0,0.25)" : "rgba(0,0,0,0.1)" }}
+                  >
+                    <button
+                      onClick={() => { haptic("selection"); setShowMyPart(false) }}
+                      className={cn(
+                        "px-2.5 py-0.5 rounded-full text-[10px] font-medium transition-all",
+                        !showMyPart ? "shadow-sm" : "opacity-60"
+                      )}
+                      style={{
+                        background: !showMyPart ? (isDark ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.85)") : "transparent",
+                        color: isDark ? "#FED0BB" : "#4A3540"
+                      }}
+                    >
+                      Total
+                    </button>
+                    <button
+                      onClick={() => { haptic("selection"); setShowMyPart(true) }}
+                      className={cn(
+                        "flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-medium transition-all",
+                        showMyPart ? "shadow-sm" : "opacity-60"
+                      )}
+                      style={{
+                        background: showMyPart ? (isDark ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.85)") : "transparent",
+                        color: isDark ? "#FED0BB" : "#4A3540"
+                      }}
+                    >
+                      <Users className="size-2.5" />
+                      Mi parte
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
             <button
               onClick={() => { if (nextMonth) { haptic("selection"); push(`/wallet?month=${nextMonth}`) } }}
@@ -638,8 +697,9 @@ export function TarjetasWalletView({ cards, monthLabel, monthKey, prevMonth, nex
                     card={card}
                     isExpanded={isExpanded}
                     onClick={() => handleCardClick(index)}
+                    displayTotal={showMyPart ? card.myMonthTotal : card.monthTotal}
                   />
-                  {isExpanded && <ExpandedCardContent card={card} />}
+                  {isExpanded && <ExpandedCardContent card={card} showMyPart={showMyPart} />}
                 </div>
               )
             })}
