@@ -39,7 +39,11 @@ El CSV de ICBC usa asterisco (*) como separador. Formato de cada línea:
 
 • Las líneas "Consumos Tarjeta:NNNN" indican cambio de tarjeta (usar número como titular)
 • Las líneas "SU PAGO EN PESOS" / "SU PAGO EN DOLARES" son pagos → ignorar
-• Cuotas en descripción: "PASSLINE 03/03" = cuota 3 de 3, "GADNIC 03/06" = cuota 3 de 6
+• Cuotas en descripción — patrones conocidos de ICBC:
+  - "PASSLINE 03/03" → cuota 3 de 3
+  - "GADNIC 03/06" → cuota 3 de 6
+  - "UNIV ASSISTANCE ON 07/09" → cuota 7 de 9 (ICBC a veces inserta "ON" antes del NN/NN)
+  - En general: si la descripción termina con "NN/NN" o "ON NN/NN" donde el segundo número es 2-36, es cuota NN de NN
 • Importe ARS usa coma decimal (29766,50 → 29766.50); USD usa punto (167.07)
 • COMPROBANTE = campo comprobante para deduplicación
 
@@ -69,11 +73,17 @@ NO INCLUIR (ignorar completamente):
 ━━━ CUOTAS ━━━
 
 El formato varía por banco:
-• "01/12" o "1/12" en la descripción (ICBC, Macro)
+• "01/12" o "1/12" al final de la descripción (ICBC, Macro)
+• "ON 01/12" al final de la descripción — ICBC inserta "ON" como separador antes del número de cuota
 • Columna separada "Cuota" con "01 de 12" o "1 de 12" (Santander, Galicia)
 • "C:01/12" o "(1/12)" en la descripción (otros)
 
-Regla:
+Regla para detectar cuotas por descripción:
+• Si la descripción termina con el patrón NN/NN o ON NN/NN, y el segundo número está entre 2 y 36 → es cuota NN de NN
+• Ejemplo: "UNIV ASSISTANCE ON 07/09" → cuotaActual=7, cuotaTotal=9
+• Ejemplo: "FARMACIA 02/06" → cuotaActual=2, cuotaTotal=6
+
+Regla de inclusión:
 • cuotaActual = 1 → nueva compra → incluir: true, tipo: "cuota"
 • cuotaActual > 1 → incluir: true, tipo: "cuota", nota: "Cuota X/Y — puede que ya esté registrada si importaste resúmenes anteriores"
 • El monto es el de UNA cuota (no el total)
