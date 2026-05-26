@@ -94,7 +94,8 @@ export async function PATCH(
 
     const { id } = await params
     const body = await request.json()
-    const data = billSchema.parse(body)
+    const { updateRecurring, ...rest } = body
+    const data = billSchema.parse(rest)
 
     const userOrgs = await getUserOrganizations(session.user.id)
     const orgIds = userOrgs.map(o => o.id)
@@ -194,6 +195,15 @@ export async function PATCH(
         assignments: { include: { user: { select: { id: true, name: true, email: true } } } },
       },
     })
+
+    // ── Propagate amount to RecurringBill template if requested ──────────────
+    if (updateRecurring === true && bill.recurringBillId) {
+      await prisma.recurringBill.update({
+        where: { id: bill.recurringBillId },
+        data: { amount: data.amount, amountUSD: data.amountUSD ?? null },
+      })
+    }
+    // ─────────────────────────────────────────────────────────────────────────
 
     // ── Propagate shared fields to installment siblings ──────────────────────
     // When editing a cuota, label/amount/amountUSD/categoryId/notes should
