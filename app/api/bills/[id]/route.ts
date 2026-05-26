@@ -293,6 +293,9 @@ export async function DELETE(
     const userOrgs = await getUserOrganizations(session.user.id)
     const orgIds = userOrgs.map(o => o.id)
 
+    const { searchParams } = new URL(request.url)
+    const deleteMode = searchParams.get("mode") // "single" | "all-series"
+
     const bill = await prisma.bill.findFirst({
       where: { id, organizationId: { in: orgIds } },
       include: { assignments: { select: { userId: true, percentage: true } } },
@@ -302,7 +305,14 @@ export async function DELETE(
       return NextResponse.json({ error: "Gasto no encontrado" }, { status: 404 })
     }
 
-    await prisma.bill.delete({ where: { id } })
+    if (deleteMode === "all-series" && bill.installmentGroupId) {
+      // Delete the entire installment series
+      await prisma.bill.deleteMany({
+        where: { installmentGroupId: bill.installmentGroupId, organizationId: { in: orgIds } },
+      })
+    } else {
+      await prisma.bill.delete({ where: { id } })
+    }
 
     // Notify other assigned members (fire-and-forget)
     const otherAssignees = bill.assignments
