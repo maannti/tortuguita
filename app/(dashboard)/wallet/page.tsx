@@ -12,6 +12,7 @@ type InstallmentBillSummary = {
 type InstallmentGroup = {
   groupId: string; label: string; totalInstallments: number; minInstallment: number; bills: InstallmentBillSummary[]; memberNames: string[]
   categoryName: string | null; categoryColor: string | null; categoryIcon: string | null
+  myPercentage: number; isShared: boolean
 }
 type CardEntry = CardData
 
@@ -125,6 +126,11 @@ export default async function CuotasPage({ searchParams }: PageProps) {
   for (const bill of installmentBills) {
     const gId = bill.installmentGroupId!
     if (!groupMap.has(gId)) {
+      const myAssignment = bill.assignments.find(a => a.user.id === session.user.id)
+      const myPercentage = myAssignment
+        ? Number(myAssignment.percentage)
+        : bill.assignments.length === 0 ? 100 : 0
+      const isShared = bill.assignments.length > 1
       groupMap.set(gId, {
         groupId: gId,
         label: bill.label,
@@ -135,6 +141,8 @@ export default async function CuotasPage({ searchParams }: PageProps) {
         categoryName: bill.category?.name ?? null,
         categoryColor: bill.category?.color ?? null,
         categoryIcon: bill.category?.icon ?? null,
+        myPercentage,
+        isShared,
       })
     }
   }
@@ -167,6 +175,7 @@ export default async function CuotasPage({ searchParams }: PageProps) {
       installmentGroups: [],
       singleBills: [],
       monthTotal: 0,
+      myMonthTotal: 0,
       closingDate: ct.currentClosingDate ? format(new Date(ct.currentClosingDate), "d MMM", { locale: es }) : null,
       dueDate: ct.currentDueDate ? format(new Date(ct.currentDueDate), "d MMM", { locale: es }) : null,
     })
@@ -182,6 +191,7 @@ export default async function CuotasPage({ searchParams }: PageProps) {
     if (!cardData.installmentGroups.find((g) => g.groupId === group.groupId)) {
       cardData.installmentGroups.push(group)
       cardData.monthTotal += Number(bill.amount)
+      cardData.myMonthTotal += Number(bill.amount) * group.myPercentage / 100
       groupPaymentDate.set(group.groupId, new Date(bill.paymentDate))
     }
   }
@@ -197,6 +207,12 @@ export default async function CuotasPage({ searchParams }: PageProps) {
   for (const bill of singleCCBills) {
     const cardData = byCard.get(bill.billTypeId)
     if (!cardData) continue
+    const myAssignment = bill.assignments.find(a => a.user.id === session.user.id)
+    const myPercentage = myAssignment
+      ? Number(myAssignment.percentage)
+      : bill.assignments.length === 0 ? 100 : 0
+    const myShare = Number(bill.amount) * myPercentage / 100
+    const isShared = bill.assignments.length > 1
     cardData.singleBills.push({
       id: bill.id, label: bill.label, amount: Number(bill.amount),
       amountUSD: bill.amountUSD ? Number(bill.amountUSD) : null,
@@ -206,8 +222,11 @@ export default async function CuotasPage({ searchParams }: PageProps) {
       categoryName: bill.category?.name ?? null,
       categoryColor: bill.category?.color ?? null,
       categoryIcon: bill.category?.icon ?? null,
+      myShare,
+      isShared,
     })
     cardData.monthTotal += Number(bill.amount)
+    cardData.myMonthTotal += myShare
   }
   // Single bills already ordered by paymentDate asc from the query
 
