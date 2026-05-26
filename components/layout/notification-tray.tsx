@@ -144,15 +144,15 @@ function BillingAlertRow({ alert, onDismiss }: { alert: BillingAlert; onDismiss:
 
       {/* Content */}
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium leading-snug text-amber-900 dark:text-amber-200">
+        <p className="text-sm font-medium leading-snug text-gray-900 dark:text-amber-200">
           {copy.title}
         </p>
-        <p className="text-sm leading-snug mt-0.5 text-amber-800 dark:text-amber-300">
+        <p className="text-sm leading-snug mt-0.5 text-gray-700 dark:text-amber-300">
           {copy.body(alert.name)}
         </p>
         <Link
           href={`/cards/${alert.id}/edit`}
-          className="inline-block mt-1.5 text-xs font-medium underline underline-offset-2 text-amber-600 dark:text-amber-400"
+          className="inline-block mt-1.5 text-xs font-medium underline underline-offset-2 text-amber-700 dark:text-amber-400"
         >
           Configurar tarjeta →
         </Link>
@@ -209,7 +209,7 @@ export function NotificationTray({ isOpen, onClose, onRead, billingAlerts = [], 
 
       {/* Top sheet — slides down from header */}
       <div
-        className="fixed top-14 right-3 z-50 rounded-2xl transition-all duration-300 ease-out bg-background/[0.97] dark:bg-card/[0.97]"
+        className="fixed top-14 right-3 z-50 rounded-2xl transition-all duration-300 ease-out bg-white/[0.97] dark:bg-card/[0.97]"
         style={{
           backdropFilter: "blur(24px)",
           WebkitBackdropFilter: "blur(24px)",
