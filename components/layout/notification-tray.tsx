@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useTheme } from "next-themes"
 import Link from "next/link"
 import { Bell, AlertTriangle, X } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
@@ -134,32 +135,53 @@ const BILLING_ALERT_COPY = {
 
 function BillingAlertRow({ alert, onDismiss }: { alert: BillingAlert; onDismiss: () => void }) {
   const copy = BILLING_ALERT_COPY[alert.alertType] ?? BILLING_ALERT_COPY.no_period
+  const { resolvedTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+  const isDark = mounted && resolvedTheme === "dark"
+
+  const colors = isDark
+    ? {
+        rowBg: "rgba(120,53,15,0.25)",
+        iconBg: "rgba(146,64,14,0.4)",
+        icon: "#fbbf24",
+        title: "#fde68a",
+        body: "#fcd34d",
+        link: "#fbbf24",
+        x: "#fbbf24",
+      }
+    : {
+        rowBg: "#fffbeb",
+        iconBg: "#fef3c7",
+        icon: "#b45309",
+        title: "#1c1917",
+        body: "#44403c",
+        link: "#92400e",
+        x: "#b45309",
+      }
 
   return (
-    <div
-      className="flex items-start gap-3 px-4 py-3"
-      style={{ backgroundColor: "#fffbeb" }}
-    >
+    <div className="flex items-start gap-3 px-4 py-3" style={{ backgroundColor: colors.rowBg }}>
       {/* Icon */}
       <div
         className="size-8 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5"
-        style={{ backgroundColor: "#fef3c7" }}
+        style={{ backgroundColor: colors.iconBg }}
       >
-        <AlertTriangle className="size-3.5" style={{ color: "#b45309" }} strokeWidth={2} />
+        <AlertTriangle className="size-3.5" style={{ color: colors.icon }} strokeWidth={2} />
       </div>
 
       {/* Content */}
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium leading-snug" style={{ color: "#1c1917" }}>
+        <p className="text-sm font-medium leading-snug" style={{ color: colors.title }}>
           {copy.title}
         </p>
-        <p className="text-sm leading-snug mt-0.5" style={{ color: "#44403c" }}>
+        <p className="text-sm leading-snug mt-0.5" style={{ color: colors.body }}>
           {copy.body(alert.name)}
         </p>
         <Link
           href={`/cards/${alert.id}/edit`}
           className="inline-block mt-1.5 text-xs font-medium underline underline-offset-2"
-          style={{ color: "#92400e" }}
+          style={{ color: colors.link }}
         >
           Configurar tarjeta →
         </Link>
@@ -171,7 +193,7 @@ function BillingAlertRow({ alert, onDismiss }: { alert: BillingAlert; onDismiss:
         className="size-6 flex items-center justify-center rounded-full flex-shrink-0 mt-0.5 transition-colors"
         aria-label="Desestimar"
       >
-        <X className="size-3.5" style={{ color: "#b45309" }} />
+        <X className="size-3.5" style={{ color: colors.x }} />
       </button>
     </div>
   )
