@@ -88,6 +88,7 @@ export default async function EditBillPage({
           percentage: Number(a.percentage),
         })),
         organizationId: bill.organizationId,
+        recurringBillId: bill.recurringBillId,
       }}
     />
   )
