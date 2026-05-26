@@ -136,23 +136,30 @@ function BillingAlertRow({ alert, onDismiss }: { alert: BillingAlert; onDismiss:
   const copy = BILLING_ALERT_COPY[alert.alertType] ?? BILLING_ALERT_COPY.no_period
 
   return (
-    <div className="flex items-start gap-3 px-4 py-3 bg-amber-50 dark:bg-amber-900/20">
+    <div
+      className="flex items-start gap-3 px-4 py-3"
+      style={{ backgroundColor: "#fffbeb" }}
+    >
       {/* Icon */}
-      <div className="size-8 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5 bg-amber-100 dark:bg-amber-800/40">
-        <AlertTriangle className="size-3.5 text-amber-600 dark:text-amber-400" strokeWidth={2} />
+      <div
+        className="size-8 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5"
+        style={{ backgroundColor: "#fef3c7" }}
+      >
+        <AlertTriangle className="size-3.5" style={{ color: "#b45309" }} strokeWidth={2} />
       </div>
 
       {/* Content */}
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium leading-snug text-gray-900 dark:text-amber-200">
+        <p className="text-sm font-medium leading-snug" style={{ color: "#1c1917" }}>
           {copy.title}
         </p>
-        <p className="text-sm leading-snug mt-0.5 text-gray-700 dark:text-amber-300">
+        <p className="text-sm leading-snug mt-0.5" style={{ color: "#44403c" }}>
           {copy.body(alert.name)}
         </p>
         <Link
           href={`/cards/${alert.id}/edit`}
-          className="inline-block mt-1.5 text-xs font-medium underline underline-offset-2 text-amber-700 dark:text-amber-400"
+          className="inline-block mt-1.5 text-xs font-medium underline underline-offset-2"
+          style={{ color: "#92400e" }}
         >
           Configurar tarjeta →
         </Link>
@@ -161,10 +168,10 @@ function BillingAlertRow({ alert, onDismiss }: { alert: BillingAlert; onDismiss:
       {/* Dismiss */}
       <button
         onClick={onDismiss}
-        className="size-6 flex items-center justify-center rounded-full flex-shrink-0 mt-0.5 transition-colors hover:bg-amber-200/60 dark:hover:bg-amber-700/40"
+        className="size-6 flex items-center justify-center rounded-full flex-shrink-0 mt-0.5 transition-colors"
         aria-label="Desestimar"
       >
-        <X className="size-3.5 text-amber-600 dark:text-amber-400" />
+        <X className="size-3.5" style={{ color: "#b45309" }} />
       </button>
     </div>
   )
