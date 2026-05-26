@@ -39,6 +39,7 @@ interface BillDetailProps {
     } | null
     user: { name: string | null }
     spaceName: string | null
+    installmentGroupId: string | null
     assignments: {
       id: string
       percentage: number
@@ -64,15 +65,26 @@ export function BillDetail({ bill }: BillDetailProps) {
   const searchParams = useSearchParams()
   const returnTo = searchParams.get("returnTo") ?? "/bills"
   const accentColor = (bill.category?.color || bill.billType.color) ?? "#9D8189"
+  const isInstallment = !!bill.installmentGroupId
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const [deleteMode, setDeleteMode] = useState<"single" | "all-series">("single")
   const [isDeleting, setIsDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
+
+  function openDeleteDialog() {
+    setDeleteMode(isInstallment ? "single" : "single")
+    setDeleteError(null)
+    setDeleteOpen(true)
+  }
 
   async function handleDelete() {
     setIsDeleting(true)
     setDeleteError(null)
     try {
-      const res = await fetch(`/api/bills/${bill.id}`, { method: "DELETE" })
+      const url = isInstallment && deleteMode === "all-series"
+        ? `/api/bills/${bill.id}?mode=all-series`
+        : `/api/bills/${bill.id}`
+      const res = await fetch(url, { method: "DELETE" })
       if (!res.ok) {
         const data = await res.json()
         setDeleteError(data.error || "Error al eliminar")
@@ -107,7 +119,7 @@ export function BillDetail({ bill }: BillDetailProps) {
           </Link>
           <button
             type="button"
-            onClick={() => setDeleteOpen(true)}
+            onClick={openDeleteDialog}
             className="size-9 flex items-center justify-center rounded-2xl bg-muted/80 text-muted-foreground hover:text-destructive active:scale-95 transition-all"
           >
             <Trash2 className="size-4" />
@@ -243,15 +255,56 @@ export function BillDetail({ bill }: BillDetailProps) {
                 className="text-xl"
                 style={{ fontFamily: "var(--font-fraunces, serif)" }}
               >
-                Eliminar gasto
+                Eliminar{isInstallment ? " cuota" : " gasto"}
               </DialogTitle>
               <DialogDescription className="text-sm text-muted-foreground leading-relaxed">
-                ¿Eliminás{" "}
+                {isInstallment ? "¿Qué querés eliminar de " : "¿Eliminás "}
                 <span className="font-medium text-foreground">"{bill.label}"</span>
-                ?{" "}Esta acción no se puede deshacer.
+                {isInstallment ? "?" : "? Esta acción no se puede deshacer."}
               </DialogDescription>
             </div>
           </DialogHeader>
+
+          {/* Installment options */}
+          {isInstallment && (
+            <div className="flex flex-col gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setDeleteMode("single")}
+                className={`flex items-start gap-3 w-full rounded-2xl border px-4 py-3 text-left transition-colors ${
+                  deleteMode === "single" ? "border-destructive/50 bg-destructive/5" : "border-border bg-background"
+                }`}
+              >
+                <div className={`mt-0.5 size-4 rounded-full border-2 flex-shrink-0 transition-colors ${
+                  deleteMode === "single" ? "border-destructive bg-destructive" : "border-muted-foreground/30"
+                }`} />
+                <div>
+                  <p className="text-sm font-medium">Solo esta cuota</p>
+                  <p className="text-xs text-muted-foreground">
+                    Cuota {bill.currentInstallment} de {bill.totalInstallments}
+                  </p>
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => setDeleteMode("all-series")}
+                className={`flex items-start gap-3 w-full rounded-2xl border px-4 py-3 text-left transition-colors ${
+                  deleteMode === "all-series" ? "border-destructive/50 bg-destructive/5" : "border-border bg-background"
+                }`}
+              >
+                <div className={`mt-0.5 size-4 rounded-full border-2 flex-shrink-0 transition-colors ${
+                  deleteMode === "all-series" ? "border-destructive bg-destructive" : "border-muted-foreground/30"
+                }`} />
+                <div>
+                  <p className="text-sm font-medium">Toda la serie</p>
+                  <p className="text-xs text-muted-foreground">
+                    Las {bill.totalInstallments} cuotas · no se puede deshacer
+                  </p>
+                </div>
+              </button>
+            </div>
+          )}
+
           {deleteError && (
             <p className="text-sm text-destructive text-center pt-1">{deleteError}</p>
           )}
@@ -262,7 +315,7 @@ export function BillDetail({ bill }: BillDetailProps) {
               disabled={isDeleting}
               className="w-full rounded-full bg-destructive text-white py-3.5 text-sm font-semibold disabled:opacity-50 active:scale-[0.97] transition-all"
             >
-              {isDeleting ? "Eliminando…" : "Eliminar"}
+              {isDeleting ? "Eliminando…" : `Eliminar${deleteMode === "all-series" ? " toda la serie" : ""}`}
             </button>
             <button
               type="button"
