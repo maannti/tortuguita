@@ -82,6 +82,7 @@ export default async function BillDetailPage({
         category: bill.category,
         user: bill.user,
         spaceName,
+        installmentGroupId: bill.installmentGroupId,
         assignments: bill.assignments.map((a) => ({
           id: a.id,
           percentage: Number(a.percentage),
