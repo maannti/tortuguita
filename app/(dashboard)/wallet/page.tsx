@@ -96,7 +96,7 @@ export default async function CuotasPage({ searchParams }: PageProps) {
         category: true,
         assignments: { include: { user: { select: { id: true, name: true } } } },
       },
-      orderBy: { paymentDate: "asc" },
+      orderBy: { paymentDate: "desc" },
     }),
     prisma.billType.findMany({
       where: { organizationId: { in: allOrgIds }, isCreditCard: true },
