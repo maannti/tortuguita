@@ -3,7 +3,7 @@ import fs from "fs";
 import path from "path";
 
 export const HAIKU_MODEL = "claude-haiku-4-5-20251001";
-export const SONNET_MODEL = "claude-sonnet-4-5-20251001";
+export const SONNET_MODEL = "claude-sonnet-4-5-20250929";
 
 /** @deprecated Use HAIKU_MODEL or SONNET_MODEL explicitly */
 export const MODEL = HAIKU_MODEL;
