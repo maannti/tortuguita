@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { anthropic, MODEL } from "@/lib/anthropic";
+import { anthropic, HAIKU_MODEL } from "@/lib/anthropic";
 import { tools } from "@/lib/ai/tools";
 import { handleToolCall } from "@/lib/ai/tool-handlers";
 import { startOfMonth, endOfMonth, format } from "date-fns";
@@ -132,7 +132,7 @@ export async function POST(request: NextRequest) {
 
           for (let iteration = 0; iteration < MAX_ITERATIONS; iteration++) {
             const response = await anthropic.messages.create({
-              model: MODEL,
+              model: HAIKU_MODEL,
               max_tokens: 8192,
               system: systemPrompt,
               messages: currentMessages,
