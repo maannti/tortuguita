@@ -29,6 +29,8 @@ interface BillDetail {
   payerName: string
   payerId: string
   debtorId: string
+  currentInstallment: number | null
+  totalInstallments: number | null
 }
 
 interface PersonBalance {
@@ -791,7 +793,11 @@ function SwipeableBillRow({ bill, canSettle, onSettle, settling }: SwipeableBill
             {bill.label}
           </div>
           <div className="text-[11px] text-muted-foreground mt-0.5">
-            {dateStr} · {bill.percentage}% · {bill.payerName.split(" ")[0]} pagó
+            {dateStr}
+            {bill.currentInstallment && bill.totalInstallments
+              ? ` · cuota ${bill.currentInstallment}/${bill.totalInstallments}`
+              : ""}
+            {" · "}{bill.percentage}% · {bill.payerName.split(" ")[0]} pagó
           </div>
         </div>
         <div
