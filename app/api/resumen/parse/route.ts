@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
-import { anthropic, MODEL } from "@/lib/anthropic"
+import { anthropic, HAIKU_MODEL, SONNET_MODEL } from "@/lib/anthropic"
 
 export const maxDuration = 300
 
@@ -207,7 +207,7 @@ export async function POST(request: NextRequest) {
     if (isCsv) {
       const csvText = await file.text()
       response = await anthropic.messages.create({
-        model: MODEL,
+        model: HAIKU_MODEL,
         max_tokens: 8192,
         messages: [
           {
@@ -220,7 +220,7 @@ export async function POST(request: NextRequest) {
       const arrayBuffer = await file.arrayBuffer()
       const base64 = Buffer.from(arrayBuffer).toString("base64")
       response = await anthropic.messages.create({
-        model: MODEL,
+        model: SONNET_MODEL,
         max_tokens: 8192,
         messages: [
           {
