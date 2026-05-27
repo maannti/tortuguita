@@ -59,6 +59,9 @@ export async function handleToolCall(
     case "delete_income_type":
       return await deleteIncomeType(toolInput, organizationId);
 
+    case "get_recurring_bills":
+      return await getRecurringBills(toolInput, organizationId);
+
     case "get_installments":
       return await getInstallments(toolInput, organizationId);
 
@@ -463,9 +466,16 @@ async function searchBills(input: any, userId: string, organizationId: string) {
       organizationId,
     };
 
-    // Filter by creator (bills user created/paid)
+    // Filter to bills created/paid by the current user
     if (input.createdByMe) {
       where.userId = userId;
+    }
+
+    // Filter to shared bills (at least one assignment to someone other than the current user)
+    if (input.isShared) {
+      where.assignments = {
+        some: { userId: { not: userId } },
+      }
     }
 
     // Filter by assigned user
@@ -1488,6 +1498,50 @@ async function updateIncomeType(input: any, organizationId: string) {
       success: false,
       error: error.message || "Failed to update income category",
     };
+  }
+}
+
+async function getRecurringBills(input: any, organizationId: string) {
+  try {
+    const recurring = await prisma.recurringBill.findMany({
+      where: {
+        organizationId,
+        ...(input.includeInactive ? {} : { isActive: true }),
+      },
+      include: {
+        billType: { select: { name: true, color: true, isCreditCard: true } },
+        category: { select: { name: true, color: true } },
+        assignments: {
+          include: { user: { select: { id: true, name: true } } },
+        },
+      },
+      orderBy: { dayOfMonth: "asc" },
+    })
+
+    return {
+      success: true,
+      recurringBills: recurring.map(r => ({
+        id: r.id,
+        label: r.label,
+        amount: Number(r.amount),
+        amountUSD: r.amountUSD ? Number(r.amountUSD) : null,
+        card: r.billType.name,
+        category: r.category?.name ?? null,
+        dayOfMonth: r.dayOfMonth,
+        isActive: r.isActive,
+        nextDate: format(new Date(r.nextDate), "yyyy-MM-dd"),
+        assignments: r.assignments.map(a => ({
+          user: a.user.name,
+          percentage: Number(a.percentage),
+        })),
+      })),
+      count: recurring.length,
+      totalMonthly: recurring
+        .filter(r => r.isActive)
+        .reduce((sum, r) => sum + Number(r.amount), 0),
+    }
+  } catch (error: any) {
+    return { success: false, error: error.message || "Failed to get recurring bills" }
   }
 }
 

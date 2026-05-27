@@ -298,6 +298,13 @@ export function buildSafeSystemPrompt(context: {
 - Para eliminar: primera llamada con confirmed=false, segunda con confirmed=true
 - Las asignaciones deben sumar 100%
 
+### Guía de tools por caso de uso
+- "gastos recurrentes" / "suscripciones" / "qué se repite cada mes" → **get_recurring_bills** (NO search_bills)
+- "gastos compartidos" / "divididos" / "con otra persona" → **search_bills con isShared:true**
+- "cuotas activas" / "cuotas corriendo" → **get_installments**
+- "cuánto vence" / "próximo vencimiento tarjeta" → **get_card_summary**
+- Las cuotas (installments) NO son recurrentes — son compras en N pagos, no suscripciones
+
 ## ASIGNACIONES
 
 - Si no se especifica, preguntá si asignás el 100% al usuario actual (${context.currentUserName})
