@@ -18,7 +18,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-      allowDangerousEmailAccountLinking: true,
     }),
     CredentialsProvider({
       name: "credentials",
@@ -101,9 +100,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.currentOrganizationId = user.currentOrganizationId;
       }
 
-      // 2. Manual session.update() from the client (e.g. after switching org)
-      if (trigger === "update" && session) {
-        token = { ...token, ...session };
+      // 2. Manual session.update() from the client (e.g. after switching org).
+      // Whitelist exactly which fields a client can mutate — never spread the
+      // raw payload, or a logged-in user could overwrite `sub` (their user id)
+      // via a PATCH to /api/auth/session and impersonate any other user.
+      if (trigger === "update" && session && typeof session === "object") {
+        const incoming = session as Record<string, unknown>;
+        if (typeof incoming.currentOrganizationId === "string") {
+          token.currentOrganizationId = incoming.currentOrganizationId;
+        }
       }
 
       // 3. Repair / migration path: only run a DB lookup when the token
