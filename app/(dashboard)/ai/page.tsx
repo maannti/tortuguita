@@ -5,7 +5,7 @@ import { useTheme } from "next-themes";
 import { Card } from "@/components/ui/card";
 import { ConversationSidebar } from "@/components/ai/conversation-sidebar";
 import { MarkdownRenderer } from "@/components/ai/markdown-renderer";
-import { XIcon, PaperclipIcon, ArrowUpIcon, ChevronLeftIcon, CheckCircleIcon, XCircleIcon } from "lucide-react";
+import { XIcon, PaperclipIcon, ArrowUpIcon, ChevronLeftIcon, CheckCircleIcon, XCircleIcon, ClockIcon, PlusIcon } from "lucide-react";
 import { TurtleIcon } from "@/components/ai/turtle-icon";
 import { useTranslations, useLanguage } from "@/components/providers/language-provider";
 import useSWR from "swr";
@@ -572,15 +572,71 @@ export default function AIPage() {
             <button
               onClick={() => { haptic("selection"); window.history.back() }}
               className="flex items-center justify-center size-11 rounded-2xl active:bg-white/30 active:scale-95 transition-all"
-            style={{ color: heroTextPrimary }}
+              style={{ color: heroTextPrimary }}
             >
               <ChevronLeftIcon className="size-6" strokeWidth={2} />
             </button>
             <span className="flex-1 text-center text-[15px] font-semibold" style={{ fontFamily: "var(--font-fraunces, serif)", color: heroTextPrimary }}>
               tortuguita IA
             </span>
-            <div className="size-11" />
+            <button
+              onClick={() => { haptic("selection"); setIsMobileSidebarOpen(true) }}
+              className="flex items-center justify-center size-11 rounded-2xl active:bg-white/30 active:scale-95 transition-all"
+              style={{ color: heroTextPrimary }}
+            >
+              <ClockIcon className="size-5" strokeWidth={1.8} />
+            </button>
           </div>
+
+          {/* Mobile history overlay */}
+          {isMobileSidebarOpen && (
+            <div className="absolute inset-0 z-50 flex">
+              {/* Backdrop */}
+              <div
+                className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+                onClick={() => setIsMobileSidebarOpen(false)}
+              />
+              {/* Panel */}
+              <div
+                className="relative ml-auto w-[85%] max-w-xs h-full flex flex-col shadow-2xl"
+                style={{ background: isDark ? "rgba(40,20,25,0.97)" : "rgba(255,255,255,0.97)" }}
+              >
+                {/* Panel header */}
+                <div className="flex items-center justify-between px-4 pt-5 pb-3 border-b" style={{ borderColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.07)" }}>
+                  <span className="text-sm font-semibold" style={{ color: heroTextPrimary, fontFamily: "var(--font-fraunces, serif)" }}>Historial</span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => { haptic("medium"); handleNewConversation(); setIsMobileSidebarOpen(false) }}
+                      className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-xl active:scale-95 transition-all"
+                      style={{ background: isDark ? "rgba(255,255,255,0.1)" : "rgba(157,129,137,0.15)", color: heroTextPrimary }}
+                    >
+                      <PlusIcon className="size-3.5" />
+                      Nueva
+                    </button>
+                    <button
+                      onClick={() => setIsMobileSidebarOpen(false)}
+                      className="size-8 flex items-center justify-center rounded-xl active:scale-95 transition-all"
+                      style={{ color: heroTextMuted }}
+                    >
+                      <XIcon className="size-4" />
+                    </button>
+                  </div>
+                </div>
+                {/* Conversation list */}
+                <div className="flex-1 overflow-y-auto py-2">
+                  <ConversationSidebar
+                    mobile
+                    conversations={Array.isArray(conversations) ? conversations : []}
+                    currentConversationId={conversationId}
+                    onSelectConversation={(id) => { handleSelectConversation(id); setIsMobileSidebarOpen(false) }}
+                    onNewConversation={() => { handleNewConversation(); setIsMobileSidebarOpen(false) }}
+                    onDeleteConversation={handleDeleteConversation}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
 
           {/* Messages */}
           <div className="flex-1 overflow-y-auto min-h-0 flex flex-col">
