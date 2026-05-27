@@ -547,6 +547,69 @@ export const tools: Tool[] = [
     },
   },
   {
+    name: "get_installments",
+    description:
+      "Get active installment plans (cuotas) for credit cards. Use this when the user asks about ongoing installments, cuotas running, or wants to see the installment plan for a purchase.",
+    input_schema: {
+      type: "object",
+      properties: {
+        cardName: {
+          type: "string",
+          description: "Optional: filter by credit card name (e.g. 'Visa', 'ICBC'). If omitted, returns all cards.",
+        },
+        includeCompleted: {
+          type: "boolean",
+          description: "Whether to include fully paid installment plans. Default: false (only active/ongoing).",
+        },
+      },
+    },
+  },
+  {
+    name: "get_card_summary",
+    description:
+      "Get a summary of what will be charged on the next due date for each credit card. Use this when the user asks 'cuánto vence el mes que viene', 'cuánto debo en la tarjeta', 'qué vence próximamente', etc.",
+    input_schema: {
+      type: "object",
+      properties: {
+        cardName: {
+          type: "string",
+          description: "Optional: filter by credit card name. If omitted, returns all cards.",
+        },
+      },
+    },
+  },
+  {
+    name: "update_billing_period",
+    description:
+      "Update the billing period (closing and due dates) for a credit card. Use this when the user says 'el cierre de mi Visa es el 15', 'el vencimiento cambió al 5', etc. Always confirm the dates with the user before updating.",
+    input_schema: {
+      type: "object",
+      properties: {
+        cardName: {
+          type: "string",
+          description: "Name of the credit card to update (e.g. 'Visa', 'ICBC Mastercard')",
+        },
+        currentClosingDate: {
+          type: "string",
+          description: "New closing date in ISO format (YYYY-MM-DD)",
+        },
+        currentDueDate: {
+          type: "string",
+          description: "New due date in ISO format (YYYY-MM-DD)",
+        },
+        nextClosingDate: {
+          type: "string",
+          description: "Optional: next period closing date in ISO format (YYYY-MM-DD)",
+        },
+        nextDueDate: {
+          type: "string",
+          description: "Optional: next period due date in ISO format (YYYY-MM-DD)",
+        },
+      },
+      required: ["cardName", "currentClosingDate", "currentDueDate"],
+    },
+  },
+  {
     name: "delete_income_type",
     description:
       "Delete an income category. IMPORTANT: Always ask the user for confirmation before deleting.",
