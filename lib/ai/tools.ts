@@ -129,6 +129,10 @@ export const tools: Tool[] = [
           type: "boolean",
           description: "Filter to bills created/paid by the current user",
         },
+        isShared: {
+          type: "boolean",
+          description: "Filter to bills shared with other users (at least one assignment to someone else). Use this when the user asks about shared expenses, gastos compartidos, or split expenses.",
+        },
         assignedToUser: {
           type: "string",
           description: "Filter to bills assigned to a specific user (use user name)",
@@ -542,6 +546,20 @@ export const tools: Tool[] = [
         icon: {
           type: "string",
           description: "New emoji icon (e.g., '💰')",
+        },
+      },
+    },
+  },
+  {
+    name: "get_recurring_bills",
+    description:
+      "Get the list of recurring bills (gastos recurrentes) — subscriptions, services and expenses that repeat every month automatically. Use this when the user asks about recurring expenses, subscriptions, what repeats monthly, etc. Do NOT use search_bills for this — recurring bills are templates, not individual bills.",
+    input_schema: {
+      type: "object",
+      properties: {
+        includeInactive: {
+          type: "boolean",
+          description: "Whether to include inactive/paused recurring bills. Default: false (only active).",
         },
       },
     },
