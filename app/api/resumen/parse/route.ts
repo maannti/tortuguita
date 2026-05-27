@@ -34,18 +34,26 @@ Vas a recibir un PDF de resumen de cuenta O un archivo CSV/texto con movimientos
 
 ━━━ FORMATO CSV DE ICBC ━━━
 
-El CSV de ICBC usa asterisco (*) como separador. Formato de cada línea:
+ICBC exporta movimientos en dos variantes de CSV — ambas tienen "Consumos Tarjeta:NNNN" como separador de titular:
+
+Variante A — separador asterisco (*):
   DD/MM/YYYY*DESCRIPCION*COMPROBANTE*IMPORTE_ARS*IMPORTE_USD
 
+Variante B — separador punto y coma (;), con encabezado:
+  Fecha;Comercio;Comprobante;Importe $;Importe U$S
+  DD/MM/YYYY;DESCRIPCION;COMPROBANTE;IMPORTE_ARS;IMPORTE_USD
+
 • Las líneas "Consumos Tarjeta:NNNN" indican cambio de tarjeta (usar número como titular)
-• Las líneas "SU PAGO EN PESOS" / "SU PAGO EN DOLARES" son pagos → ignorar
+• Las líneas "SU PAGO EN PESOS" / "SU PAGO EN DOLARES" / "SU PAGO EN USD" son pagos → ignorar
+• El campo COMPROBANTE puede tener ceros al inicio (00430911) o sin ellos (430911) — extraerlo tal cual aparece
 • Cuotas en descripción — patrones conocidos de ICBC:
   - "PASSLINE 03/03" → cuota 3 de 3
   - "GADNIC 03/06" → cuota 3 de 6
   - "UNIV ASSISTANCE ON 07/09" → cuota 7 de 9 (ICBC a veces inserta "ON" antes del NN/NN)
+  - "www.COMPRAGAMER.com 01/06" → cuota 1 de 6 (el patrón puede estar precedido del nombre)
   - En general: si la descripción termina con "NN/NN" o "ON NN/NN" donde el segundo número es 2-36, es cuota NN de NN
 • Importe ARS usa coma decimal (29766,50 → 29766.50); USD usa punto (167.07)
-• COMPROBANTE = campo comprobante para deduplicación
+• COMPROBANTE = campo comprobante para deduplicación — SIEMPRE extraerlo, nunca ignorarlo
 
 Tu tarea es identificar y extraer SOLO las transacciones de tarjeta de crédito (consumos/compras) y devolver JSON estructurado.
 

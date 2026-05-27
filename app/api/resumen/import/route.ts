@@ -62,6 +62,15 @@ export async function POST(request: NextRequest) {
       return bt
     }
 
+    // Normalize comprobante: strip leading zeros so "00430911" and "430911" match.
+    // Banks export the same ID with different zero-padding in CSV vs PDF.
+    function normalizeRef(ref: string | null | undefined): string | null {
+      if (!ref) return null
+      const t = ref.trim()
+      const stripped = t.replace(/^0+/, "")
+      return stripped.length > 0 ? stripped : t // keep "0" if all-zero string
+    }
+
     const created: string[] = []
     const errors: string[] = []
 
@@ -91,43 +100,91 @@ export async function POST(request: NextRequest) {
 
         const totalInstallments = tx.cuotaTotal ?? 1
         const cuotaActual = tx.cuotaActual ?? 1
-        const externalRef = tx.comprobante ?? null
+        // Store normalized ref so future imports from any format match consistently
+        const externalRef = normalizeRef(tx.comprobante)
 
         // ── Dedup check ──────────────────────────────────────────────────────
-        // Path 1: exact comprobante match (no time limit)
+        //
+        // Three-path strategy to handle CSV-vs-PDF format differences:
+        //
+        // Path 1 — comprobante match (normalized to strip leading zeros)
+        //   Handles: "00430911" (CSV) vs "430911" (PDF) → same after normalization
+        //   Also tries the raw value to catch bills stored before normalization existed
+        //
+        // Path 2 — amount + ±3-day window + card + installment number
+        //   Handles: operation date (CSV) vs posting date (PDF), which can differ 1-2 days
+        //
+        // Path 3 — amount + ±3-day window + card, no installment constraint
+        //   Handles: cuotas where PDF didn't detect the "04/12" notation → cuotaActual=null
+        //   so Path 2's installment filter misses them. Only fires when incoming tx looks
+        //   like a single purchase but DB already has an installment bill for same amount/date.
+        //
+        // ────────────────────────────────────────────────────────────────────
+
+        // Path 1: normalized comprobante
         if (externalRef) {
-          const existing = await prisma.bill.findUnique({
-            where: {
-              billTypeId_externalRef_currentInstallment: {
-                billTypeId: tx.billTypeId,
-                externalRef,
-                currentInstallment: cuotaActual,
-              },
-            },
+          // 1a — normalized (new bills stored normalized)
+          const existing1a = await prisma.bill.findFirst({
+            where: { billTypeId: tx.billTypeId, externalRef, currentInstallment: cuotaActual },
             select: { id: true },
           })
-          if (existing) {
-            errors.push(`Duplicado ignorado: ${tx.descripcion} (comprobante ${externalRef})`)
+          if (existing1a) {
+            errors.push(`Duplicado ignorado: ${tx.descripcion} (comprobante)`)
             continue
           }
+          // 1b — raw value (bills stored before normalization had leading zeros)
+          const rawRef = tx.comprobante?.trim()
+          if (rawRef && rawRef !== externalRef) {
+            const existing1b = await prisma.bill.findFirst({
+              where: { billTypeId: tx.billTypeId, externalRef: rawRef, currentInstallment: cuotaActual },
+              select: { id: true },
+            })
+            if (existing1b) {
+              errors.push(`Duplicado ignorado: ${tx.descripcion} (comprobante raw)`)
+              continue
+            }
+          }
         }
-        // Path 2: fallback — same card + exact amount + same date + same installment
-        // Catches re-imports of old bills that were loaded before comprobante support
+
+        // Path 2: amount + ±3 days + card + installment number
+        // ±3 days handles the operation-date vs posting-date difference (banks use both)
         {
           const txPaymentDate = new Date(tx.fecha + "T12:00:00")
-          const dayStart = new Date(txPaymentDate); dayStart.setHours(0, 0, 0, 0)
-          const dayEnd = new Date(txPaymentDate); dayEnd.setHours(23, 59, 59, 999)
-          const fallback = await prisma.bill.findFirst({
+          const dateMin = new Date(txPaymentDate); dateMin.setDate(dateMin.getDate() - 3); dateMin.setHours(0, 0, 0, 0)
+          const dateMax = new Date(txPaymentDate); dateMax.setDate(dateMax.getDate() + 3); dateMax.setHours(23, 59, 59, 999)
+          const fallback2 = await prisma.bill.findFirst({
             where: {
               billTypeId: tx.billTypeId,
               amount: Math.abs(finalAmount),
-              paymentDate: { gte: dayStart, lte: dayEnd },
+              paymentDate: { gte: dateMin, lte: dateMax },
               currentInstallment: totalInstallments > 1 ? cuotaActual : null,
             },
             select: { id: true },
           })
-          if (fallback) {
+          if (fallback2) {
             errors.push(`Duplicado ignorado: ${tx.descripcion} (monto+fecha)`)
+            continue
+          }
+        }
+
+        // Path 3: amount + ±3 days + card, ignoring installment number
+        // Only fires when the incoming tx looks like a single purchase (cuota not detected)
+        // but the DB already has an installment bill for the same amount/date on this card.
+        if (totalInstallments <= 1) {
+          const txPaymentDate = new Date(tx.fecha + "T12:00:00")
+          const dateMin = new Date(txPaymentDate); dateMin.setDate(dateMin.getDate() - 3); dateMin.setHours(0, 0, 0, 0)
+          const dateMax = new Date(txPaymentDate); dateMax.setDate(dateMax.getDate() + 3); dateMax.setHours(23, 59, 59, 999)
+          const fallback3 = await prisma.bill.findFirst({
+            where: {
+              billTypeId: tx.billTypeId,
+              amount: Math.abs(finalAmount),
+              paymentDate: { gte: dateMin, lte: dateMax },
+              totalInstallments: { gt: 1 }, // exists in DB as a cuota
+            },
+            select: { id: true },
+          })
+          if (fallback3) {
+            errors.push(`Duplicado ignorado: ${tx.descripcion} (cuota existente)`)
             continue
           }
         }
