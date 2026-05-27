@@ -59,6 +59,15 @@ export async function handleToolCall(
     case "delete_income_type":
       return await deleteIncomeType(toolInput, organizationId);
 
+    case "get_installments":
+      return await getInstallments(toolInput, organizationId);
+
+    case "get_card_summary":
+      return await getCardSummary(toolInput, organizationId);
+
+    case "update_billing_period":
+      return await updateBillingPeriod(toolInput, organizationId);
+
     default:
       throw new Error(`Unknown tool: ${toolName}`);
   }
@@ -1479,6 +1488,220 @@ async function updateIncomeType(input: any, organizationId: string) {
       success: false,
       error: error.message || "Failed to update income category",
     };
+  }
+}
+
+async function getInstallments(input: any, organizationId: string) {
+  try {
+    const now = new Date()
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+
+    // Optionally filter by card
+    let billTypeFilter: Prisma.BillWhereInput["billType"] = { isCreditCard: true }
+    if (input.cardName) {
+      billTypeFilter = { isCreditCard: true, name: { contains: input.cardName, mode: "insensitive" } }
+    }
+
+    // Find all bills in installment groups
+    const bills = await prisma.bill.findMany({
+      where: {
+        organizationId,
+        totalInstallments: { gt: 1 },
+        installmentGroupId: { not: null },
+        billType: billTypeFilter,
+      },
+      include: {
+        billType: { select: { id: true, name: true, color: true } },
+      },
+      orderBy: [{ installmentGroupId: "asc" }, { currentInstallment: "asc" }],
+    })
+
+    // Group by installmentGroupId
+    const groups = new Map<string, {
+      label: string
+      cardName: string
+      cardColor: string | null
+      totalInstallments: number
+      paidInstallments: number
+      nextInstallment: number | null
+      amountPerCuota: number
+      nextBudgetDate: string | null
+      remainingInstallments: number
+      totalRemaining: number
+      isCompleted: boolean
+    }>()
+
+    for (const bill of bills) {
+      const gId = bill.installmentGroupId!
+      if (!groups.has(gId)) {
+        groups.set(gId, {
+          label: bill.label,
+          cardName: bill.billType.name,
+          cardColor: bill.billType.color,
+          totalInstallments: bill.totalInstallments!,
+          paidInstallments: 0,
+          nextInstallment: null,
+          amountPerCuota: Number(bill.amount),
+          nextBudgetDate: null,
+          remainingInstallments: 0,
+          totalRemaining: 0,
+          isCompleted: false,
+        })
+      }
+      const g = groups.get(gId)!
+      if (bill.isPaid || new Date(bill.budgetDate) < startOfToday) {
+        g.paidInstallments++
+      } else if (g.nextInstallment === null) {
+        g.nextInstallment = bill.currentInstallment
+        g.nextBudgetDate = format(new Date(bill.budgetDate), "yyyy-MM-dd")
+      }
+    }
+
+    // Compute remaining
+    for (const g of groups.values()) {
+      g.remainingInstallments = g.totalInstallments - g.paidInstallments
+      g.totalRemaining = g.remainingInstallments * g.amountPerCuota
+      g.isCompleted = g.remainingInstallments <= 0
+    }
+
+    const result = Array.from(groups.values())
+      .filter(g => input.includeCompleted ? true : !g.isCompleted)
+      .sort((a, b) => a.cardName.localeCompare(b.cardName))
+
+    return {
+      success: true,
+      installments: result.map(g => ({
+        label: g.label,
+        card: g.cardName,
+        cuotaActual: g.nextInstallment ?? g.totalInstallments,
+        cuotaTotal: g.totalInstallments,
+        cuotasPagadas: g.paidInstallments,
+        cuotasRestantes: g.remainingInstallments,
+        montoPorCuota: g.amountPerCuota,
+        totalRestante: g.totalRemaining,
+        proximoVencimiento: g.nextBudgetDate,
+        completado: g.isCompleted,
+      })),
+      count: result.length,
+    }
+  } catch (error: any) {
+    return { success: false, error: error.message || "Failed to get installments" }
+  }
+}
+
+async function getCardSummary(input: any, organizationId: string) {
+  try {
+    const where: Prisma.BillTypeWhereInput = { organizationId, isCreditCard: true }
+    if (input.cardName) {
+      where.name = { contains: input.cardName, mode: "insensitive" }
+    }
+
+    const cards = await prisma.billType.findMany({
+      where,
+      select: {
+        id: true, name: true, color: true,
+        currentClosingDate: true, currentDueDate: true,
+        nextClosingDate: true, nextDueDate: true,
+      },
+    })
+
+    const summaries = await Promise.all(cards.map(async card => {
+      // Determine which month's bills correspond to the upcoming due date
+      if (!card.currentDueDate) {
+        return {
+          card: card.name,
+          dueDate: null,
+          closingDate: null,
+          totalARS: 0,
+          billCount: 0,
+          note: "Sin período configurado",
+        }
+      }
+
+      const due = new Date(card.currentDueDate)
+      const monthStart = new Date(due.getFullYear(), due.getMonth(), 1)
+      const monthEnd = new Date(due.getFullYear(), due.getMonth() + 1, 0, 23, 59, 59)
+
+      const agg = await prisma.bill.aggregate({
+        where: {
+          organizationId,
+          billTypeId: card.id,
+          budgetDate: { gte: monthStart, lte: monthEnd },
+        },
+        _sum: { amount: true },
+        _count: true,
+      })
+
+      return {
+        card: card.name,
+        color: card.color,
+        dueDate: format(due, "d/M/yyyy"),
+        closingDate: card.currentClosingDate ? format(new Date(card.currentClosingDate), "d/M/yyyy") : null,
+        nextDueDate: card.nextDueDate ? format(new Date(card.nextDueDate), "d/M/yyyy") : null,
+        totalARS: Number(agg._sum.amount ?? 0),
+        billCount: agg._count,
+      }
+    }))
+
+    const grandTotal = summaries.reduce((s, c) => s + c.totalARS, 0)
+
+    return {
+      success: true,
+      cards: summaries,
+      grandTotal,
+    }
+  } catch (error: any) {
+    return { success: false, error: error.message || "Failed to get card summary" }
+  }
+}
+
+async function updateBillingPeriod(input: any, organizationId: string) {
+  try {
+    const card = await prisma.billType.findFirst({
+      where: {
+        organizationId,
+        isCreditCard: true,
+        name: { contains: input.cardName, mode: "insensitive" },
+      },
+    })
+
+    if (!card) {
+      const available = await prisma.billType.findMany({
+        where: { organizationId, isCreditCard: true },
+        select: { name: true },
+      })
+      return {
+        success: false,
+        error: `Tarjeta "${input.cardName}" no encontrada. Tarjetas disponibles: ${available.map(c => c.name).join(", ")}`,
+      }
+    }
+
+    const updateData: any = {
+      currentClosingDate: new Date(input.currentClosingDate + "T12:00:00"),
+      currentDueDate: new Date(input.currentDueDate + "T12:00:00"),
+    }
+    if (input.nextClosingDate) updateData.nextClosingDate = new Date(input.nextClosingDate + "T12:00:00")
+    if (input.nextDueDate) updateData.nextDueDate = new Date(input.nextDueDate + "T12:00:00")
+
+    const updated = await prisma.billType.update({
+      where: { id: card.id },
+      data: updateData,
+    })
+
+    const fd = (d: Date) => format(d, "d/M/yyyy")
+    return {
+      success: true,
+      message: `Período actualizado para ${updated.name}: cierre ${fd(updated.currentClosingDate!)}, vence ${fd(updated.currentDueDate!)}`,
+      card: {
+        name: updated.name,
+        currentClosingDate: fd(updated.currentClosingDate!),
+        currentDueDate: fd(updated.currentDueDate!),
+        nextClosingDate: updated.nextClosingDate ? fd(updated.nextClosingDate) : null,
+        nextDueDate: updated.nextDueDate ? fd(updated.nextDueDate) : null,
+      },
+    }
+  } catch (error: any) {
+    return { success: false, error: error.message || "Failed to update billing period" }
   }
 }
 
