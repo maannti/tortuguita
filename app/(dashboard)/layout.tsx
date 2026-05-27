@@ -22,7 +22,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           <SimpleHeader />
           <main className="flex-1 min-h-0 overflow-y-auto overscroll-y-contain bg-background">
             {/* Center content on desktop */}
-            <div className="lg:max-w-xl lg:mx-auto">
+            <div className="lg:max-w-xl lg:mx-auto h-full">
               {children}
             </div>
           </main>
