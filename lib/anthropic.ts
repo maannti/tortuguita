@@ -2,7 +2,11 @@ import Anthropic from "@anthropic-ai/sdk";
 import fs from "fs";
 import path from "path";
 
-export const MODEL = "claude-haiku-4-5-20251001";
+export const HAIKU_MODEL = "claude-haiku-4-5-20251001";
+export const SONNET_MODEL = "claude-sonnet-4-5-20251001";
+
+/** @deprecated Use HAIKU_MODEL or SONNET_MODEL explicitly */
+export const MODEL = HAIKU_MODEL;
 
 /** Read ANTHROPIC_API_KEY from process.env, falling back to .env.local / .env files.
  *  This is needed because when Next.js runs inside an environment that already has
