@@ -146,7 +146,7 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        // Path 2: amount + ±3 days + card + installment number
+        // Path 2: amount + ±3 days + same card + installment number
         // ±3 days handles the operation-date vs posting-date difference (banks use both)
         {
           const txPaymentDate = new Date(tx.fecha + "T12:00:00")
@@ -167,7 +167,7 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        // Path 3: amount + ±3 days + card, ignoring installment number
+        // Path 3: amount + ±3 days + same card, ignoring installment number
         // Only fires when the incoming tx looks like a single purchase (cuota not detected)
         // but the DB already has an installment bill for the same amount/date on this card.
         if (totalInstallments <= 1) {
@@ -185,6 +185,29 @@ export async function POST(request: NextRequest) {
           })
           if (fallback3) {
             errors.push(`Duplicado ignorado: ${tx.descripcion} (cuota existente)`)
+            continue
+          }
+        }
+
+        // Path 4: amount + ±3 days across ALL org CC bills (cross-card dedup)
+        // Handles the case where the CSV was imported with card A but the PDF
+        // auto-maps to card B. Same amount + same date = same transaction.
+        {
+          const txPaymentDate = new Date(tx.fecha + "T12:00:00")
+          const dateMin = new Date(txPaymentDate); dateMin.setDate(dateMin.getDate() - 3); dateMin.setHours(0, 0, 0, 0)
+          const dateMax = new Date(txPaymentDate); dateMax.setDate(dateMax.getDate() + 3); dateMax.setHours(23, 59, 59, 999)
+          const fallback4 = await prisma.bill.findFirst({
+            where: {
+              organizationId: tx.organizationId,
+              billType: { isCreditCard: true },
+              amount: Math.abs(finalAmount),
+              paymentDate: { gte: dateMin, lte: dateMax },
+              currentInstallment: totalInstallments > 1 ? cuotaActual : null,
+            },
+            select: { id: true },
+          })
+          if (fallback4) {
+            errors.push(`Duplicado ignorado: ${tx.descripcion} (monto+fecha, otra tarjeta)`)
             continue
           }
         }
