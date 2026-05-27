@@ -499,7 +499,7 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
                 {!duplicatesLoading && (() => {
                   const count = Object.values(duplicateMatches).filter(Boolean).length
                   return count > 0 ? (
-                    <p className="text-[11px] text-amber-700 flex items-center gap-1 font-medium">
+                    <p className="text-[11px] text-amber-700 dark:text-amber-400 flex items-center gap-1 font-medium">
                       <AlertTriangle className="size-3" />
                       {count} posible{count !== 1 ? "s" : ""} duplicado{count !== 1 ? "s" : ""} detectado{count !== 1 ? "s" : ""} — revisá antes de importar
                     </p>
@@ -508,7 +508,7 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
                 {/* Exchange rate chip */}
                 {usdRate !== null ? (
                   <div className="flex items-center gap-1.5">
-                    <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-100">
+                    <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-800/50">
                       <span>USD oficial</span>
                       <span className="font-semibold">{formatARS(usdRate)}</span>
                     </span>
@@ -620,7 +620,7 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
                               key={tx.id}
                               className={`rounded-2xl border transition-all ${
                                 (duplicateMatches[tx.id] || tx.nota) && ov.incluir
-                                  ? "border-amber-300 bg-amber-50/60"
+                                  ? "border-amber-300 dark:border-amber-700/50 bg-amber-50/60 dark:bg-amber-900/20"
                                   : ov.incluir
                                     ? "border-border bg-background"
                                     : "border-border/40 bg-muted/20 opacity-60"
@@ -659,10 +659,10 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
                                       <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">Débito automático</span>
                                     )}
                                     {isDevolucion && (
-                                      <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-green-100 text-green-700">Devolución</span>
+                                      <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">Devolución</span>
                                     )}
                                     {tx.nota && (
-                                      <span className="text-[10px] text-amber-700 flex items-center gap-1">
+                                      <span className="text-[10px] text-amber-700 dark:text-amber-400 flex items-center gap-1">
                                         <AlertTriangle className="size-3" />{tx.nota}
                                       </span>
                                     )}
@@ -718,7 +718,7 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
                                         {hasUSD && hasARS && (
                                           <button type="button"
                                             onClick={() => setTxOv(tx.id, { usarUSD: !ov.usarUSD })}
-                                            className={`text-xs px-2 py-1 rounded-lg border transition-colors ${ov.usarUSD ? "bg-blue-50 border-blue-200 text-blue-700" : "border-border text-muted-foreground"}`}
+                                            className={`text-xs px-2 py-1 rounded-lg border transition-colors ${ov.usarUSD ? "bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800/50 text-blue-700 dark:text-blue-300" : "border-border text-muted-foreground"}`}
                                           >
                                             {ov.usarUSD ? `U$S ${tx.montoUSD?.toFixed(2)} → oficial` : "ARS del resumen"}
                                           </button>
@@ -761,11 +761,11 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
                                   return next
                                 })
                                 return (
-                                  <div className="border-t border-amber-200/60">
+                                  <div className="border-t border-amber-200/60 dark:border-amber-800/40">
                                     <button
                                       type="button"
                                       onClick={toggleExpand}
-                                      className="w-full flex items-center gap-2 px-4 py-2.5 bg-amber-50 hover:bg-amber-100/80 transition-colors text-xs font-medium text-amber-700 rounded-b-2xl"
+                                      className="w-full flex items-center gap-2 px-4 py-2.5 bg-amber-50 dark:bg-amber-900/25 hover:bg-amber-100/80 dark:hover:bg-amber-900/40 transition-colors text-xs font-medium text-amber-700 dark:text-amber-400 rounded-b-2xl"
                                       style={{ borderRadius: isExpanded ? "0" : undefined }}
                                     >
                                       <AlertTriangle className="size-3 flex-shrink-0" />
@@ -773,11 +773,11 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
                                       <ChevronDown className={`size-3 ml-auto transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} />
                                     </button>
                                     {isExpanded && (
-                                      <div className="px-4 pb-4 pt-2 bg-amber-50 space-y-3 rounded-b-2xl">
+                                      <div className="px-4 pb-4 pt-2 bg-amber-50 dark:bg-amber-900/25 space-y-3 rounded-b-2xl">
                                         {/* Side-by-side comparison */}
                                         <div className="grid grid-cols-2 gap-2">
-                                          <div className="rounded-xl bg-white/80 border border-amber-100 p-3 space-y-1">
-                                            <p className="text-[10px] font-semibold uppercase tracking-wide text-amber-600">Importando</p>
+                                          <div className="rounded-xl bg-white/80 dark:bg-muted/30 border border-amber-100 dark:border-amber-800/40 p-3 space-y-1">
+                                            <p className="text-[10px] font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400">Importando</p>
                                             <p className="text-xs font-medium text-foreground leading-snug">{ov.descripcion}</p>
                                             <p className="text-xs text-muted-foreground" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
                                               {formatARS(tx.montoARS ?? 0)}
@@ -786,7 +786,7 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
                                               {new Date(tx.fecha + "T12:00:00").toLocaleDateString("es-AR", { day: "numeric", month: "short" })}
                                             </p>
                                           </div>
-                                          <div className="rounded-xl bg-white/80 border border-amber-100 p-3 space-y-1">
+                                          <div className="rounded-xl bg-white/80 dark:bg-muted/30 border border-amber-100 dark:border-amber-800/40 p-3 space-y-1">
                                             <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Ya registrado</p>
                                             <p className="text-xs font-medium text-foreground leading-snug">{match.label}</p>
                                             <p className="text-xs text-muted-foreground" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
@@ -805,14 +805,14 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
                                               setTxOv(tx.id, { incluir: false })
                                               setExpandedDuplicates(prev => { const n = new Set(prev); n.delete(tx.id); return n })
                                             }}
-                                            className="flex-1 text-xs font-semibold py-2.5 rounded-xl bg-amber-200/70 text-amber-900 hover:bg-amber-200 transition-colors active:scale-95"
+                                            className="flex-1 text-xs font-semibold py-2.5 rounded-xl bg-amber-200/70 dark:bg-amber-800/50 text-amber-900 dark:text-amber-200 hover:bg-amber-200 dark:hover:bg-amber-800/70 transition-colors active:scale-95"
                                           >
                                             Omitir este
                                           </button>
                                           <button
                                             type="button"
                                             onClick={toggleExpand}
-                                            className="flex-1 text-xs font-semibold py-2.5 rounded-xl bg-white/80 text-foreground border border-amber-100 hover:bg-white transition-colors active:scale-95"
+                                            className="flex-1 text-xs font-semibold py-2.5 rounded-xl bg-white/80 dark:bg-muted/30 text-foreground border border-amber-100 dark:border-amber-800/40 hover:bg-white dark:hover:bg-muted/50 transition-colors active:scale-95"
                                           >
                                             Importar igual
                                           </button>
@@ -857,10 +857,10 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
                 </p>
               </div>
               {importResult.errors && importResult.errors.length > 0 && (
-                <div className="w-full rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-left">
-                  <p className="text-xs font-semibold text-amber-800 mb-1">Algunos ítems no se pudieron importar:</p>
+                <div className="w-full rounded-xl bg-amber-50 dark:bg-amber-900/25 border border-amber-200 dark:border-amber-800/40 px-4 py-3 text-left">
+                  <p className="text-xs font-semibold text-amber-800 dark:text-amber-300 mb-1">Algunos ítems no se pudieron importar:</p>
                   {importResult.errors.map((e, i) => (
-                    <p key={i} className="text-xs text-amber-700">· {e}</p>
+                    <p key={i} className="text-xs text-amber-700 dark:text-amber-400">· {e}</p>
                   ))}
                 </div>
               )}
