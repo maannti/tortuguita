@@ -78,6 +78,8 @@ export async function GET(req: NextRequest) {
       payerName: string
       payerId: string
       debtorId: string
+      currentInstallment: number | null
+      totalInstallments: number | null
     }[]
   }
   const debtMap: Record<string, Record<string, DebtEntry>> = {}
@@ -111,6 +113,8 @@ export async function GET(req: NextRequest) {
         payerName: bill.paidByUser?.name ?? bill.user.name ?? "—",
         payerId,
         debtorId,
+        currentInstallment: bill.currentInstallment,
+        totalInstallments: bill.totalInstallments,
       })
     }
   }
