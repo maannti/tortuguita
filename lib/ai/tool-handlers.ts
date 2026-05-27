@@ -60,7 +60,7 @@ export async function handleToolCall(
       return await deleteIncomeType(toolInput, organizationId);
 
     case "get_recurring_bills":
-      return await getRecurringBills(toolInput, organizationId);
+      return await getRecurringBills(toolInput, userId, organizationId);
 
     case "get_installments":
       return await getInstallments(toolInput, organizationId);
@@ -1501,11 +1501,16 @@ async function updateIncomeType(input: any, organizationId: string) {
   }
 }
 
-async function getRecurringBills(input: any, organizationId: string) {
+async function getRecurringBills(input: any, userId: string, organizationId: string) {
   try {
+    // Query across ALL orgs the user has access to (same as the recurring bills page)
+    const { getUserOrganizations } = await import("@/lib/organization-utils")
+    const userOrgs = await getUserOrganizations(userId)
+    const orgIds = userOrgs.map(o => o.id)
+
     const recurring = await prisma.recurringBill.findMany({
       where: {
-        organizationId,
+        organizationId: { in: orgIds },
         ...(input.includeInactive ? {} : { isActive: true }),
       },
       include: {
