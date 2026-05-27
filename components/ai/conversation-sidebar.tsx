@@ -14,6 +14,7 @@ interface ConversationSidebarProps {
   onSelectConversation: (id: string) => void;
   onNewConversation: () => void;
   onDeleteConversation?: (id: string) => void;
+  mobile?: boolean; // renders as bare list without Card/New Chat button
 }
 
 interface SwipeState {
@@ -30,6 +31,7 @@ export function ConversationSidebar({
   onSelectConversation,
   onNewConversation,
   onDeleteConversation,
+  mobile = false,
 }: ConversationSidebarProps) {
   const [swipedId, setSwipedId] = useState<string | null>(null);
   const swipeRef = useRef<SwipeState>({ id: null, startX: 0, currentX: 0, swiping: false, thresholdReached: false });
@@ -130,14 +132,8 @@ export function ConversationSidebar({
     }
   };
 
-  return (
-    <Card className="w-64 p-4 flex flex-col gap-4 h-full">
-      <Button onClick={onNewConversation} className="w-full">
-        <PlusIcon className="size-4 mr-2" />
-        New Chat
-      </Button>
-
-      <div className="space-y-2 overflow-y-auto flex-1" onClick={handleContainerClick}>
+  const listContent = (
+      <div className={cn("space-y-1 overflow-y-auto flex-1", !mobile && "space-y-2")} onClick={handleContainerClick}>
         {conversations.length === 0 ? (
           <div className="text-sm text-muted-foreground text-center py-8">No conversations yet</div>
         ) : (
@@ -190,6 +186,17 @@ export function ConversationSidebar({
           ))
         )}
       </div>
+  );
+
+  if (mobile) return listContent;
+
+  return (
+    <Card className="w-64 p-4 flex flex-col gap-4 h-full">
+      <Button onClick={onNewConversation} className="w-full">
+        <PlusIcon className="size-4 mr-2" />
+        New Chat
+      </Button>
+      {listContent}
     </Card>
   );
 }
