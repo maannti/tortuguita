@@ -217,6 +217,8 @@ export function buildSafeSystemPrompt(context: {
   recurringCount?: number
   recurringMonthlyTotal?: string
   sharedBillCount?: number
+  currentSpaceName?: string
+  spaceCount?: number
 }): string {
   const formatCategory = (c: { name: string; icon?: string | null; isCreditCard?: boolean }) => {
     const icon = c.icon ? ` ${c.icon}` : ''
@@ -284,15 +286,23 @@ export function buildSafeSystemPrompt(context: {
 
 - Usuario: ${context.currentUserName}
 - Fecha: ${context.currentDate}
-- Gasto del mes: $${context.currentMonthTotal} (${context.billCount} gastos individuales)
-- Gastos recurrentes activos: ${context.recurringCount ?? 0}${(context.recurringCount ?? 0) > 0 ? ` (≈$${context.recurringMonthlyTotal}/mes en suscripciones y servicios)` : ''}
-- Gastos compartidos este mes: ${context.sharedBillCount ?? 0} (divididos con otros miembros)
-- Categorías de gastos: ${context.categories.map(formatCategory).join(', ') || 'ninguna'}
+- Espacio activo: ${context.currentSpaceName ?? 'espacio actual'}${(context.spaceCount ?? 0) > 1 ? ` (el usuario pertenece a ${context.spaceCount} espacios en total)` : ''}
+- Gasto del mes en este espacio: $${context.currentMonthTotal} (${context.billCount} gastos individuales)
+- Gastos recurrentes activos en tus espacios: ${context.recurringCount ?? 0}${(context.recurringCount ?? 0) > 0 ? ` (≈$${context.recurringMonthlyTotal}/mes en suscripciones y servicios)` : ''}
+- Gastos compartidos este mes en tus espacios: ${context.sharedBillCount ?? 0} (divididos con otros miembros)
+- Categorías de gastos (espacio activo): ${context.categories.map(formatCategory).join(', ') || 'ninguna'}
 - Categorías de tarjetas: ${creditCards.map(c => c.name).join(', ') || 'ninguna'}
 - Períodos de facturación:
   ${billingPeriodsInfo}
-- Categorías de ingresos: ${context.incomeCategories.map(formatIncomeCategory).join(', ') || 'ninguna'}
-- Miembros de la organización: ${context.users.map(u => u.name).join(', ')}
+- Categorías de ingresos (espacio activo): ${context.incomeCategories.map(formatIncomeCategory).join(', ') || 'ninguna'}
+- Personas con las que compartís espacios: ${context.users.map(u => u.name).join(', ')}
+
+## ESPACIOS
+
+- **Espacio** = el grupo donde viven los gastos (un usuario puede tener un espacio personal y uno o más compartidos con familia/pareja).
+- Las búsquedas (search_bills, search_incomes, get_recurring_bills, etc.) recorren **todos** los espacios del usuario.
+- Crear / editar / borrar siempre cae en el **espacio activo** (${context.currentSpaceName ?? 'el actual'}).
+- Cuando hables de espacios, decí "espacio" — **nunca** "organización".
 
 ## HERRAMIENTAS — decidí cuál usar ANTES de responder
 
