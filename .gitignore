@@ -48,5 +48,13 @@ next-env.d.ts
 /public/sw.js.map
 /public/workbox-*.js.map
 
-# Claude Code worktrees (excluded from react-doctor scans via git ls-files)
-/.claude/worktrees/
+# Claude Code workspace — settings, local notes, worktrees, mockups.
+# Keep the whole folder out of git. settings.local.json frequently contains
+# API tokens copy-pasted while debugging; an accidental `git add .` would
+# leak them in a public repo.
+/.claude/
+/.claire/
+
+# Local-only credentials and instructions for AI assistants (test users,
+# personal notes that we don't want in the public repo).
+/CLAUDE.local.md
