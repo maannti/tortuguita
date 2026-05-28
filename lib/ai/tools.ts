@@ -131,7 +131,7 @@ export const tools: Tool[] = [
         },
         isShared: {
           type: "boolean",
-          description: "Filter to bills shared with other users (at least one assignment to someone else). Use this when the user asks about shared expenses, gastos compartidos, or split expenses.",
+          description: "Filter to bills shared with other users (at least one assignment to someone other than the current user). ALWAYS set this to true when the user mentions: 'gastos compartidos', 'compartidos', 'dividí', 'dividimos', 'compartí con', 'qué me debe X', 'qué le debo a X', 'split', 'shared expenses'. Do NOT manually filter — let this flag do the work.",
         },
         assignedToUser: {
           type: "string",
@@ -553,7 +553,7 @@ export const tools: Tool[] = [
   {
     name: "get_recurring_bills",
     description:
-      "Get the list of recurring bills (gastos recurrentes) — subscriptions, services and expenses that repeat every month automatically. Use this when the user asks about recurring expenses, subscriptions, what repeats monthly, etc. Do NOT use search_bills for this — recurring bills are templates, not individual bills.",
+      "Get the list of recurring bills (gastos recurrentes / suscripciones) — subscription templates that the cron generates as real bills every month. Call this ANY time the user mentions: 'gastos recurrentes', 'recurrentes', 'suscripciones', 'qué pago todos los meses', 'qué se repite', 'mensuales fijos', 'monthly subscriptions', 'recurring expenses'. Do NOT use search_bills for these — recurring bills are templates that live in a separate table; search_bills only returns generated bills.",
     input_schema: {
       type: "object",
       properties: {
