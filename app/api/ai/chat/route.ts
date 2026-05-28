@@ -278,6 +278,8 @@ function buildSystemPrompt(context: any, hasFile = false): string {
     recurringCount: context.recurringCount,
     recurringMonthlyTotal: context.recurringMonthlyTotal,
     sharedBillCount: context.sharedBillCount,
+    currentSpaceName: context.currentSpaceName,
+    spaceCount: context.spaceCount,
   });
   if (!hasFile) return base;
   return base + `
@@ -306,15 +308,26 @@ async function buildContext(organizationId: string, currentUserId: string) {
   const monthStart = startOfMonth(now);
   const monthEnd = endOfMonth(now);
 
+  // Resolve all spaces the user belongs to. Searches span all of them so
+  // the assistant can answer "qué gastos compartidos tengo" even when those
+  // bills live outside the active space. Stats that should mirror the
+  // dashboard (current-month total, category list) stay scoped to the
+  // active space.
+  const { getUserOrganizations } = await import("@/lib/organization-utils");
+  const userOrgs = await getUserOrganizations(currentUserId);
+  const allOrgIds = userOrgs.map((o) => o.id);
+  const scopeOrgIds = allOrgIds.length > 0 ? allOrgIds : [organizationId];
+
   const [
     categories,
     incomeCategories,
     currentMonthBills,
-    users,
+    members,
     currentUser,
     recurringAgg,
     sharedBillCount,
   ] = await Promise.all([
+    // Categories from the ACTIVE space — that's where create_bill lands.
     prisma.billType.findMany({
       where: { organizationId },
       select: {
@@ -335,6 +348,8 @@ async function buildContext(organizationId: string, currentUserId: string) {
       select: { id: true, name: true, color: true, icon: true, isRecurring: true },
       orderBy: { name: "asc" },
     }),
+    // Current-month total stays scoped to the active space so the AI
+    // mirrors the dashboard widget the user is looking at.
     prisma.bill.aggregate({
       where: {
         organizationId,
@@ -343,38 +358,48 @@ async function buildContext(organizationId: string, currentUserId: string) {
       _sum: { amount: true },
       _count: true,
     }),
+    // Members across ALL the user's spaces (deduped) — so the AI can
+    // resolve "asignalo a Santi" even if Santi is in another shared space.
     prisma.user.findMany({
-      where: { organizationId },
+      where: {
+        userOrganizations: { some: { organizationId: { in: scopeOrgIds } } },
+      },
       select: { id: true, name: true },
       orderBy: { name: "asc" },
+      distinct: ["id"],
     }),
     prisma.user.findUnique({
       where: { id: currentUserId },
       select: { name: true },
     }),
-    // Active recurring bill templates — count + monthly total
+    // Active recurring bill templates across all spaces.
     prisma.recurringBill.aggregate({
-      where: { organizationId, isActive: true },
+      where: { organizationId: { in: scopeOrgIds }, isActive: true },
       _sum: { amount: true },
       _count: true,
     }),
-    // Bills this month that are split with someone other than the current user
+    // Shared bills this month across all spaces — the metric the user
+    // actually means when they say "tengo gastos compartidos".
     prisma.bill.count({
       where: {
-        organizationId,
+        organizationId: { in: scopeOrgIds },
         paymentDate: { gte: monthStart, lte: monthEnd },
         assignments: { some: { userId: { not: currentUserId } } },
       },
     }),
   ]);
 
+  const currentSpace = userOrgs.find((o) => o.id === organizationId);
+
   return {
     categories,
     incomeCategories,
     currentMonthTotal: Number(currentMonthBills._sum.amount || 0).toFixed(2),
     billCount: currentMonthBills._count,
-    users,
+    users: members,
     currentUserName: currentUser?.name || "Unknown",
+    currentSpaceName: currentSpace?.name ?? "espacio actual",
+    spaceCount: userOrgs.length,
     recurringCount: recurringAgg._count,
     recurringMonthlyTotal: Number(recurringAgg._sum.amount || 0).toFixed(2),
     sharedBillCount,
