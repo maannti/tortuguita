@@ -275,6 +275,9 @@ function buildSystemPrompt(context: any, hasFile = false): string {
     users: context.users,
     currentUserName: context.currentUserName,
     currentDate: format(new Date(), "yyyy-MM-dd"),
+    recurringCount: context.recurringCount,
+    recurringMonthlyTotal: context.recurringMonthlyTotal,
+    sharedBillCount: context.sharedBillCount,
   });
   if (!hasFile) return base;
   return base + `
@@ -303,7 +306,15 @@ async function buildContext(organizationId: string, currentUserId: string) {
   const monthStart = startOfMonth(now);
   const monthEnd = endOfMonth(now);
 
-  const [categories, incomeCategories, currentMonthBills, users, currentUser] = await Promise.all([
+  const [
+    categories,
+    incomeCategories,
+    currentMonthBills,
+    users,
+    currentUser,
+    recurringAgg,
+    sharedBillCount,
+  ] = await Promise.all([
     prisma.billType.findMany({
       where: { organizationId },
       select: {
@@ -341,6 +352,20 @@ async function buildContext(organizationId: string, currentUserId: string) {
       where: { id: currentUserId },
       select: { name: true },
     }),
+    // Active recurring bill templates — count + monthly total
+    prisma.recurringBill.aggregate({
+      where: { organizationId, isActive: true },
+      _sum: { amount: true },
+      _count: true,
+    }),
+    // Bills this month that are split with someone other than the current user
+    prisma.bill.count({
+      where: {
+        organizationId,
+        paymentDate: { gte: monthStart, lte: monthEnd },
+        assignments: { some: { userId: { not: currentUserId } } },
+      },
+    }),
   ]);
 
   return {
@@ -350,5 +375,8 @@ async function buildContext(organizationId: string, currentUserId: string) {
     billCount: currentMonthBills._count,
     users,
     currentUserName: currentUser?.name || "Unknown",
+    recurringCount: recurringAgg._count,
+    recurringMonthlyTotal: Number(recurringAgg._sum.amount || 0).toFixed(2),
+    sharedBillCount,
   };
 }
