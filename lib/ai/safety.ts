@@ -214,6 +214,9 @@ export function buildSafeSystemPrompt(context: {
   users: Array<{ name: string | null }>
   currentUserName: string
   currentDate: string
+  recurringCount?: number
+  recurringMonthlyTotal?: string
+  sharedBillCount?: number
 }): string {
   const formatCategory = (c: { name: string; icon?: string | null; isCreditCard?: boolean }) => {
     const icon = c.icon ? ` ${c.icon}` : ''
@@ -281,7 +284,9 @@ export function buildSafeSystemPrompt(context: {
 
 - Usuario: ${context.currentUserName}
 - Fecha: ${context.currentDate}
-- Gasto del mes: $${context.currentMonthTotal} (${context.billCount} gastos)
+- Gasto del mes: $${context.currentMonthTotal} (${context.billCount} gastos individuales)
+- Gastos recurrentes activos: ${context.recurringCount ?? 0}${(context.recurringCount ?? 0) > 0 ? ` (≈$${context.recurringMonthlyTotal}/mes en suscripciones y servicios)` : ''}
+- Gastos compartidos este mes: ${context.sharedBillCount ?? 0} (divididos con otros miembros)
 - Categorías de gastos: ${context.categories.map(formatCategory).join(', ') || 'ninguna'}
 - Categorías de tarjetas: ${creditCards.map(c => c.name).join(', ') || 'ninguna'}
 - Períodos de facturación:
@@ -289,21 +294,32 @@ export function buildSafeSystemPrompt(context: {
 - Categorías de ingresos: ${context.incomeCategories.map(formatIncomeCategory).join(', ') || 'ninguna'}
 - Miembros de la organización: ${context.users.map(u => u.name).join(', ')}
 
-## HERRAMIENTAS
+## HERRAMIENTAS — decidí cuál usar ANTES de responder
 
-- **SIEMPRE usá tools para buscar datos reales.** Si el usuario pregunta por un gasto, categoría o ingreso específico, llamá search_bills o search_incomes — nunca respondas de memoria ni basándote en resultados de búsquedas anteriores.
-- Si la pregunta es de seguimiento ("Y el alquiler?", "¿Y las expensas?", "¿Qué pasó con X?"), buscá explícitamente ese dato con el tool correspondiente.
+**SIEMPRE usá tools para datos reales** — nunca respondas de memoria ni de búsquedas previas. Si la pregunta es de seguimiento ("¿y el alquiler?", "¿qué pasó con X?"), volvé a buscar.
+
+### Mapeo pregunta → tool (consultá esta tabla siempre)
+
+| Si el usuario dice / pregunta | Usá |
+|---|---|
+| "gastos recurrentes", "suscripciones", "qué se repite", "qué pago todos los meses", "mensuales fijos" | **get_recurring_bills** |
+| "gastos compartidos", "qué dividí", "qué compartí con X", "qué me debe X", "compartidos este mes" | **search_bills** con \`isShared: true\` |
+| "cuotas activas", "qué cuotas tengo corriendo", "cuotas que faltan" | **get_installments** |
+| "cuánto vence el mes que viene", "próximo vencimiento tarjeta", "cuánto debo en la VISA" | **get_card_summary** |
+| Un gasto puntual ("¿pagué el alquiler?", "gastos de marzo") | **search_bills** |
+| Ingresos / sueldos / freelance | **search_incomes** |
+| Stats, totales por categoría, comparaciones de meses | **get_analytics** |
+| Crear / editar / borrar gasto | **create_bill** / **update_bill** / **delete_bill** |
+
+### Reglas críticas de tools
+
+- **Recurring ≠ cuotas**: los recurrentes son suscripciones mensuales (Netflix, alquiler). Las cuotas son una compra en N pagos.
+- **Recurring no aparece en search_bills**: son plantillas que el cron convierte en bills. Si el usuario pregunta por suscripciones, usá \`get_recurring_bills\` aunque parezca que "search_bills" alcanzaría.
+- **Shared bills**: un gasto es "compartido" si tiene asignaciones a alguien que no sea el usuario actual. Usá \`search_bills\` con \`isShared: true\`, no filtres a mano.
 - Si falta la categoría al crear un gasto, preguntá cuál usar
 - Si la categoría no existe, ofrecé crearla
 - Para eliminar: primera llamada con confirmed=false, segunda con confirmed=true
 - Las asignaciones deben sumar 100%
-
-### Guía de tools por caso de uso
-- "gastos recurrentes" / "suscripciones" / "qué se repite cada mes" → **get_recurring_bills** (NO search_bills)
-- "gastos compartidos" / "divididos" / "con otra persona" → **search_bills con isShared:true**
-- "cuotas activas" / "cuotas corriendo" → **get_installments**
-- "cuánto vence" / "próximo vencimiento tarjeta" → **get_card_summary**
-- Las cuotas (installments) NO son recurrentes — son compras en N pagos, no suscripciones
 
 ## ASIGNACIONES
 
