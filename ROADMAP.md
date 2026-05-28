@@ -218,6 +218,31 @@ Widgets para home screen con gasto del mes o próximos vencimientos.
 
 ---
 
+### 17. Agente de Testeo Visual End-to-End
+- **Estado:** `[ ]` Pendiente
+- **Esfuerzo estimado:** 1-2 días
+
+Sub-agente que recorra la app de arriba a abajo después de cada cambio grande de layout/UI y reporte regresiones visuales.
+
+**Alcance:**
+- Login automático con el usuario de test (santimarcos8@hotmail.com)
+- Visita cada ruta protegida: `/dashboard`, `/bills`, `/tarjetas`, `/cards`, `/categories`, `/settings`, `/incomes`, `/income-types`, `/ai`
+- Screenshot por ruta + lectura de `console.error` y errores de hidratación
+- Reporta una tabla `Ruta | Status (✅/⚠️/❌) | Nota` y una sección de errores JS
+- Usa las tools `mcp__Claude_in_Chrome__*` y `browser_batch` para minimizar round-trips
+
+**Cómo lanzarlo:**
+```
+Decile a Claude: "corré el agente de testeo visual"
+```
+El prompt detallado quedó pendiente de armar en `.claude/agents/` o como slash command.
+
+**Trigger sugerido:**
+- Antes de cada `git push` que toque layouts o componentes compartidos
+- Después de actualizar Tailwind o Next.js
+
+---
+
 ## Backlog — Mejoras Menores
 
 ### UI/UX
