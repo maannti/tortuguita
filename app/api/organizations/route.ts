@@ -23,7 +23,7 @@ export async function GET() {
   } catch (error) {
     console.error("Error fetching organizations:", error);
     return NextResponse.json(
-      { error: "Failed to fetch organizations" },
+      { error: "No se pudieron cargar los espacios" },
       { status: 500 }
     );
   }
@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
 
     console.error("Error creating organization:", error);
     return NextResponse.json(
-      { error: "Failed to create organization" },
+      { error: "No se pudo crear el espacio. Intentá de nuevo." },
       { status: 500 }
     );
   }

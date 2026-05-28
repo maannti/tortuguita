@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
 
     if (!membership) {
       return NextResponse.json(
-        { error: "You are not a member of this organization" },
+        { error: "No sos miembro de este espacio" },
         { status: 403 }
       );
     }
@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
 
     console.error("Error switching organization:", error);
     return NextResponse.json(
-      { error: "Failed to switch organization" },
+      { error: "No se pudo cambiar de espacio. Intentá de nuevo." },
       { status: 500 }
     );
   }

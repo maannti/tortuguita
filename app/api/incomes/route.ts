@@ -165,7 +165,7 @@ export async function POST(request: NextRequest) {
 
       if (memberships.length !== orgIds.length) {
         return NextResponse.json(
-          { error: "You don't have access to all specified organizations" },
+          { error: "No tenés acceso a todos los espacios indicados" },
           { status: 403 }
         )
       }
@@ -174,7 +174,7 @@ export async function POST(request: NextRequest) {
       const totalPercentage = multiHomeDistribution.reduce((sum, d) => sum + d.percentage, 0)
       if (Math.abs(totalPercentage - 100) > 0.01) {
         return NextResponse.json(
-          { error: "Multi-home percentages must total 100%" },
+          { error: "Los porcentajes entre espacios tienen que sumar 100%" },
           { status: 400 }
         )
       }

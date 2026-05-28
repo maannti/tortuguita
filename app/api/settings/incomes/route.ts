@@ -26,7 +26,7 @@ export async function PUT(request: NextRequest) {
     const userOrgs = await getUserOrganizations(session.user.id)
     const org = userOrgs.find(o => o.id === organizationId)
     if (!org) {
-      return NextResponse.json({ error: "Organization not found" }, { status: 404 })
+      return NextResponse.json({ error: "Espacio no encontrado" }, { status: 404 })
     }
 
     // Find or create a "Sueldo" income type for this org
