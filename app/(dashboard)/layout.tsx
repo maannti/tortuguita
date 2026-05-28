@@ -1,6 +1,7 @@
 import { SimpleHeader } from "@/components/layout/simple-header"
 import { BottomNav } from "@/components/layout/bottom-nav"
 import { SideNav } from "@/components/layout/side-nav"
+import { DashboardContentWrapper } from "@/components/layout/dashboard-content-wrapper"
 import { SpacesProvider } from "@/lib/spaces-context"
 import { auth } from "@/lib/auth"
 import { getUserOrganizations } from "@/lib/organization-utils"
@@ -21,10 +22,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
         <div className="flex flex-col flex-1 min-w-0">
           <SimpleHeader />
           <main className="flex-1 min-h-0 overflow-y-auto overscroll-y-contain bg-background">
-            {/* Center content on desktop */}
-            <div className="lg:max-w-xl lg:mx-auto h-full">
-              {children}
-            </div>
+            {/* Center content on desktop — wide routes (e.g. /ai) opt out */}
+            <DashboardContentWrapper>{children}</DashboardContentWrapper>
           </main>
           {/* Mobile-only bottom nav */}
           <BottomNav />
