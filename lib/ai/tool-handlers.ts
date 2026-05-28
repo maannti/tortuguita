@@ -462,8 +462,15 @@ async function getAnalytics(input: any, organizationId: string) {
 
 async function searchBills(input: any, userId: string, organizationId: string) {
   try {
+    // Search across ALL spaces the user belongs to — same scope as /bills.
+    // The `organizationId` arg is only used as a fallback hint; the real
+    // gate is the user's membership list.
+    const { getUserOrganizations } = await import("@/lib/organization-utils")
+    const userOrgs = await getUserOrganizations(userId)
+    const orgIds = userOrgs.map((o) => o.id)
+
     const where: Prisma.BillWhereInput = {
-      organizationId,
+      organizationId: { in: orgIds.length > 0 ? orgIds : [organizationId] },
     };
 
     // Filter to bills created/paid by the current user
@@ -480,11 +487,11 @@ async function searchBills(input: any, userId: string, organizationId: string) {
 
     // Filter by assigned user
     if (input.assignedToUser) {
-      // Resolve userName to userId
+      // Resolve userName to userId across any of the user's spaces
       const user = await prisma.user.findFirst({
         where: {
-          organizationId,
           name: { equals: input.assignedToUser, mode: "insensitive" },
+          userOrganizations: { some: { organizationId: { in: orgIds } } },
         },
       });
 
@@ -507,7 +514,7 @@ async function searchBills(input: any, userId: string, organizationId: string) {
     if (input.categoryName) {
       const billType = await prisma.billType.findFirst({
         where: {
-          organizationId,
+          organizationId: { in: orgIds },
           name: { contains: input.categoryName, mode: "insensitive" },
         },
       });
@@ -1147,8 +1154,13 @@ async function createIncomeType(input: any, organizationId: string) {
 
 async function searchIncomes(input: any, userId: string, organizationId: string) {
   try {
+    // Search across ALL spaces the user belongs to — matches /incomes.
+    const { getUserOrganizations } = await import("@/lib/organization-utils")
+    const userOrgs = await getUserOrganizations(userId)
+    const orgIds = userOrgs.map((o) => o.id)
+
     const where: Prisma.IncomeWhereInput = {
-      organizationId,
+      organizationId: { in: orgIds.length > 0 ? orgIds : [organizationId] },
     };
 
     if (input.createdByMe) {
@@ -1158,8 +1170,8 @@ async function searchIncomes(input: any, userId: string, organizationId: string)
     if (input.assignedToUser) {
       const user = await prisma.user.findFirst({
         where: {
-          organizationId,
           name: { equals: input.assignedToUser, mode: "insensitive" },
+          userOrganizations: { some: { organizationId: { in: orgIds } } },
         },
       });
 
@@ -1180,7 +1192,7 @@ async function searchIncomes(input: any, userId: string, organizationId: string)
     if (input.categoryName) {
       const incomeType = await prisma.incomeType.findFirst({
         where: {
-          organizationId,
+          organizationId: { in: orgIds },
           name: { contains: input.categoryName, mode: "insensitive" },
         },
       });
