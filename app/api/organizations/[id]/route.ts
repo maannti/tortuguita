@@ -27,7 +27,7 @@ export async function PUT(
     const isOwner = await isOrganizationOwner(session.user.id, id);
     if (!isOwner) {
       return NextResponse.json(
-        { error: "Only organization owners can update the name" },
+        { error: "Solo el dueño del espacio puede cambiarle el nombre" },
         { status: 403 }
       );
     }
@@ -53,7 +53,7 @@ export async function PUT(
 
     console.error("Error updating organization:", error);
     return NextResponse.json(
-      { error: "Failed to update organization" },
+      { error: "No se pudo actualizar el espacio. Intentá de nuevo." },
       { status: 500 }
     );
   }
@@ -76,34 +76,34 @@ export async function DELETE(
     const isOwner = await isOrganizationOwner(session.user.id, id);
     if (!isOwner) {
       return NextResponse.json(
-        { error: "Only organization owners can delete the organization" },
+        { error: "Solo el dueño del espacio puede eliminarlo" },
         { status: 403 }
       );
     }
 
-    // Check if user has other organizations
+    // Check if user has other spaces — they need at least one to stay in the app
     const userOrgCount = await prisma.userOrganization.count({
       where: { userId: session.user.id },
     });
 
     if (userOrgCount <= 1) {
       return NextResponse.json(
-        { error: "Cannot delete your last organization. You must have at least one organization." },
+        { error: "No podés eliminar tu único espacio. Tenés que tener al menos uno." },
         { status: 400 }
       );
     }
 
-    // Check if this is the current organization
+    // Check if this is the active space
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
     });
 
-    // Delete organization (cascades to bills, billTypes, conversations, userOrganizations)
+    // Delete space (cascades to bills, billTypes, conversations, userOrganizations)
     await prisma.organization.delete({
       where: { id },
     });
 
-    // If this was the current org, switch to another org
+    // If this was the active space, switch to another one
     if (user?.currentOrganizationId === id) {
       const anotherOrg = await prisma.userOrganization.findFirst({
         where: { userId: session.user.id },
@@ -117,11 +117,11 @@ export async function DELETE(
       }
     }
 
-    return NextResponse.json({ message: "Organization deleted successfully" });
+    return NextResponse.json({ message: "Espacio eliminado correctamente" });
   } catch (error) {
     console.error("Error deleting organization:", error);
     return NextResponse.json(
-      { error: "Failed to delete organization" },
+      { error: "No se pudo eliminar el espacio. Intentá de nuevo." },
       { status: 500 }
     );
   }

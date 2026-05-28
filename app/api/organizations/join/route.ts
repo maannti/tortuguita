@@ -39,15 +39,15 @@ export async function POST(request: NextRequest) {
 
     if (!organization) {
       return NextResponse.json(
-        { error: "Invalid join code" },
+        { error: "Código de invitación inválido" },
         { status: 404 }
       );
     }
 
-    // Check if personal org
+    // Check if personal space
     if (organization.isPersonal) {
       return NextResponse.json(
-        { error: "Cannot join a personal organization" },
+        { error: "No te podés unir a un espacio personal" },
         { status: 400 }
       );
     }
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
 
     if (existingMembership) {
       return NextResponse.json(
-        { error: "You are already a member of this organization" },
+        { error: "Ya sos miembro de este espacio" },
         { status: 400 }
       );
     }
@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
 
     console.error("Error joining organization:", error);
     return NextResponse.json(
-      { error: "Failed to join organization" },
+      { error: "No se pudo unir al espacio. Intentá de nuevo." },
       { status: 500 }
     );
   }

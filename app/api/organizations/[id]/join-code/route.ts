@@ -22,29 +22,29 @@ export async function POST(
 
     const { id } = await params
 
-    // Only organization owners can rotate the join code
+    // Only space owners can rotate the join code
     const isOwner = await isOrganizationOwner(session.user.id, id)
     if (!isOwner) {
       return NextResponse.json(
-        { error: "Only organization owners can regenerate the join code" },
+        { error: "Solo el dueño del espacio puede regenerar el código" },
         { status: 403 }
       )
     }
 
-    // Personal organizations cannot have join codes
+    // Personal spaces don't have join codes
     const org = await prisma.organization.findUnique({
       where: { id },
       select: { isPersonal: true },
     })
     if (!org) {
       return NextResponse.json(
-        { error: "Organization not found" },
+        { error: "Espacio no encontrado" },
         { status: 404 }
       )
     }
     if (org.isPersonal) {
       return NextResponse.json(
-        { error: "Personal organizations do not have join codes" },
+        { error: "Los espacios personales no tienen código de invitación" },
         { status: 400 }
       )
     }
@@ -69,7 +69,7 @@ export async function POST(
 
     if (attempts >= maxAttempts) {
       return NextResponse.json(
-        { error: "Failed to generate unique join code" },
+        { error: "No se pudo generar un código único. Intentá de nuevo." },
         { status: 500 }
       )
     }

@@ -33,8 +33,8 @@ const signupSchema = z.object({
   // Cap the array so a single signup can't try to join 1000 orgs at once. (B4)
   organizationChoices: z
     .array(organizationChoiceSchema)
-    .min(1, "At least one organization choice is required")
-    .max(5, "Too many organization choices"),
+    .min(1, "Tenés que elegir al menos un espacio")
+    .max(5, "Demasiados espacios elegidos"),
 });
 
 export async function POST(request: NextRequest) {
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
         }
         if (org.isPersonal) {
           return NextResponse.json(
-            { error: "Cannot join a personal organization" },
+            { error: "No te podés unir a un espacio personal" },
             { status: 400 }
           );
         }

@@ -20,7 +20,7 @@ export async function POST(
     const membership = await verifyOrganizationMembership(session.user.id, id);
     if (!membership) {
       return NextResponse.json(
-        { error: "You are not a member of this organization" },
+        { error: "No sos miembro de este espacio" },
         { status: 404 }
       );
     }
@@ -28,19 +28,19 @@ export async function POST(
     // Check if owner - owners cannot leave
     if (membership.role === "owner") {
       return NextResponse.json(
-        { error: "Owners cannot leave the organization. Transfer ownership or delete the organization instead." },
+        { error: "El dueño no puede salir del espacio. Transferí la propiedad o eliminá el espacio." },
         { status: 400 }
       );
     }
 
-    // Check if user has other organizations
+    // Check if user has other spaces — they need at least one to stay in the app
     const userOrgCount = await prisma.userOrganization.count({
       where: { userId: session.user.id },
     });
 
     if (userOrgCount <= 1) {
       return NextResponse.json(
-        { error: "Cannot leave your last organization. You must have at least one organization." },
+        { error: "No podés salir de tu único espacio. Tenés que tener al menos uno." },
         { status: 400 }
       );
     }
@@ -73,11 +73,11 @@ export async function POST(
       }
     }
 
-    return NextResponse.json({ message: "Left organization successfully" });
+    return NextResponse.json({ message: "Saliste del espacio" });
   } catch (error) {
     console.error("Error leaving organization:", error);
     return NextResponse.json(
-      { error: "Failed to leave organization" },
+      { error: "No se pudo salir del espacio. Intentá de nuevo." },
       { status: 500 }
     );
   }
