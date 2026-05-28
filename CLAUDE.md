@@ -143,10 +143,7 @@ Si algo rompe el visual, el estado correcto usa: `CardIcon`/`MonthPicker`, tarje
 
 ## Usuario de test
 
-```
-Email: santimarcos8@hotmail.com
-Pass:  test1234
-```
+Las credenciales del usuario de test viven en `CLAUDE.local.md` (gitignored — este archivo es público porque el repo lo es).
 
 ## Comandos útiles
 
