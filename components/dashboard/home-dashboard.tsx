@@ -228,7 +228,7 @@ function SpaceBreakdown({ orgSplits, currentUserId }: { orgSplits: OrgSplit[]; c
 
   return (
     <section>
-      <button onClick={() => setOpen(v => !v)} className="w-full flex items-center justify-between mb-3">
+      <button data-tour="space-breakdown" onClick={() => setOpen(v => !v)} className="w-full flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <Users className="size-4 text-muted-foreground" />
           <h2 className="text-base font-semibold">Resumen por espacio</h2>

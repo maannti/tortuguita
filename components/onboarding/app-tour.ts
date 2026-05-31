@@ -39,6 +39,15 @@ const ALL_STEPS = [
     },
   },
   {
+    element: "[data-tour='space-breakdown']",
+    popover: {
+      title: "Resumen por espacio",
+      description: "Cuánto le corresponde a cada uno este mes, desglosado por tarjeta y categoría. Expandí cada persona para ver el detalle.",
+      side: "bottom" as const,
+      align: "center" as const,
+    },
+  },
+  {
     element: "[data-tour='categories']",
     popover: {
       title: "Gastos por categoría",
