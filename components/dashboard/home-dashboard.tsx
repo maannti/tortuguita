@@ -3,7 +3,8 @@ import { CardIcon, isNetworkId, NetworkId, BANKS } from "@/components/ui/card-ne
 import { useState, useCallback, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react"
+import { ChevronLeft, ChevronRight, Plus, ChevronDown, Users, User } from "lucide-react"
+import { cn } from "@/lib/utils"
 import { MonthPicker } from "@/components/ui/month-picker"
 import { useSpaces } from "@/lib/spaces-context"
 import { OnboardingSlides } from "@/components/onboarding/onboarding-slides"
@@ -84,7 +85,13 @@ export interface SpaceData {
   creditCardGroups: CreditCardGroup[]
 }
 
-interface Props { month: string; monthKey: string; availableMonths: string[]; spaces: SpaceData[]; currentUserId: string; showOnboarding?: boolean; checklistData?: ChecklistData; insights?: { insights: string[] } }
+type SplitItem = { billId: string; label: string; amount: number; assigned: number; percentage: number }
+type CardGroup = { billTypeId: string; name: string; color: string | null; dueDate: string | null; items: SplitItem[]; total: number }
+type CommonGroup = { key: string; name: string; color: string | null; items: SplitItem[]; total: number }
+type MemberSplit = { userId: string; name: string; cards: CardGroup[]; common: CommonGroup[]; total: number }
+type OrgSplit = { orgId: string; orgName: string; isPersonal: boolean; memberSplits: MemberSplit[]; total: number }
+
+interface Props { month: string; monthKey: string; availableMonths: string[]; spaces: SpaceData[]; orgSplits: OrgSplit[]; currentUserId: string; showOnboarding?: boolean; checklistData?: ChecklistData; insights?: { insights: string[] } }
 
 const arsFormatter = new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", minimumFractionDigits: 0, maximumFractionDigits: 2 })
 const arsFormatterFull = new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -107,7 +114,176 @@ function HeroAmount({ amount, className, style }: { amount: number; className?: 
   )
 }
 
-export function HomeDashboard({ month, monthKey, availableMonths, spaces, currentUserId, showOnboarding = false, checklistData, insights }: Props) {
+const SPACE_PALETTES = [
+  { bg: "#F7F5F2", border: "#E8E4DE", header: "#EDE9E3" },
+  { bg: "#F0F4F8", border: "#D9E4EF", header: "#E4EDF6" },
+  { bg: "#F3F0F7", border: "#DDD6EB", header: "#E9E3F3" },
+  { bg: "#F0F6F3", border: "#D4E8DE", header: "#E2F0E8" },
+]
+
+function CardGroupRow({ group }: { group: CardGroup }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className="rounded-xl overflow-hidden border border-border/60">
+      <button onClick={() => setOpen(v => !v)} className="w-full flex items-center justify-between px-4 py-3 text-left bg-card hover:bg-muted/40 transition-colors">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <span className="size-2.5 rounded-full shrink-0" style={{ backgroundColor: group.color ?? "#9D8189" }} />
+          <div className="min-w-0">
+            <p className="text-sm font-medium truncate">{group.name}</p>
+            {group.dueDate && <p className="text-xs text-muted-foreground">vence {group.dueDate}</p>}
+          </div>
+        </div>
+        <div className="flex items-center gap-2 ml-3 shrink-0">
+          <span className="text-sm font-semibold" style={{ fontFamily: "var(--font-fraunces, serif)" }}>{formatARS(group.total)}</span>
+          <ChevronDown className={cn("size-3.5 text-muted-foreground transition-transform", open && "rotate-180")} />
+        </div>
+      </button>
+      {open && (
+        <div className="divide-y divide-border/40 border-t border-border/60 bg-muted/20">
+          {group.items.map(item => (
+            <div key={item.billId + item.label} className="flex items-center justify-between px-4 py-2.5">
+              <p className="text-sm text-muted-foreground truncate pr-2">{item.label}</p>
+              <p className="text-sm shrink-0" style={{ fontFamily: "var(--font-fraunces, serif)" }}>{formatARS(item.assigned)}</p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function CommonGroupRow({ group }: { group: CommonGroup }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className="rounded-xl overflow-hidden border border-border/60">
+      <button onClick={() => setOpen(v => !v)} className="w-full flex items-center justify-between px-4 py-3 text-left bg-card hover:bg-muted/40 transition-colors">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <span className="size-2.5 rounded-full shrink-0" style={{ backgroundColor: group.color ?? "#9D8189" }} />
+          <p className="text-sm font-medium truncate">{group.name}</p>
+        </div>
+        <div className="flex items-center gap-2 ml-3 shrink-0">
+          <span className="text-sm font-semibold" style={{ fontFamily: "var(--font-fraunces, serif)" }}>{formatARS(group.total)}</span>
+          <ChevronDown className={cn("size-3.5 text-muted-foreground transition-transform", open && "rotate-180")} />
+        </div>
+      </button>
+      {open && (
+        <div className="divide-y divide-border/40 border-t border-border/60 bg-muted/20">
+          {group.items.map(item => (
+            <div key={item.billId + item.label} className="flex items-center justify-between px-4 py-2.5">
+              <div className="min-w-0 pr-2">
+                <p className="text-sm text-muted-foreground truncate">{item.label}</p>
+                {item.percentage < 100 && <p className="text-xs text-muted-foreground/60">{item.percentage}%</p>}
+              </div>
+              <p className="text-sm shrink-0" style={{ fontFamily: "var(--font-fraunces, serif)" }}>{formatARS(item.assigned)}</p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function MemberCard({ split, isCurrentUser }: { split: MemberSplit; isCurrentUser: boolean }) {
+  const [expanded, setExpanded] = useState(false)
+  const hasDetail = split.cards.length > 0 || split.common.length > 0
+  return (
+    <div className="rounded-2xl border bg-card/80 overflow-hidden">
+      <button onClick={() => hasDetail && setExpanded(v => !v)} className="w-full flex items-center justify-between px-4 py-3.5 text-left">
+        <div>
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-0.5">
+            {isCurrentUser ? "Vos" : split.name.split(" ")[0]}
+          </p>
+          <p className="text-2xl font-semibold" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
+            {formatARS(split.total)}
+          </p>
+        </div>
+        {hasDetail && <ChevronDown className={cn("size-4 text-muted-foreground transition-transform", expanded && "rotate-180")} />}
+      </button>
+      {expanded && hasDetail && (
+        <div className="px-3 pb-3 flex flex-col gap-2.5 border-t pt-3">
+          {split.cards.length > 0 && (
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground px-1">
+                <span>💳</span><span>Tarjetas</span>
+              </div>
+              {split.cards.map(card => <CardGroupRow key={card.billTypeId} group={card} />)}
+            </div>
+          )}
+          {split.common.length > 0 && (
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground px-1">
+                <span>🏠</span><span>Gastos comunes</span>
+              </div>
+              {split.common.map(group => <CommonGroupRow key={group.key} group={group} />)}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function SpaceBreakdown({ orgSplits, currentUserId }: { orgSplits: OrgSplit[]; currentUserId: string }) {
+  const [open, setOpen] = useState(true)
+
+  return (
+    <section>
+      <button onClick={() => setOpen(v => !v)} className="w-full flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <Users className="size-4 text-muted-foreground" />
+          <h2 className="text-base font-semibold">Resumen por espacio</h2>
+        </div>
+        <ChevronDown className={cn("size-4 text-muted-foreground transition-transform", open && "rotate-180")} />
+      </button>
+
+      {open && (
+        <div className="flex flex-col gap-3">
+          {orgSplits.map((org, i) => {
+            const palette = SPACE_PALETTES[Math.min(org.isPersonal ? 0 : i + 1, SPACE_PALETTES.length - 1)]
+            const isShared = !org.isPersonal && org.memberSplits.length > 1
+            const sorted = [...org.memberSplits].sort((a, b) => {
+              if (a.userId === currentUserId) return -1
+              if (b.userId === currentUserId) return 1
+              return 0
+            })
+            return (
+              <OrgCard key={org.orgId} org={org} palette={palette} sorted={sorted} isShared={isShared} currentUserId={currentUserId} />
+            )
+          })}
+        </div>
+      )}
+    </section>
+  )
+}
+
+function OrgCard({ org, palette, sorted, isShared, currentUserId }: {
+  org: OrgSplit; palette: typeof SPACE_PALETTES[0]; sorted: MemberSplit[]; isShared: boolean; currentUserId: string
+}) {
+  const [expanded, setExpanded] = useState(true)
+  return (
+    <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: palette.bg, border: `1px solid ${palette.border}` }}>
+      <button onClick={() => setExpanded(v => !v)} className="w-full flex items-center justify-between px-5 py-4 text-left" style={{ background: expanded ? palette.header : "transparent" }}>
+        <div className="flex items-center gap-2">
+          {org.isPersonal ? <User className="size-4 text-muted-foreground" /> : <Users className="size-4 text-muted-foreground" />}
+          <span className="text-sm font-semibold">{org.orgName}</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <p className="text-base font-semibold" style={{ fontFamily: "var(--font-fraunces, serif)" }}>{formatARS(org.total)}</p>
+          <ChevronDown className={cn("size-4 text-muted-foreground transition-transform", expanded && "rotate-180")} />
+        </div>
+      </button>
+      {expanded && (
+        <div className="px-3 pb-3 flex flex-col gap-2 pt-2">
+          {sorted.map(m => (
+            <MemberCard key={m.userId} split={m} isCurrentUser={m.userId === currentUserId} />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+export function HomeDashboard({ month, monthKey, availableMonths, spaces, orgSplits, currentUserId, showOnboarding = false, checklistData, insights }: Props) {
   const router = useRouter()
   const { resolvedTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
@@ -158,19 +334,16 @@ export function HomeDashboard({ month, monthKey, availableMonths, spaces, curren
   // Show member split for the first active shared space (even if personal is also active)
   const sharedSpace = activeSpaces.find(sp => !sp.isPersonal && sp.members.length > 1)
   const members = sharedSpace ? sharedSpace.members : (activeSpaces.length === 1 ? activeSpaces[0].members : [])
-  // ── Category summary (top 5 non-CC, sorted by amount) ──
-  const categoryMap = new Map<string, { name: string; color: string; amount: number }>()
-  for (const e of recentExpenses) {
-    if (e.isCreditCard) continue
-    const cur = categoryMap.get(e.billTypeName) ?? { name: e.billTypeName, color: e.billTypeColor, amount: 0 }
-    categoryMap.set(e.billTypeName, { ...cur, amount: cur.amount + e.amount })
+  // ── Category summary (top 5 non-CC, sorted by amount, with space tag) ──
+  const categoryMap = new Map<string, { name: string; color: string; amount: number; spaceName: string }>()
+  for (const sp of activeSpaces) {
+    for (const e of sp.recentExpenses) {
+      if (e.isCreditCard) continue
+      const cur = categoryMap.get(e.billTypeName) ?? { name: e.billTypeName, color: e.billTypeColor, amount: 0, spaceName: sp.name }
+      categoryMap.set(e.billTypeName, { ...cur, amount: cur.amount + e.amount })
+    }
   }
   const topCategories = [...categoryMap.values()].sort((a, b) => b.amount - a.amount).slice(0, 5)
-  // ── Biggest single expense of the month (any type) ──
-  const biggestExpense = recentExpenses.length > 0
-    ? recentExpenses.reduce((max, e) => e.amount > max.amount ? e : max, recentExpenses[0])
-    : null
-
   return (
     <div className="pb-28">
       {slidesVisible && <OnboardingSlides onDone={handleSlidesDone} />}
@@ -268,7 +441,11 @@ export function HomeDashboard({ month, monthKey, availableMonths, spaces, curren
               /* 3+ members — rounded-square tiles, fill width evenly */
               <div
                 className="grid gap-x-1 gap-y-2"
-                style={{ gridTemplateColumns: `repeat(${Math.min(members.length, 5)}, 1fr)` }}
+                style={{
+                  gridTemplateColumns: `repeat(${
+                    members.length <= 5 ? members.length : members.length === 6 ? 3 : 4
+                  }, 1fr)`
+                }}
               >
                 {members.map((member) => {
                   const parts = member.name.trim().split(" ")
@@ -402,52 +579,39 @@ export function HomeDashboard({ month, monthKey, availableMonths, spaces, curren
         {/* AI Insight widget */}
         {insights && <AiInsightWidget data={insights} />}
 
+        {/* Por espacio */}
+        {orgSplits.length > 0 && totalAmount > 0 && (
+          <SpaceBreakdown orgSplits={orgSplits} currentUserId={currentUserId} />
+        )}
+
         {/* Category summary + biggest expense */}
-        {(topCategories.length > 0 || biggestExpense) && (
+        {topCategories.length > 0 && (
           <section data-tour="categories">
             <div className="flex items-center justify-between mb-2.5 px-1">
               <h2 className="text-base font-medium text-foreground" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
-                Por categoría
+                Totales por categoría
               </h2>
               <Link href="/bills" className="text-sm text-muted-foreground">
                 Ver todos →
               </Link>
             </div>
             <div className="glass rounded-2xl overflow-hidden divide-y divide-white/60">
-              {/* Top categories */}
               {topCategories.map((cat) => (
                 <div key={cat.name} className="flex items-center justify-between px-4 py-3">
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="size-2.5 rounded-full flex-shrink-0 shadow-sm" style={{ backgroundColor: cat.color }} />
-                    <p className="text-sm font-medium truncate text-foreground">{cat.name}</p>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate text-foreground">{cat.name}</p>
+                      {activeSpaces.length > 1 && (
+                        <p className="text-[10px] text-muted-foreground/70 truncate">{cat.spaceName}</p>
+                      )}
+                    </div>
                   </div>
                   <span className="text-sm font-medium tabular-nums text-foreground ml-3 flex-shrink-0" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
                     {formatARS(cat.amount)}
                   </span>
                 </div>
               ))}
-
-              {/* Divider + biggest expense */}
-              {biggestExpense && (
-                <Link
-                  href={`/bills/${biggestExpense.id}`}
-                  className="flex items-center justify-between px-4 py-3 active:bg-muted/40 transition-colors"
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="size-2.5 rounded-full flex-shrink-0 shadow-sm" style={{ backgroundColor: biggestExpense.billTypeColor }} />
-                    <div className="min-w-0">
-                      <p className="text-xs text-muted-foreground">Gasto más grande</p>
-                      <p className="text-sm font-medium truncate text-foreground">{biggestExpense.label}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1 ml-3 flex-shrink-0">
-                    <span className="text-sm font-medium tabular-nums text-foreground" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
-                      {formatARS(biggestExpense.amount)}
-                    </span>
-                    <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
-                  </div>
-                </Link>
-              )}
             </div>
           </section>
         )}
