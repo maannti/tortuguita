@@ -124,7 +124,7 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
       }))
     } catch { /* ignore quota errors */ }
     const org = orgId ? organizations.find(o => o.id === orgId) : (organizations.find(o => o.isPersonal) ?? organizations[0])
-    const params = new URLSearchParams({ returnTo: "/resumen?restore=1" })
+    const params = new URLSearchParams({ returnTo: "/bills/import?restore=1" })
     if (org) { params.set("spaceId", org.id); params.set("spaceName", org.name) }
     push(`/categories/new?${params.toString()}`)
   }
