@@ -155,7 +155,7 @@ export async function POST(request: NextRequest) {
           const fallback2 = await prisma.bill.findFirst({
             where: {
               billTypeId: tx.billTypeId,
-              amount: Math.abs(finalAmount),
+              amount: finalAmount,
               paymentDate: { gte: dateMin, lte: dateMax },
               currentInstallment: totalInstallments > 1 ? cuotaActual : null,
             },
@@ -177,7 +177,7 @@ export async function POST(request: NextRequest) {
           const fallback3 = await prisma.bill.findFirst({
             where: {
               billTypeId: tx.billTypeId,
-              amount: Math.abs(finalAmount),
+              amount: finalAmount,
               paymentDate: { gte: dateMin, lte: dateMax },
               totalInstallments: { gt: 1 }, // exists in DB as a cuota
             },
@@ -200,7 +200,7 @@ export async function POST(request: NextRequest) {
             where: {
               organizationId: tx.organizationId,
               billType: { isCreditCard: true },
-              amount: Math.abs(finalAmount),
+              amount: finalAmount,
               paymentDate: { gte: dateMin, lte: dateMax },
               currentInstallment: totalInstallments > 1 ? cuotaActual : null,
             },
