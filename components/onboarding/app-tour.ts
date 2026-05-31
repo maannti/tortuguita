@@ -41,8 +41,8 @@ const ALL_STEPS = [
   {
     element: "[data-tour='categories']",
     popover: {
-      title: "Por categoría",
-      description: "El desglose de gastos del mes por categoría, con el gasto más grande del período.",
+      title: "Gastos por categoría",
+      description: "El total gastado este mes agrupado por categoría, con el ítem más caro de cada una.",
       side: "top" as const,
       align: "center" as const,
     },
