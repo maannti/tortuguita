@@ -152,12 +152,13 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
     setDuplicateMatches({})
     try {
       const payload = txs
-        .filter(tx => tx.montoARS !== null && tx.montoARS > 0)
+        .filter(tx => (tx.montoARS !== null && tx.montoARS > 0) || (tx.montoUSD !== null && tx.montoUSD > 0))
         .map(tx => ({
           id: tx.id,
           fecha: tx.fecha,
           descripcion: tx.descripcion,
           montoARS: tx.montoARS,
+          montoUSD: tx.montoUSD ?? null,
           billTypeId: cardMap[tx.titular] ?? orgCcCards[0]?.id ?? "",
           comprobante: tx.comprobante ?? null,
         }))

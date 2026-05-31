@@ -9,6 +9,7 @@ const txSchema = z.object({
   fecha: z.string(),
   descripcion: z.string(),
   montoARS: z.number().nullable(),
+  montoUSD: z.number().nullable().optional(),
   billTypeId: z.string(),
   comprobante: z.string().nullable().optional(),
 })
@@ -73,7 +74,7 @@ export async function POST(request: NextRequest) {
         billType: { isCreditCard: true },
         paymentDate: { gte: twoYearsAgo },
       },
-      select: { id: true, label: true, amount: true, paymentDate: true, billTypeId: true, externalRef: true, sourceDescription: true },
+      select: { id: true, label: true, amount: true, amountUSD: true, paymentDate: true, billTypeId: true, externalRef: true, sourceDescription: true },
       orderBy: { paymentDate: "desc" },
     })
 
@@ -81,7 +82,8 @@ export async function POST(request: NextRequest) {
 
     for (const tx of transacciones) {
       const txAmount = tx.montoARS ?? 0
-      if (txAmount <= 0) { matches[tx.id] = null; continue }
+      const txUSD = tx.montoUSD ?? null
+      if (txAmount <= 0 && !txUSD) { matches[tx.id] = null; continue }
 
       const txDate = new Date(tx.fecha)
 
@@ -109,8 +111,18 @@ export async function POST(request: NextRequest) {
       // The CSV might have been imported with a different card than the PDF auto-mapping.
       for (const bill of existingBills) {
         const billAmount = Number(bill.amount)
-        const amountDiff = Math.abs(billAmount - txAmount) / Math.max(txAmount, 1)
-        if (amountDiff > 0.05) continue // more than 5% difference → skip
+        const billUSD = bill.amountUSD ? Number(bill.amountUSD) : null
+
+        // If both have USD amounts, compare in USD (avoids exchange-rate drift)
+        // Otherwise fall back to ARS comparison
+        let amountDiff: number
+        if (txUSD && billUSD) {
+          amountDiff = Math.abs(billUSD - txUSD) / Math.max(txUSD, 1)
+          if (amountDiff > 0.01) continue // 1% tolerance for USD (should be near-exact)
+        } else {
+          amountDiff = Math.abs(billAmount - txAmount) / Math.max(txAmount, 1)
+          if (amountDiff > 0.05) continue // 5% tolerance for ARS
+        }
 
         const daysDiff = Math.abs(
           (txDate.getTime() - new Date(bill.paymentDate).getTime()) / (1000 * 60 * 60 * 24)
