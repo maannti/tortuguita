@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation"
 import { useSession } from "next-auth/react"
 import { cn } from "@/lib/utils"
 import { haptic } from "@/lib/haptics"
+import { useSpaces } from "@/lib/spaces-context"
 
 function getInitials(name?: string | null) {
   return name ? name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2) : "?"
@@ -39,6 +40,8 @@ const navItems = [
 export function BottomNav() {
   const pathname = usePathname()
   const { data: session } = useSession()
+  const { spaces } = useSpaces()
+  const hasSharedSpace = spaces.some(s => s.memberCount > 1)
   const isSettingsActive = pathname.startsWith("/settings")
 
   return (
@@ -69,6 +72,7 @@ export function BottomNav() {
             </Link>
           )
         })}
+
 
         {/* User avatar tab */}
         <Link
