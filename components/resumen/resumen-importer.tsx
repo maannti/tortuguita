@@ -660,10 +660,10 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
                                       <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">Débito automático</span>
                                     )}
                                     {isDevolucion && (
-                                      <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">Devolución</span>
+                                      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-green-600 dark:bg-green-700 text-white">Devolución</span>
                                     )}
                                     {tx.nota && (
-                                      <span className="text-[10px] text-amber-700 dark:text-amber-400 flex items-center gap-1">
+                                      <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-amber-500 dark:bg-amber-600 text-white flex items-center gap-1">
                                         <AlertTriangle className="size-3" />{tx.nota}
                                       </span>
                                     )}
@@ -762,11 +762,11 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
                                   return next
                                 })
                                 return (
-                                  <div className="border-t border-amber-200/60 dark:border-amber-800/40">
+                                  <div className="border-t border-amber-300 dark:border-amber-800/40">
                                     <button
                                       type="button"
                                       onClick={toggleExpand}
-                                      className="w-full flex items-center gap-2 px-4 py-2.5 bg-amber-50 dark:bg-amber-900/25 hover:bg-amber-100/80 dark:hover:bg-amber-900/40 transition-colors text-xs font-medium text-amber-700 dark:text-amber-400 rounded-b-2xl"
+                                      className="w-full flex items-center gap-2 px-4 py-2.5 bg-amber-100 dark:bg-amber-900/25 hover:bg-amber-200/80 dark:hover:bg-amber-900/40 transition-colors text-xs font-semibold text-amber-800 dark:text-amber-400 rounded-b-2xl"
                                       style={{ borderRadius: isExpanded ? "0" : undefined }}
                                     >
                                       <AlertTriangle className="size-3 flex-shrink-0" />
@@ -774,7 +774,7 @@ export function ResumenImporter({ ccCards, members, organizations, currentUserId
                                       <ChevronDown className={`size-3 ml-auto transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} />
                                     </button>
                                     {isExpanded && (
-                                      <div className="px-4 pb-4 pt-2 bg-amber-50 dark:bg-amber-900/25 space-y-3 rounded-b-2xl">
+                                      <div className="px-4 pb-4 pt-2 bg-amber-100 dark:bg-amber-900/25 space-y-3 rounded-b-2xl">
                                         {/* Side-by-side comparison */}
                                         <div className="grid grid-cols-2 gap-2">
                                           <div className="rounded-xl bg-white/80 dark:bg-muted/30 border border-amber-100 dark:border-amber-800/40 p-3 space-y-1">
