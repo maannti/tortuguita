@@ -675,7 +675,7 @@ export function TarjetasWalletView({ cards, monthLabel, monthKey, prevMonth, nex
           <CreditCard className="size-4" style={{ color: isDark ? "#b0c4ff" : "#3a4a8a" }} />
           <span className="text-sm" style={{ color: isDark ? "#b0c4ff" : "#2a3570" }}><em className="italic font-normal">gestionar</em> <strong className="font-bold not-italic">tarjetas</strong></span>
         </Link>
-        <Link href="/resumen"
+        <Link href="/bills/import"
           className="flex-1 flex items-center justify-center gap-2 px-3.5 py-3 rounded-2xl active:opacity-80 active:scale-[0.99] transition-all"
           style={{ background: isDark ? "#0e2a1a" : "#D8EFE3" }}
         >

@@ -152,7 +152,7 @@ export function OnboardingChecklist({ data }: { data: ChecklistData }) {
             done={hasImportedBill}
             label="Importá un resumen o CSV"
             description="Con una tarjeta configurada podés traer todos los movimientos de una."
-            href="/resumen"
+            href="/bills/import"
             optional
           />
         </div>
