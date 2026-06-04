@@ -117,8 +117,17 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
   const [error, setError] = useState<string | null>(null)
   const [updateRecurring, setUpdateRecurring] = useState(false)
   const [label, setLabel] = useState(initialData?.label ?? "")
-  const [amountDisplay, setAmountDisplay] = useState(initialData ? formatDisplay(initialData.amount) : "")
-  const [amountUSDDisplay, setAmountUSDDisplay] = useState(initialData?.amountUSD ? String(initialData.amountUSD) : "")
+  // Currency toggle: default ARS. If a bill already has a USD value, edit in USD.
+  const [currency, setCurrency] = useState<"ARS" | "USD">(initialData?.amountUSD ? "USD" : "ARS")
+  const [amountDisplay, setAmountDisplay] = useState(
+    initialData ? formatDisplay(initialData.amountUSD ? initialData.amountUSD : initialData.amount) : ""
+  )
+  // ARS per USD — reconstructed in edit mode when both values exist
+  const [usdRate, setUsdRate] = useState(
+    initialData?.amountUSD && initialData.amount
+      ? formatDisplay(Math.round((initialData.amount / initialData.amountUSD) * 100) / 100)
+      : ""
+  )
   const [notes, setNotes] = useState(initialData?.notes ?? "")
   // For non-CC: categoryId maps to billTypeId. For CC: categoryId maps to the new categoryId field.
   const [categoryId, setCategoryId] = useState(
@@ -157,7 +166,8 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
       const d = JSON.parse(raw)
       if (d.label)             setLabel(d.label)
       if (d.amountDisplay)     setAmountDisplay(d.amountDisplay)
-      if (d.amountUSDDisplay)  setAmountUSDDisplay(d.amountUSDDisplay)
+      if (d.currency)          setCurrency(d.currency)
+      if (d.usdRate)           setUsdRate(d.usdRate)
       if (d.notes)             setNotes(d.notes)
       if (d.categoryId)    setCategoryId(d.categoryId)
       if (d.paymentMethod) setPaymentMethod(d.paymentMethod)
@@ -176,16 +186,30 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
     if (isEdit) return
     try {
       sessionStorage.setItem(DRAFT_KEY, JSON.stringify({
-        label, amountDisplay, amountUSDDisplay, notes, categoryId, paymentMethod, cardId,
+        label, amountDisplay, currency, usdRate, notes, categoryId, paymentMethod, cardId,
         installments, splitMode, soloMemberId, paymentDate, selectedOrgId,
       }))
     } catch {}
-  }, [label, amountDisplay, amountUSDDisplay, notes, categoryId, paymentMethod, cardId, installments, splitMode, soloMemberId, paymentDate, selectedOrgId, isEdit])
+  }, [label, amountDisplay, currency, usdRate, notes, categoryId, paymentMethod, cardId, installments, splitMode, soloMemberId, paymentDate, selectedOrgId, isEdit])
   // ─────────────────────────────────────────────────────────────────────────
 
   const isCreditCard = paymentMethod === "credit"
-  const amount = parseAmount(amountDisplay)
+  // rawAmount = value typed in the selected currency; amount is always ARS (for budget math)
+  const rawAmount = parseAmount(amountDisplay)
+  const usdRateValue = parseAmount(usdRate)
+  const amount = currency === "USD" ? Math.round(rawAmount * usdRateValue * 100) / 100 : rawAmount
+  const amountUSDValue = currency === "USD" ? rawAmount : null
   const amountPerInstallment = installments > 1 ? amount / installments : amount
+
+  // Strip thousand-dots, keep digits + one comma, re-format integer part
+  function handleAmountChange(value: string) {
+    const stripped = value.replace(/\./g, "").replace(/[^0-9,]/g, "")
+    const commaIdx = stripped.indexOf(",")
+    const intPart = commaIdx >= 0 ? stripped.slice(0, commaIdx) : stripped
+    const decPart = commaIdx >= 0 ? stripped.slice(commaIdx + 1) : null
+    const formattedInt = intPart ? intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ".") : ""
+    setAmountDisplay(decPart !== null ? `${formattedInt},${decPart}` : formattedInt)
+  }
   const totalIncome = Object.values(memberIncomes).reduce((s, v) => s + v, 0)
   const hasIncomes = totalIncome > 0
 
@@ -246,7 +270,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
         body: JSON.stringify({
           label: label.trim(),
           amount,
-          amountUSD: amountUSDDisplay ? parseFloat(amountUSDDisplay.replace(",", ".")) || null : null,
+          amountUSD: amountUSDValue,
           paymentDate: new Date(paymentDate + "T12:00:00").toISOString(),
           billTypeId,
           categoryId: isCreditCard ? (categoryId || null) : null,
@@ -314,9 +338,10 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
 
   // Build a hint about what's missing when canSave is false
   const saveHint = (() => {
-    if (!label.trim() && amount <= 0) return "Completá la descripción y el monto para guardar"
+    if (!label.trim() && rawAmount <= 0) return "Completá la descripción y el monto para guardar"
+    if (rawAmount <= 0) return "Ingresá el monto para guardar"
+    if (currency === "USD" && usdRateValue <= 0) return "Ingresá la cotización del dólar"
     if (!label.trim()) return "Ingresá una descripción para guardar"
-    if (amount <= 0) return "Ingresá el monto para guardar"
     if (!paymentMethod) return "Seleccioná un medio de pago"
     if (isCreditCard && !cardId) return "Seleccioná una tarjeta"
     if (!isCreditCard && !categoryId) return "Seleccioná una categoría"
@@ -342,6 +367,75 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
           {!canSave && !error && saveHint && (
             <p className="text-xs text-muted-foreground text-center px-2">{saveHint}</p>
           )}
+
+          {/* ── Monto (hero) ── */}
+          <div className="pt-2 pb-1">
+            {/* Currency toggle */}
+            <div className="flex justify-center mb-4">
+              <div className="inline-flex rounded-full bg-muted/60 p-0.5">
+                {(["ARS", "USD"] as const).map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => { if (c !== currency) { setCurrency(c); setAmountDisplay("") } }}
+                    className={`px-4 py-1 rounded-full text-xs font-semibold transition-all ${
+                      currency === c ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"
+                    }`}
+                  >
+                    {c === "ARS" ? "Pesos" : "Dólares"}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {/* Big serif amount */}
+            <div className="flex items-baseline justify-center gap-1.5">
+              <span className="text-2xl text-muted-foreground" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
+                {currency === "ARS" ? "$" : "U$S"}
+              </span>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={amountDisplay}
+                onChange={(e) => handleAmountChange(e.target.value)}
+                onBlur={() => { const n = parseAmount(amountDisplay); if (n > 0) setAmountDisplay(formatDisplay(n)) }}
+                placeholder="0"
+                autoFocus={!isEdit}
+                className="w-full max-w-[15rem] bg-transparent text-center text-5xl font-semibold focus:outline-none placeholder:text-muted-foreground/25"
+                style={{ fontFamily: "var(--font-fraunces, serif)" }}
+              />
+            </div>
+            {/* USD → exchange rate (only when Dólares) */}
+            {currency === "USD" && (
+              <div className="mt-4 flex items-center justify-center gap-2">
+                <span className="text-xs text-muted-foreground">Cotización</span>
+                <div className="flex items-center gap-1 rounded-lg border bg-background px-2.5 py-1.5">
+                  <span className="text-muted-foreground text-xs">$</span>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={usdRate}
+                    onChange={(e) => {
+                      const stripped = e.target.value.replace(/\./g, "").replace(/[^0-9,]/g, "")
+                      const commaIdx = stripped.indexOf(",")
+                      const intPart = commaIdx >= 0 ? stripped.slice(0, commaIdx) : stripped
+                      const decPart = commaIdx >= 0 ? stripped.slice(commaIdx + 1) : null
+                      const formattedInt = intPart ? intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ".") : ""
+                      setUsdRate(decPart !== null ? `${formattedInt},${decPart}` : formattedInt)
+                    }}
+                    placeholder="1.000"
+                    className="w-20 bg-transparent text-sm focus:outline-none"
+                  />
+                </div>
+                {amount > 0 && <span className="text-xs text-muted-foreground">= {formatARS(amount)}</span>}
+              </div>
+            )}
+          </div>
+
+          {/* Título del gasto */}
+          <div className="space-y-1.5">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Título del gasto</p>
+            <input type="text" value={label} onChange={(e) => setLabel(e.target.value)} placeholder="ej. Supermercado, alquiler, nafta…" className="w-full rounded-xl border bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
+          </div>
 
           {/* Espacio — oculto para CC (el espacio se deriva de la categoría elegida) */}
           {organizations.length > 1 && !isCreditCard && (
@@ -378,38 +472,6 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
             </div>
           )}
 
-          {/* Título del gasto */}
-          <div className="space-y-1.5">
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Título del gasto</p>
-            <input type="text" value={label} onChange={(e) => setLabel(e.target.value)} placeholder="ej. Tele UWU, vinilos, alquiler..." className="w-full rounded-xl border bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" autoFocus={!isEdit} />
-          </div>
-
-          {/* Monto */}
-          <div className="space-y-1.5">
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Monto total</p>
-            <div className="flex items-center gap-2 rounded-xl border bg-background px-4 py-3 focus-within:ring-2 focus-within:ring-primary/30">
-              <span className="text-muted-foreground font-medium">$</span>
-              <input
-                type="text"
-                inputMode="decimal"
-                value={amountDisplay}
-                onChange={(e) => {
-                  // Strip existing thousand-dots, keep only digits and one comma
-                  const stripped = e.target.value.replace(/\./g, "").replace(/[^0-9,]/g, "")
-                  const commaIdx = stripped.indexOf(",")
-                  const intPart = commaIdx >= 0 ? stripped.slice(0, commaIdx) : stripped
-                  const decPart = commaIdx >= 0 ? stripped.slice(commaIdx + 1) : null
-                  // Format integer with thousand dots
-                  const formattedInt = intPart ? intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ".") : ""
-                  setAmountDisplay(decPart !== null ? `${formattedInt},${decPart}` : formattedInt)
-                }}
-                onBlur={() => { const n = parseAmount(amountDisplay); if (n > 0) setAmountDisplay(formatDisplay(n)) }}
-                placeholder="0"
-                className="flex-1 bg-transparent text-sm focus:outline-none"
-              />
-            </div>
-          </div>
-
           {/* "Aplicar de acá en adelante" — solo al editar bills generados por recurrentes */}
           {isEdit && initialData?.recurringBillId && (
             <button
@@ -430,33 +492,12 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
                 <p className="text-sm font-medium">Actualizar también los meses siguientes</p>
                 <p className="text-xs text-muted-foreground">
                   {updateRecurring
-                    ? `El recurrente queda en ${formatARS(parseAmount(amountDisplay) || initialData.amount)}/mes`
+                    ? `El recurrente queda en ${formatARS(amount || initialData.amount)}/mes`
                     : "Solo cambia este mes"}
                 </p>
               </div>
             </button>
           )}
-
-          {/* Monto en USD — opcional, visible siempre */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Monto en USD <span className="normal-case font-normal">(opcional)</span>
-            </label>
-            <div className="flex items-center gap-2 rounded-xl border bg-background px-4 py-3 focus-within:ring-2 focus-within:ring-primary/30">
-              <span className="text-muted-foreground font-medium text-sm">U$S</span>
-              <input
-                type="text"
-                inputMode="decimal"
-                value={amountUSDDisplay}
-                onChange={(e) => {
-                  const val = e.target.value.replace(/[^0-9.,]/g, "").replace(",", ".")
-                  setAmountUSDDisplay(val)
-                }}
-                placeholder="0.00"
-                className="flex-1 bg-transparent text-sm focus:outline-none"
-              />
-            </div>
-          </div>
 
           {/* Categoría — siempre visible cuando no es crédito */}
           {!isCreditCard && (
