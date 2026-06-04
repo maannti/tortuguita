@@ -2,7 +2,6 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { ChevronLeft, Plus, Check } from "lucide-react"
-import { ColorInputWithPicker } from "@/components/ui/color-picker-dialog"
 import { EmojiPickerSheet } from "@/components/ui/emoji-picker-sheet"
 
 interface Member { id: string; name: string | null; email: string | null }
@@ -41,38 +40,151 @@ const ALL_EMOJIS = [...EMOJI_BASICS, ...EMOJI_MORE]
 // without the user ever having to pick one manually.
 const DEFAULT_EMOJI = "🏷️"
 
-// Keyword → emoji/color, used to auto-suggest an icon from the category name.
-// Order matters: first match wins, so put more specific terms first.
-const EMOJI_KEYWORDS: { words: string[]; emoji: string; color: string }[] = [
-  { words: ["nafta", "combustible", "gasolina", "ypf", "shell", "auto", "vehiculo", "vehículo", "rodado", "rodados", "movilidad", "patente", "cochera", "peaje", "seguro"], emoji: "🚗", color: "#7B8FA1" },
-  { words: ["super", "supermercado", "mercado", "almacen", "verduler", "carnicer", "comida", "alimento", "compras"], emoji: "🛒", color: "#7B9E87" },
-  { words: ["resto", "restaurante", "bar", "salida", "cafe", "café", "delivery", "pedidos", "rappi", "pedidosya"], emoji: "🍔", color: "#C4956A" },
-  { words: ["alquiler", "renta", "expensas", "hogar", "casa", "depto", "departamento"], emoji: "🏠", color: "#9D8189" },
-  { words: ["luz", "electricidad", "gas", "agua", "servicio", "edenor", "edesur", "metrogas"], emoji: "⚡", color: "#C4A24D" },
-  { words: ["internet", "wifi", "fibertel", "telecentro", "telefono", "celular", "movil", "claro", "personal", "movistar"], emoji: "📱", color: "#7B8FA1" },
-  { words: ["salud", "medico", "médic", "farmacia", "remedio", "obra social", "prepaga", "osde", "swiss"], emoji: "💊", color: "#B08080" },
-  { words: ["educacion", "educación", "colegio", "escuela", "curso", "universidad", "facultad", "estudio"], emoji: "🎓", color: "#5B7BA8" },
-  { words: ["viaje", "vuelo", "avion", "avión", "hotel", "vacacion", "vacación", "turismo"], emoji: "✈️", color: "#9B7EC8" },
-  { words: ["gym", "gimnasio", "deporte", "fitness", "entrenamiento"], emoji: "💪", color: "#9D8189" },
-  { words: ["cine", "pelicula", "película", "netflix", "disney", "hbo", "streaming", "suscrip"], emoji: "🎬", color: "#9B7EC8" },
-  { words: ["spotify", "musica", "música", "youtube"], emoji: "🎵", color: "#9B7EC8" },
-  { words: ["ropa", "indumentaria", "vestiment", "zapatilla", "calzado"], emoji: "👔", color: "#B08080" },
-  { words: ["mascota", "perro", "gato", "veterinaria", "vet"], emoji: "🐾", color: "#C4956A" },
-  { words: ["peluqueria", "peluquería", "barberia", "barbería", "belleza", "estetica", "estética"], emoji: "💈", color: "#B08080" },
-  { words: ["juego", "gaming", "playstation", "xbox", "steam"], emoji: "🎮", color: "#9B7EC8" },
-  { words: ["libro", "libreria", "librería", "lectura"], emoji: "📚", color: "#5B7BA8" },
-  { words: ["limpieza", "limpiez"], emoji: "🧹", color: "#7B9E87" },
-  { words: ["transporte", "sube", "colectivo", "tren", "subte", "uber", "taxi", "cabify"], emoji: "🚆", color: "#7B8FA1" },
-  { words: ["vino", "trago", "bebida", "alcohol", "cerveza"], emoji: "🍷", color: "#C4956A" },
-  { words: ["regalo", "cumple", "cumpleaños", "navidad"], emoji: "🎁", color: "#B08080" },
-  { words: ["ahorro", "inversion", "inversión", "plata", "dinero", "banco"], emoji: "💰", color: "#C4A24D" },
+// Soft pastel palette, on-brand. The category color is derived from the emoji
+// (deterministic) so the user never has to pick one — always pastel, with variety.
+const PASTEL_PALETTE = [
+  "#F4ACB7", "#FFCAD4", "#FFE5D9", "#D8E2DC", "#BBD0E5", "#C9E4CA",
+  "#FCE1A8", "#E0C3FC", "#FFD6A5", "#B5EAD7", "#C7CEEA", "#FFB7B2",
 ]
 
+function pastelForEmoji(emoji: string): string {
+  if (!emoji) return "#D8E2DC"
+  let h = 0
+  for (const ch of emoji) h = (h * 31 + (ch.codePointAt(0) ?? 0)) >>> 0
+  return PASTEL_PALETTE[h % PASTEL_PALETTE.length]
+}
+
+// Keyword → emoji/color, used to auto-suggest an icon from the category name.
+// Keywords are single words (no spaces), accent-insensitive. Order matters:
+// first match wins, so put more specific groups before generic ones.
+const EMOJI_KEYWORDS: { words: string[]; emoji: string; color: string }[] = [
+  // Vehículo / transporte propio
+  { words: ["auto", "autos", "vehiculo", "vehiculos", "rodado", "rodados", "movilidad", "coche", "camioneta", "moto", "nafta", "combustible", "gasolina", "gnc", "ypf", "axion", "shell", "puma", "cochera", "garage", "garaje", "estacionamiento", "peaje", "patente", "vtv", "gomeria", "lavadero", "taller", "mecanico", "repuesto", "repuestos", "neumatico", "cubierta", "cubiertas"], emoji: "🚗", color: "#7B8FA1" },
+  // Transporte público / apps
+  { words: ["transporte", "sube", "colectivo", "bondi", "tren", "subte", "metro", "ferrocarril", "uber", "taxi", "remis", "cabify", "didi", "pasaje", "boleto", "viaticos"], emoji: "🚆", color: "#7B8FA1" },
+  // Seguros
+  { words: ["seguro", "seguros", "poliza", "polizas", "aseguradora", "art"], emoji: "🛡️", color: "#5B7BA8" },
+  // Súper / mercado
+  { words: ["super", "supermercado", "supermercados", "mercado", "almacen", "almacenes", "autoservicio", "mayorista", "coto", "carrefour", "jumbo", "vea", "chino", "despensa", "dietetica", "compras", "mandados", "viveres", "provista"], emoji: "🛒", color: "#7B9E87" },
+  // Verdulería / frutas
+  { words: ["verduleria", "verdura", "verduras", "fruta", "frutas", "fruteria", "granja", "huerta"], emoji: "🥦", color: "#7B9E87" },
+  // Carnicería
+  { words: ["carniceria", "carne", "carnes", "pollo", "pollos", "pescaderia", "pescado"], emoji: "🥩", color: "#C4956A" },
+  // Fiambrería
+  { words: ["fiambreria", "fiambre", "fiambres"], emoji: "🧀", color: "#C4A24D" },
+  // Panadería
+  { words: ["panaderia", "pan", "factura", "facturas", "medialuna", "medialunas", "reposteria"], emoji: "🥖", color: "#C4956A" },
+  // Kiosco / golosinas
+  { words: ["kiosco", "kiosko", "maxikiosco", "golosina", "golosinas", "caramelo", "chocolate", "snack", "snacks"], emoji: "🍬", color: "#C4956A" },
+  // Comida / delivery / resto
+  { words: ["comida", "comidas", "vianda", "viandas", "almuerzo", "cena", "delivery", "pedido", "pedidos", "rappi", "pedidosya", "mcdonalds", "burger", "hamburguesa", "restaurante", "resto", "fastfood"], emoji: "🍔", color: "#C4956A" },
+  { words: ["pizza", "pizzeria", "empanada", "empanadas"], emoji: "🍕", color: "#C4956A" },
+  { words: ["sushi", "japonesa"], emoji: "🍣", color: "#B08080" },
+  { words: ["helado", "heladeria", "postre", "postres", "torta", "tortas"], emoji: "🍰", color: "#C4956A" },
+  // Café / desayuno
+  { words: ["cafe", "cafeteria", "desayuno", "merienda", "starbucks"], emoji: "☕", color: "#C4956A" },
+  { words: ["mate", "yerba"], emoji: "🧉", color: "#7B9E87" },
+  // Bebidas / salidas nocturnas
+  { words: ["vino", "vinos", "vinoteca", "trago", "tragos", "bebida", "bebidas", "alcohol", "fernet", "birra", "cerveza", "cervezas", "previa", "boliche", "joda", "bar"], emoji: "🍷", color: "#C4956A" },
+  // Alquiler / vivienda
+  { words: ["alquiler", "renta", "expensas", "hogar", "casa", "vivienda", "depto", "departamento", "inmobiliaria", "garantia", "abl"], emoji: "🏠", color: "#9D8189" },
+  // Muebles / deco
+  { words: ["mueble", "muebles", "deco", "decoracion", "sillon", "colchon", "easy", "sodimac"], emoji: "🛋️", color: "#9D8189" },
+  // Ferretería / arreglos / oficios
+  { words: ["ferreteria", "herramienta", "herramientas", "arreglo", "arreglos", "refaccion", "refacciones", "plomero", "plomeria", "electricista", "gasista", "albañil", "pintura", "pintor", "mantenimiento", "obra"], emoji: "🔧", color: "#7B8FA1" },
+  // Limpieza
+  { words: ["limpieza", "limpiar", "lavandina", "detergente", "escoba", "mucama", "empleada", "articulos"], emoji: "🧹", color: "#7B9E87" },
+  // Lavandería
+  { words: ["lavanderia", "tintoreria"], emoji: "🧺", color: "#7B8FA1" },
+  // Luz
+  { words: ["luz", "electricidad", "edenor", "edesur", "epec", "edelap"], emoji: "⚡", color: "#C4A24D" },
+  // Gas
+  { words: ["gas", "garrafa", "metrogas", "naturgy", "camuzzi"], emoji: "🔥", color: "#C4956A" },
+  // Agua
+  { words: ["agua", "aysa", "absa", "aguas"], emoji: "💧", color: "#5B7BA8" },
+  // Internet / cable / TV
+  { words: ["internet", "wifi", "fibertel", "telecentro", "flow", "cable", "directv", "tv", "television", "telefonia"], emoji: "📡", color: "#7B8FA1" },
+  // Celular / teléfono
+  { words: ["celular", "celu", "telefono", "movil", "claro", "movistar", "personal", "tuenti", "recarga"], emoji: "📱", color: "#7B8FA1" },
+  // Tecnología / electrónica / suscripciones digitales
+  { words: ["tecnologia", "electronica", "compu", "computadora", "notebook", "pc", "gadget", "monitor", "teclado", "software", "hosting", "dominio", "nube", "icloud"], emoji: "💻", color: "#5B7BA8" },
+  // Psicología
+  { words: ["psicologo", "psicologa", "psicologia", "terapia", "psiquiatra"], emoji: "🧠", color: "#B08080" },
+  // Dentista
+  { words: ["dentista", "odontologo", "odontologia", "ortodoncia", "muela"], emoji: "🦷", color: "#5B7BA8" },
+  // Salud / farmacia
+  { words: ["salud", "farmacia", "remedio", "remedios", "medicamento", "medicamentos", "medico", "doctor", "consulta", "clinica", "hospital", "sanatorio", "analisis", "laboratorio", "kinesiologia", "oculista", "oftalmologo", "prepaga", "osde", "galeno", "medife", "ioma", "pami"], emoji: "💊", color: "#B08080" },
+  // Educación
+  { words: ["educacion", "colegio", "escuela", "matricula", "universidad", "facultad", "instituto", "curso", "cursos", "capacitacion", "posgrado", "maestria", "ingles", "idiomas", "apuntes", "fotocopias", "utiles"], emoji: "🎓", color: "#5B7BA8" },
+  // Niños / bebé
+  { words: ["bebe", "bebes", "niño", "niños", "hijo", "hijos", "pañal", "pañales", "jardin", "guarderia", "juguete", "juguetes", "jugueteria"], emoji: "🧸", color: "#C4956A" },
+  // Viajes
+  { words: ["viaje", "viajes", "vacaciones", "turismo", "vuelo", "vuelos", "pasajes", "aerolineas", "hotel", "hospedaje", "hosteria", "airbnb", "excursion", "europa", "brasil", "exterior"], emoji: "✈️", color: "#9B7EC8" },
+  { words: ["playa", "costa", "mar"], emoji: "🏖️", color: "#9B7EC8" },
+  // Ropa / indumentaria
+  { words: ["ropa", "indumentaria", "vestimenta", "remera", "pantalon", "jean", "campera", "abrigo", "buzo", "vestido", "calzado", "zapatilla", "zapatillas", "zapato", "zapatos", "zapateria", "cartera", "accesorios", "lenceria", "medias"], emoji: "👕", color: "#B08080" },
+  // Peluquería / belleza
+  { words: ["peluqueria", "peluquero", "barberia", "barber", "corte", "belleza", "estetica", "cosmetica", "maquillaje", "manicura", "pedicura", "depilacion", "uñas", "spa", "perfumeria", "perfume"], emoji: "💈", color: "#B08080" },
+  // Mascotas
+  { words: ["mascota", "mascotas", "perro", "perros", "gato", "gatos", "veterinaria", "veterinario", "vet", "balanceado", "petshop", "pet"], emoji: "🐶", color: "#C4956A" },
+  // Gaming
+  { words: ["juego", "juegos", "gaming", "gamer", "playstation", "xbox", "nintendo", "steam", "consola", "videojuego", "videojuegos"], emoji: "🎮", color: "#9B7EC8" },
+  // Cine / streaming
+  { words: ["cine", "pelicula", "peliculas", "netflix", "disney", "hbo", "max", "star", "paramount", "prime", "streaming", "entretenimiento"], emoji: "🎬", color: "#9B7EC8" },
+  // Música
+  { words: ["musica", "spotify", "deezer", "tidal", "youtube"], emoji: "🎵", color: "#9B7EC8" },
+  // Entradas / eventos
+  { words: ["entrada", "entradas", "evento", "eventos", "ticket", "show", "teatro", "recital", "recitales", "concierto"], emoji: "🎟️", color: "#9B7EC8" },
+  // Deporte / gym
+  { words: ["gym", "gimnasio", "fitness", "entrenamiento", "deporte", "deportes", "padel", "paddle", "futbol", "tenis", "natacion", "pileta", "running", "crossfit", "pilates", "yoga", "cancha", "club"], emoji: "💪", color: "#9D8189" },
+  // Arte / hobbies
+  { words: ["arte", "dibujo", "manualidades", "hobby", "hobbies"], emoji: "🎨", color: "#9B7EC8" },
+  // Libros
+  { words: ["libro", "libros", "libreria", "lectura", "kindle"], emoji: "📚", color: "#5B7BA8" },
+  // Cigarrillos
+  { words: ["cigarrillo", "cigarrillos", "tabaco", "fumar", "vape", "marlboro"], emoji: "🚬", color: "#9D8189" },
+  // Regalos
+  { words: ["regalo", "regalos", "cumple", "cumpleaños", "navidad", "presente"], emoji: "🎁", color: "#B08080" },
+  // Fiesta / eventos sociales
+  { words: ["fiesta", "festejo", "casamiento", "boda", "despedida"], emoji: "🎉", color: "#9B7EC8" },
+  // Donaciones / iglesia
+  { words: ["donacion", "donaciones", "caridad", "iglesia", "diezmo", "ong"], emoji: "❤️", color: "#B08080" },
+  // Impuestos
+  { words: ["impuesto", "impuestos", "afip", "monotributo", "arba", "rentas", "municipal", "inmobiliario", "tasa", "tasas", "ganancias", "sellos", "multa", "multas"], emoji: "🏛️", color: "#9D8189" },
+  // Banco / finanzas
+  { words: ["banco", "comision", "comisiones", "prestamo", "prestamos", "interes", "intereses", "tarjeta", "resumen", "mercadopago", "uala", "brubank", "transferencia"], emoji: "🏦", color: "#7B8FA1" },
+  // Ahorro / inversión
+  { words: ["ahorro", "ahorros", "inversion", "inversiones", "dolar", "dolares", "cripto", "bitcoin", "acciones", "fci", "plazo"], emoji: "💰", color: "#C4A24D" },
+  // Sueldo / ingresos
+  { words: ["sueldo", "salario", "ingreso", "ingresos", "honorarios", "freelance", "aguinaldo"], emoji: "💵", color: "#7B9E87" },
+]
+
+// Accent/diacritic-insensitive lowercase
+function normalizeText(s: string): string {
+  return s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "")
+}
+
+// Whole-word match: exact for short keywords; prefix-tolerant (plurals, etc.)
+// for keywords/tokens of length >= 4. Avoids substring false positives like
+// "europa"⊃"ropa" or "entrenamiento"⊃"tren".
+function tokenMatches(token: string, keyword: string): boolean {
+  if (token === keyword) return true
+  if (Math.min(token.length, keyword.length) < 4) return false
+  return token.startsWith(keyword) || keyword.startsWith(token)
+}
+
 function matchEmojiFromName(name: string): { emoji: string; color: string } | null {
-  const n = name.toLowerCase().trim()
+  const n = normalizeText(name).trim()
   if (!n) return null
+  const tokens = n.split(/[^a-z0-9]+/).filter(Boolean)
+  if (tokens.length === 0) return null
   for (const entry of EMOJI_KEYWORDS) {
-    if (entry.words.some((w) => n.includes(w))) return { emoji: entry.emoji, color: entry.color }
+    for (const w of entry.words) {
+      const wn = normalizeText(w)
+      if (tokens.some((t) => tokenMatches(t, wn))) {
+        return { emoji: entry.emoji, color: entry.color }
+      }
+    }
   }
   return null
 }
@@ -124,27 +236,28 @@ export function CategoryFormV2({ mode, initialData, organizationId, spaceName, r
   const [selectedEmoji, setSelectedEmoji] = useState(initialIsPreset ? initialData!.icon! : "")
   const [customMode, setCustomMode] = useState(!!initialData?.icon && !initialIsPreset)
   const [customEmoji, setCustomEmoji] = useState(!initialIsPreset ? initialData?.icon || "" : "")
-  // Once the user picks an icon/color manually, stop auto-suggesting from the name.
+  // Once the user picks an icon manually, stop auto-suggesting from the name.
   const [emojiTouched, setEmojiTouched] = useState(mode === "edit" && !!initialData?.icon)
-  const [colorTouched, setColorTouched] = useState(mode === "edit" && !!initialData?.color)
   const [pickerOpen, setPickerOpen] = useState(false)
 
-  // Auto-suggest emoji + color from the typed name (until the user picks manually).
-  // Falls back to a default icon so a category always has one.
+  // Auto-suggest emoji from the typed name (until the user picks manually).
+  // Empty name → no emoji. Non-empty with no keyword match → default icon.
+  // Color is always derived from the emoji (pastel, on-brand).
   useEffect(() => {
     if (emojiTouched) return
-    const m = matchEmojiFromName(name)
-    setSelectedEmoji(m?.emoji ?? DEFAULT_EMOJI)
     setCustomMode(false)
     setCustomEmoji("")
-    if (m && !colorTouched) setColor(m.color)
-  }, [name, emojiTouched, colorTouched])
+    if (!name.trim()) { setSelectedEmoji(""); return }
+    const m = matchEmojiFromName(name)
+    const emoji = m?.emoji ?? DEFAULT_EMOJI
+    setSelectedEmoji(emoji)
+    setColor(pastelForEmoji(emoji))
+  }, [name, emojiTouched])
 
-  function pickEmoji(e: string, c: string) {
+  function pickEmoji(e: string) {
     setEmojiTouched(true)
-    setColorTouched(true)
     setSelectedEmoji(e)
-    setColor(c)
+    setColor(pastelForEmoji(e))
     setCustomMode(false)
     setCustomEmoji("")
   }
@@ -155,6 +268,7 @@ export function CategoryFormV2({ mode, initialData, organizationId, spaceName, r
     setSelectedEmoji("")
     setCustomMode(true)
     setCustomEmoji(e)
+    setColor(pastelForEmoji(e))
   }
 
   const displayEmoji = customMode ? customEmoji : selectedEmoji
@@ -199,7 +313,7 @@ export function CategoryFormV2({ mode, initialData, organizationId, spaceName, r
           className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
           <ChevronLeft className="size-4" />Volver
         </button>
-        <h1 className="text-base font-semibold" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
+        <h1 className="text-base font-semibold">
           {mode === "create" ? "Nueva categoría" : "Editar categoría"}
         </h1>
         <button type="submit" disabled={isLoading || !name.trim()}
@@ -231,7 +345,7 @@ export function CategoryFormV2({ mode, initialData, organizationId, spaceName, r
             </div>
             <div className="flex items-center gap-2 max-w-full px-4">
               {displayEmoji && <span className="text-xl leading-none">{displayEmoji}</span>}
-              <p className="text-xl font-semibold truncate" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
+              <p className={`text-xl font-semibold truncate ${name ? "" : "text-muted-foreground/50"}`} style={{ fontFamily: "var(--font-fraunces, serif)" }}>
                 {name || "Nombre de la categoría"}
               </p>
             </div>
@@ -254,7 +368,7 @@ export function CategoryFormV2({ mode, initialData, organizationId, spaceName, r
               {EMOJI_BASICS.map((p) => {
                 const selected = !customMode && selectedEmoji === p.emoji
                 return (
-                  <button key={p.emoji} type="button" onClick={() => pickEmoji(p.emoji, p.color)}
+                  <button key={p.emoji} type="button" onClick={() => pickEmoji(p.emoji)}
                     className={`h-14 w-14 shrink-0 rounded-2xl flex items-center justify-center text-2xl transition-all active:scale-90
                       ${selected ? "ring-2 ring-primary bg-primary/10" : "bg-muted/40 hover:bg-muted/70"}`}>
                     {p.emoji}
@@ -272,12 +386,6 @@ export function CategoryFormV2({ mode, initialData, organizationId, spaceName, r
               </button>
             </div>
             <p className="text-xs text-muted-foreground">Tocá <span className="font-medium">+</span> para elegir cualquier emoji.</p>
-          </div>
-
-          {/* Color */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Color</label>
-            <ColorInputWithPicker value={color} onChange={setColor} />
           </div>
 
           {/* Default assignments — only for shared spaces */}
