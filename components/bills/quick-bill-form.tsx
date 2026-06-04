@@ -352,22 +352,17 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
     return { type: "next", dueDate: formatShortDate(nextDue), closingDate: formatShortDate(nextClosing) }
   })()
 
-  // Build a hint about what's missing when canSave is false
-  const saveHint = (() => {
-    if (!label.trim() && rawAmount <= 0) return "Completá la descripción y el monto para guardar"
-    if (rawAmount <= 0) return "Ingresá el monto para guardar"
-    if (currency === "USD" && usdRateValue <= 0) return "Ingresá la cotización del dólar"
-    if (!label.trim()) return "Ingresá una descripción para guardar"
-    if (!paymentMethod) return "Seleccioná un medio de pago"
-    if (isCreditCard && !cardId) return "Seleccioná una tarjeta"
-    if (!isCreditCard && !categoryId) return "Seleccioná una categoría"
-    return null
-  })()
+  // Required-field marker for labels
+  const reqMark = <span className="text-primary"> *</span>
 
   // Shared modern field style — soft filled, rounded, subtle focus ring
   const fieldClass =
     "w-full rounded-2xl border border-border/40 bg-muted/30 px-4 py-3.5 text-sm transition-all placeholder:text-muted-foreground/50 focus:outline-none focus:bg-background focus:border-primary/40 focus:ring-2 focus:ring-primary/15"
   const labelClass = "text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+
+  // Amount hero scales down as the number grows so it never clips the prefix or edges
+  const amtChars = amountDisplay.length || 1
+  const amtFontPx = amtChars <= 6 ? 48 : amtChars <= 8 ? 40 : amtChars <= 10 ? 33 : amtChars <= 13 ? 27 : 22
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col min-h-[calc(100dvh-7rem)]">
@@ -385,9 +380,6 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
       <div className="flex-1 overflow-y-auto">
         <div className="px-4 py-5 pb-28 space-y-5">
           {error && <div className="rounded-xl bg-destructive/10 text-destructive text-sm px-4 py-3">{error}</div>}
-          {!canSave && !error && saveHint && (
-            <p className="text-xs text-muted-foreground text-center px-2">{saveHint}</p>
-          )}
 
           {/* ── Monto (hero) ── */}
           <div className="pt-1 pb-2">
@@ -408,9 +400,9 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
                 ))}
               </div>
             </div>
-            {/* Big serif amount with small prefix */}
-            <div className="flex items-baseline justify-center gap-1">
-              <span className="text-lg text-muted-foreground/60 font-medium" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
+            {/* Big serif amount — prefix + input scale together to fit any length */}
+            <div className="flex items-baseline justify-center gap-1 px-4">
+              <span className="text-muted-foreground/60 font-medium leading-none" style={{ fontFamily: "var(--font-fraunces, serif)", fontSize: Math.max(16, amtFontPx * 0.42) }}>
                 {currency === "ARS" ? "$" : "U$S"}
               </span>
               <input
@@ -421,8 +413,8 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
                 onBlur={() => { const n = parseAmount(amountDisplay); if (n > 0) setAmountDisplay(formatDisplay(n)) }}
                 placeholder="0"
                 autoFocus={!isEdit}
-                className="w-full max-w-[13rem] bg-transparent text-center text-5xl font-semibold focus:outline-none placeholder:text-muted-foreground/20"
-                style={{ fontFamily: "var(--font-fraunces, serif)" }}
+                className="bg-transparent text-center font-semibold focus:outline-none placeholder:text-muted-foreground/20"
+                style={{ fontFamily: "var(--font-fraunces, serif)", fontSize: amtFontPx, width: `${amtChars + 0.5}ch` }}
               />
             </div>
             {/* USD → exchange rate (only when Dólares) */}
@@ -459,7 +451,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
 
           {/* Título del gasto */}
           <div className="space-y-1.5">
-            <p className={labelClass}>Título del gasto</p>
+            <p className={labelClass}>Título del gasto{reqMark}</p>
             <input type="text" value={label} onChange={(e) => setLabel(e.target.value)} placeholder="ej. Supermercado, alquiler, nafta…" className={fieldClass} />
           </div>
 
@@ -528,7 +520,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
           {/* Categoría — siempre visible cuando no es crédito */}
           {!isCreditCard && (
             <div className="space-y-1.5">
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Categoría</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Categoría{reqMark}</p>
               {(() => {
                 const sel = allNormalCats.find(c => c.id === categoryId)
                 return (
@@ -556,7 +548,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
 
           {/* Medio de pago */}
           <div className="space-y-1.5">
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Medio de pago</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Medio de pago{reqMark}</p>
             <div className="grid grid-cols-2 gap-2">
               {PAYMENT_METHODS.map((pm) => (
                 <button key={pm.value} type="button"
@@ -592,7 +584,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
           {/* Tarjetas de crédito */}
           {isCreditCard && ccCards.length > 0 && (
             <div className="space-y-1.5">
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">¿Con qué tarjeta?</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">¿Con qué tarjeta?{reqMark}</p>
               <div className="grid grid-cols-2 gap-2">
                 {ccCards.map((cat) => (
                   <button key={cat.id} type="button" onClick={() => setCardId(cat.id)}
