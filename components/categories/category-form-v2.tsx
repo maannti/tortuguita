@@ -1,7 +1,7 @@
 "use client"
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
-import { ChevronLeft, Plus, Pencil, Check } from "lucide-react"
+import { ChevronLeft, Plus, Check } from "lucide-react"
 import { ColorInputWithPicker } from "@/components/ui/color-picker-dialog"
 
 interface Member { id: string; name: string | null; email: string | null }
@@ -35,6 +35,42 @@ const EMOJI_MORE = [
 ]
 
 const ALL_EMOJIS = [...EMOJI_BASICS, ...EMOJI_MORE]
+
+// Keyword → emoji/color, used to auto-suggest an icon from the category name.
+// Order matters: first match wins, so put more specific terms first.
+const EMOJI_KEYWORDS: { words: string[]; emoji: string; color: string }[] = [
+  { words: ["nafta", "combustible", "gasolina", "ypf", "shell", "auto", "vehiculo", "patente", "cochera", "peaje"], emoji: "🚗", color: "#7B8FA1" },
+  { words: ["super", "supermercado", "mercado", "almacen", "verduler", "carnicer", "comida", "alimento", "compras"], emoji: "🛒", color: "#7B9E87" },
+  { words: ["resto", "restaurante", "bar", "salida", "cafe", "café", "delivery", "pedidos", "rappi", "pedidosya"], emoji: "🍔", color: "#C4956A" },
+  { words: ["alquiler", "renta", "expensas", "hogar", "casa", "depto", "departamento"], emoji: "🏠", color: "#9D8189" },
+  { words: ["luz", "electricidad", "gas", "agua", "servicio", "edenor", "edesur", "metrogas"], emoji: "⚡", color: "#C4A24D" },
+  { words: ["internet", "wifi", "fibertel", "telecentro", "telefono", "celular", "movil", "claro", "personal", "movistar"], emoji: "📱", color: "#7B8FA1" },
+  { words: ["salud", "medico", "médic", "farmacia", "remedio", "obra social", "prepaga", "osde", "swiss"], emoji: "💊", color: "#B08080" },
+  { words: ["educacion", "educación", "colegio", "escuela", "curso", "universidad", "facultad", "estudio"], emoji: "🎓", color: "#5B7BA8" },
+  { words: ["viaje", "vuelo", "avion", "avión", "hotel", "vacacion", "vacación", "turismo"], emoji: "✈️", color: "#9B7EC8" },
+  { words: ["gym", "gimnasio", "deporte", "fitness", "entrenamiento"], emoji: "💪", color: "#9D8189" },
+  { words: ["cine", "pelicula", "película", "netflix", "disney", "hbo", "streaming", "suscrip"], emoji: "🎬", color: "#9B7EC8" },
+  { words: ["spotify", "musica", "música", "youtube"], emoji: "🎵", color: "#9B7EC8" },
+  { words: ["ropa", "indumentaria", "vestiment", "zapatilla", "calzado"], emoji: "👔", color: "#B08080" },
+  { words: ["mascota", "perro", "gato", "veterinaria", "vet"], emoji: "🐾", color: "#C4956A" },
+  { words: ["peluqueria", "peluquería", "barberia", "barbería", "belleza", "estetica", "estética"], emoji: "💈", color: "#B08080" },
+  { words: ["juego", "gaming", "playstation", "xbox", "steam"], emoji: "🎮", color: "#9B7EC8" },
+  { words: ["libro", "libreria", "librería", "lectura"], emoji: "📚", color: "#5B7BA8" },
+  { words: ["limpieza", "limpiez"], emoji: "🧹", color: "#7B9E87" },
+  { words: ["transporte", "sube", "colectivo", "tren", "subte", "uber", "taxi", "cabify"], emoji: "🚆", color: "#7B8FA1" },
+  { words: ["vino", "trago", "bebida", "alcohol", "cerveza"], emoji: "🍷", color: "#C4956A" },
+  { words: ["regalo", "cumple", "cumpleaños", "navidad"], emoji: "🎁", color: "#B08080" },
+  { words: ["ahorro", "inversion", "inversión", "plata", "dinero", "banco"], emoji: "💰", color: "#C4A24D" },
+]
+
+function matchEmojiFromName(name: string): { emoji: string; color: string } | null {
+  const n = name.toLowerCase().trim()
+  if (!n) return null
+  for (const entry of EMOJI_KEYWORDS) {
+    if (entry.words.some((w) => n.includes(w))) return { emoji: entry.emoji, color: entry.color }
+  }
+  return null
+}
 
 interface Props {
   mode: "create" | "edit"
@@ -84,8 +120,24 @@ export function CategoryFormV2({ mode, initialData, organizationId, spaceName, r
   const [selectedEmoji, setSelectedEmoji] = useState(initialIsPreset ? initialData!.icon! : "")
   const [customMode, setCustomMode] = useState(!!initialData?.icon && !initialIsPreset)
   const [customEmoji, setCustomEmoji] = useState(!initialIsPreset ? initialData?.icon || "" : "")
+  // Once the user picks an icon/color manually, stop auto-suggesting from the name.
+  const [emojiTouched, setEmojiTouched] = useState(mode === "edit" && !!initialData?.icon)
+  const [colorTouched, setColorTouched] = useState(mode === "edit" && !!initialData?.color)
+  const customInputRef = useRef<HTMLInputElement>(null)
+
+  // Auto-suggest emoji + color from the typed name (until the user picks manually)
+  useEffect(() => {
+    if (emojiTouched) return
+    const m = matchEmojiFromName(name)
+    setSelectedEmoji(m?.emoji ?? "")
+    setCustomMode(false)
+    setCustomEmoji("")
+    if (m && !colorTouched) setColor(m.color)
+  }, [name, emojiTouched, colorTouched])
 
   function pickEmoji(e: string, c: string) {
+    setEmojiTouched(true)
+    setColorTouched(true)
     setSelectedEmoji(e)
     setColor(c)
     setCustomMode(false)
@@ -93,13 +145,15 @@ export function CategoryFormV2({ mode, initialData, organizationId, spaceName, r
   }
 
   function openCustom() {
+    setEmojiTouched(true)
     setCustomMode(true)
     setSelectedEmoji("")
+    setCustomEmoji("")
+    // Open the keyboard right away (the emoji panel is one tap from here)
+    requestAnimationFrame(() => customInputRef.current?.focus())
   }
 
   const displayEmoji = customMode ? customEmoji : selectedEmoji
-
-  const visibleEmojis = expanded ? ALL_EMOJIS : EMOJI_BASICS
 
   async function handleSubmit(ev: React.FormEvent) {
     ev.preventDefault()
@@ -126,6 +180,11 @@ export function CategoryFormV2({ mode, initialData, organizationId, spaceName, r
   }
 
   const backPath = returnTo || (organizationId ? `/categories?spaceId=${organizationId}` : "/categories")
+
+  // Shared modern field style — soft filled, rounded, subtle focus ring
+  const fieldClass =
+    "w-full rounded-2xl border border-border/40 bg-muted/30 px-4 py-3.5 text-sm transition-all placeholder:text-muted-foreground/50 focus:outline-none focus:bg-background focus:border-primary/40 focus:ring-2 focus:ring-primary/15"
+  const labelClass = "text-xs font-semibold uppercase tracking-wider text-muted-foreground"
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col min-h-[calc(100dvh-3.5rem)]">
@@ -156,80 +215,74 @@ export function CategoryFormV2({ mode, initialData, organizationId, spaceName, r
             </div>
           )}
 
-          {/* Preview */}
-          <div className="glass rounded-2xl px-4 py-3.5 flex items-center gap-3">
-            <div className="size-11 rounded-2xl flex items-center justify-center flex-shrink-0"
+          {/* Preview — hero */}
+          <div className="pt-1 pb-2 flex flex-col items-center gap-3">
+            <div className="size-20 rounded-3xl flex items-center justify-center flex-shrink-0 transition-colors"
               style={{ backgroundColor: `${color}22` }}>
               {displayEmoji
-                ? <span className="text-2xl leading-none">{displayEmoji}</span>
-                : <span className="size-5 rounded-full" style={{ backgroundColor: color }} />
+                ? <span className="text-4xl leading-none">{displayEmoji}</span>
+                : <span className="size-7 rounded-full" style={{ backgroundColor: color }} />
               }
             </div>
-            <div>
-              <p className="text-sm font-semibold">{name || "Nombre de la categoría"}</p>
-              <p className="text-xs text-muted-foreground">Gasto fijo</p>
+            <div className="flex items-center gap-2 max-w-full px-4">
+              {displayEmoji && <span className="text-xl leading-none">{displayEmoji}</span>}
+              <p className="text-xl font-semibold truncate" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
+                {name || "Nombre de la categoría"}
+              </p>
             </div>
           </div>
 
           {/* Nombre */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Nombre</label>
+            <label className={labelClass}>Nombre</label>
             <input type="text" value={name} onChange={(e) => setName(e.target.value)} autoFocus
               placeholder="ej. Alquiler, Netflix, Gimnasio…"
-              className="w-full rounded-xl border bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
+              className={fieldClass} />
           </div>
 
           {/* Ícono */}
           <div className="space-y-2">
-            <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Ícono</label>
+            <label className={labelClass}>Ícono <span className="normal-case font-normal">(opcional · se sugiere solo)</span></label>
 
-            {/* Fila base: siempre grid de 6 columnas → alineado con los márgenes */}
-            <div className="grid grid-cols-6 gap-2">
-              {EMOJI_BASICS.map((p) => {
+            {/* Fixed-size tiles so they don't stretch on wide screens */}
+            <div className="flex flex-wrap gap-2">
+              {(expanded ? ALL_EMOJIS : EMOJI_BASICS).map((p) => {
                 const selected = !customMode && selectedEmoji === p.emoji
                 return (
                   <button key={p.emoji} type="button" onClick={() => pickEmoji(p.emoji, p.color)}
-                    className={`aspect-square rounded-2xl flex items-center justify-center text-2xl transition-all active:scale-90
-                      ${selected ? "ring-2 ring-primary bg-primary/8" : "bg-muted/50 hover:bg-muted"}`}>
+                    className={`h-14 w-14 shrink-0 rounded-2xl flex items-center justify-center text-2xl transition-all active:scale-90
+                      ${selected ? "ring-2 ring-primary bg-primary/10" : "bg-muted/40 hover:bg-muted/70"}`}>
                     {p.emoji}
                   </button>
                 )
               })}
 
-              {/* Expand */}
+              {/* Expand / collapse */}
               <button type="button" onClick={() => setExpanded(o => !o)}
-                className="aspect-square rounded-2xl flex items-center justify-center bg-muted/50 hover:bg-muted transition-all active:scale-90">
+                className="h-14 w-14 shrink-0 rounded-2xl flex items-center justify-center bg-muted/40 hover:bg-muted/70 transition-all active:scale-90">
                 <Plus className={`size-5 text-muted-foreground transition-transform ${expanded ? "rotate-45" : ""}`} />
               </button>
 
-              {/* Custom emoji */}
+              {/* Custom emoji — opens keyboard, then shows the chosen emoji here */}
               <button type="button" onClick={openCustom}
-                className={`aspect-square rounded-2xl flex items-center justify-center transition-all active:scale-90
-                  ${customMode ? "ring-2 ring-primary bg-primary/8" : "bg-muted/50 hover:bg-muted"}`}>
-                <Pencil className="size-4 text-muted-foreground" />
+                className={`h-14 w-14 shrink-0 rounded-2xl flex items-center justify-center transition-all active:scale-90
+                  ${customMode ? "ring-2 ring-primary bg-primary/10" : "bg-muted/40 hover:bg-muted/70"}`}>
+                {customEmoji
+                  ? <span className="text-2xl leading-none">{customEmoji}</span>
+                  : <span className="text-xl leading-none opacity-50">😀</span>}
               </button>
             </div>
 
-            {/* Emojis extra — misma grilla de 6 */}
-            {expanded && (
-              <div className="grid grid-cols-6 gap-2">
-                {EMOJI_MORE.map((p) => {
-                  const selected = !customMode && selectedEmoji === p.emoji
-                  return (
-                    <button key={p.emoji} type="button" onClick={() => pickEmoji(p.emoji, p.color)}
-                      className={`aspect-square rounded-2xl flex items-center justify-center text-2xl transition-all active:scale-90
-                        ${selected ? "ring-2 ring-primary bg-primary/8" : "bg-muted/50 hover:bg-muted"}`}>
-                      {p.emoji}
-                    </button>
-                  )
-                })}
-              </div>
-            )}
-
-            {customMode && (
-              <input type="text" value={customEmoji} onChange={(e) => setCustomEmoji(e.target.value)}
-                placeholder="Escribí cualquier emoji…"
-                className="w-full rounded-xl border bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
+            {/* Capture field — only while choosing a custom emoji; vanishes once picked */}
+            {customMode && !customEmoji && (
+              <input
+                ref={customInputRef}
+                type="text"
+                value={customEmoji}
+                onChange={(e) => { setCustomEmoji(e.target.value); setEmojiTouched(true) }}
+                placeholder="Tocá un emoji del teclado 😀"
+                className={fieldClass}
+              />
             )}
           </div>
 
@@ -249,20 +302,20 @@ export function CategoryFormV2({ mode, initialData, organizationId, spaceName, r
               <div className="grid gap-2">
                 {/* No preference */}
                 <button type="button" onClick={clearDefault}
-                  className={`flex items-center justify-between px-4 py-3 rounded-xl border-2 text-sm transition-all ${!defaultAssignments ? "border-primary bg-primary/5 font-medium" : "border-muted hover:border-muted-foreground/40"}`}>
+                  className={`flex items-center justify-between px-4 py-3.5 rounded-2xl border-2 text-sm transition-all ${!defaultAssignments ? "border-primary bg-primary/5 font-medium" : "border-border/40 hover:border-muted-foreground/40"}`}>
                   <span>Sin preferencia</span>
                   {!defaultAssignments && <Check className="size-4 text-primary" />}
                 </button>
                 {/* Equal split */}
                 <button type="button" onClick={setDefaultEqual}
-                  className={`flex items-center justify-between px-4 py-3 rounded-xl border-2 text-sm transition-all ${isDefaultEqual() ? "border-primary bg-primary/5 font-medium" : "border-muted hover:border-muted-foreground/40"}`}>
+                  className={`flex items-center justify-between px-4 py-3.5 rounded-2xl border-2 text-sm transition-all ${isDefaultEqual() ? "border-primary bg-primary/5 font-medium" : "border-border/40 hover:border-muted-foreground/40"}`}>
                   <span>Partes iguales</span>
                   {isDefaultEqual() && <Check className="size-4 text-primary" />}
                 </button>
                 {/* Per member */}
                 {members.map(m => (
                   <button key={m.id} type="button" onClick={() => setDefaultFor(m.id)}
-                    className={`flex items-center justify-between px-4 py-3 rounded-xl border-2 text-sm transition-all ${isDefaultFor(m.id) ? "border-primary bg-primary/5 font-medium" : "border-muted hover:border-muted-foreground/40"}`}>
+                    className={`flex items-center justify-between px-4 py-3.5 rounded-2xl border-2 text-sm transition-all ${isDefaultFor(m.id) ? "border-primary bg-primary/5 font-medium" : "border-border/40 hover:border-muted-foreground/40"}`}>
                     <span>
                       {m.name || m.email || "Usuario"}
                       {m.id === currentUserId && <span className="text-muted-foreground font-normal ml-1">(yo)</span>}
