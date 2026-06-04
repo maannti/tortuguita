@@ -238,6 +238,8 @@ export function CategoryFormV2({ mode, initialData, organizationId, spaceName, r
   const [customEmoji, setCustomEmoji] = useState(!initialIsPreset ? initialData?.icon || "" : "")
   // Once the user picks an icon manually, stop auto-suggesting from the name.
   const [emojiTouched, setEmojiTouched] = useState(mode === "edit" && !!initialData?.icon)
+  // Once the user picks a color swatch, stop deriving it from the emoji.
+  const [colorTouched, setColorTouched] = useState(mode === "edit" && !!initialData?.color)
   const [pickerOpen, setPickerOpen] = useState(false)
 
   // Auto-suggest emoji from the typed name (until the user picks manually).
@@ -251,13 +253,13 @@ export function CategoryFormV2({ mode, initialData, organizationId, spaceName, r
     const m = matchEmojiFromName(name)
     const emoji = m?.emoji ?? DEFAULT_EMOJI
     setSelectedEmoji(emoji)
-    setColor(pastelForEmoji(emoji))
-  }, [name, emojiTouched])
+    if (!colorTouched) setColor(pastelForEmoji(emoji))
+  }, [name, emojiTouched, colorTouched])
 
   function pickEmoji(e: string) {
     setEmojiTouched(true)
     setSelectedEmoji(e)
-    setColor(pastelForEmoji(e))
+    if (!colorTouched) setColor(pastelForEmoji(e))
     setCustomMode(false)
     setCustomEmoji("")
   }
@@ -268,7 +270,7 @@ export function CategoryFormV2({ mode, initialData, organizationId, spaceName, r
     setSelectedEmoji("")
     setCustomMode(true)
     setCustomEmoji(e)
-    setColor(pastelForEmoji(e))
+    if (!colorTouched) setColor(pastelForEmoji(e))
   }
 
   const displayEmoji = customMode ? customEmoji : selectedEmoji
@@ -386,6 +388,22 @@ export function CategoryFormV2({ mode, initialData, organizationId, spaceName, r
               </button>
             </div>
             <p className="text-xs text-muted-foreground">Tocá <span className="font-medium">+</span> para elegir cualquier emoji.</p>
+          </div>
+
+          {/* Color — pastel swatches (auto from emoji, o elegí uno) */}
+          <div className="space-y-2">
+            <label className={labelClass}>Color</label>
+            <div className="flex flex-wrap gap-2.5">
+              {PASTEL_PALETTE.map((c) => {
+                const isSel = color.toLowerCase() === c.toLowerCase()
+                return (
+                  <button key={c} type="button" aria-label={`Color ${c}`}
+                    onClick={() => { setColor(c); setColorTouched(true) }}
+                    className={`size-9 rounded-full transition-all active:scale-90 ${isSel ? "ring-2 ring-offset-2 ring-foreground/40" : "hover:scale-105"}`}
+                    style={{ backgroundColor: c }} />
+                )
+              })}
+            </div>
           </div>
 
           {/* Default assignments — only for shared spaces */}
