@@ -37,10 +37,14 @@ const EMOJI_MORE = [
 
 const ALL_EMOJIS = [...EMOJI_BASICS, ...EMOJI_MORE]
 
+// Fallback icon when the name doesn't match any keyword — keeps the icon mandatory
+// without the user ever having to pick one manually.
+const DEFAULT_EMOJI = "🏷️"
+
 // Keyword → emoji/color, used to auto-suggest an icon from the category name.
 // Order matters: first match wins, so put more specific terms first.
 const EMOJI_KEYWORDS: { words: string[]; emoji: string; color: string }[] = [
-  { words: ["nafta", "combustible", "gasolina", "ypf", "shell", "auto", "vehiculo", "patente", "cochera", "peaje"], emoji: "🚗", color: "#7B8FA1" },
+  { words: ["nafta", "combustible", "gasolina", "ypf", "shell", "auto", "vehiculo", "vehículo", "rodado", "rodados", "movilidad", "patente", "cochera", "peaje", "seguro"], emoji: "🚗", color: "#7B8FA1" },
   { words: ["super", "supermercado", "mercado", "almacen", "verduler", "carnicer", "comida", "alimento", "compras"], emoji: "🛒", color: "#7B9E87" },
   { words: ["resto", "restaurante", "bar", "salida", "cafe", "café", "delivery", "pedidos", "rappi", "pedidosya"], emoji: "🍔", color: "#C4956A" },
   { words: ["alquiler", "renta", "expensas", "hogar", "casa", "depto", "departamento"], emoji: "🏠", color: "#9D8189" },
@@ -125,11 +129,12 @@ export function CategoryFormV2({ mode, initialData, organizationId, spaceName, r
   const [colorTouched, setColorTouched] = useState(mode === "edit" && !!initialData?.color)
   const [pickerOpen, setPickerOpen] = useState(false)
 
-  // Auto-suggest emoji + color from the typed name (until the user picks manually)
+  // Auto-suggest emoji + color from the typed name (until the user picks manually).
+  // Falls back to a default icon so a category always has one.
   useEffect(() => {
     if (emojiTouched) return
     const m = matchEmojiFromName(name)
-    setSelectedEmoji(m?.emoji ?? "")
+    setSelectedEmoji(m?.emoji ?? DEFAULT_EMOJI)
     setCustomMode(false)
     setCustomEmoji("")
     if (m && !colorTouched) setColor(m.color)
@@ -157,8 +162,9 @@ export function CategoryFormV2({ mode, initialData, organizationId, spaceName, r
   async function handleSubmit(ev: React.FormEvent) {
     ev.preventDefault()
     if (!name.trim()) { setError("Ingresá un nombre"); return }
+    const finalEmoji = customMode ? customEmoji.trim() : selectedEmoji
+    if (!finalEmoji) { setError("Elegí un ícono"); return }
     setError(null); setIsLoading(true)
-    const finalEmoji = customMode ? customEmoji.trim() || null : selectedEmoji || null
     try {
       const url = mode === "create" ? "/api/bill-types" : `/api/bill-types/${initialData?.id}`
       const res = await fetch(url, {
@@ -241,7 +247,7 @@ export function CategoryFormV2({ mode, initialData, organizationId, spaceName, r
 
           {/* Ícono */}
           <div className="space-y-2">
-            <label className={labelClass}>Ícono <span className="normal-case font-normal">(opcional · se sugiere solo)</span></label>
+            <label className={labelClass}>Ícono <span className="normal-case font-normal">(se elige solo · podés cambiarlo)</span></label>
 
             {/* Fixed-size tiles so they don't stretch on wide screens */}
             <div className="flex flex-wrap gap-2">
