@@ -372,12 +372,12 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
   return (
     <form onSubmit={handleSubmit} className="flex flex-col min-h-[calc(100dvh-7rem)]">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b sticky top-0 z-10 bg-background/95 backdrop-blur-sm">
-        <button type="button" onClick={() => backHref ? push(backHref) : back()} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
+      <div className="grid grid-cols-[1fr_auto_1fr] items-center px-4 py-3 border-b sticky top-0 z-10 bg-background/95 backdrop-blur-sm">
+        <button type="button" onClick={() => backHref ? push(backHref) : back()} className="justify-self-start flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
           <ChevronLeft className="size-4" />Volver
         </button>
-        <h1 className="text-base font-semibold">{isEdit ? "Editar gasto" : "Nuevo gasto"}</h1>
-        <button type="submit" disabled={isLoading || !canSave} className="px-4 py-1.5 rounded-full bg-primary text-primary-foreground text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 transition-all">
+        <h1 className="justify-self-center text-base font-semibold whitespace-nowrap">{isEdit ? "Editar gasto" : "Nuevo gasto"}</h1>
+        <button type="submit" disabled={isLoading || !canSave} className="justify-self-end px-4 py-1.5 rounded-full bg-primary text-primary-foreground text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 transition-all">
           {isLoading ? "..." : "Guardar"}
         </button>
       </div>
