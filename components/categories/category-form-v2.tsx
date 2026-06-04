@@ -343,9 +343,8 @@ export function CategoryFormV2({ mode, initialData, organizationId, spaceName, r
                 <Pencil className="size-3.5 text-muted-foreground" />
               </span>
             </button>
-            <div className="flex items-center gap-2 max-w-full px-4">
-              {displayEmoji && <span className="text-xl leading-none">{displayEmoji}</span>}
-              <p className={`text-xl font-semibold truncate ${name ? "" : "text-muted-foreground/50"}`} style={{ fontFamily: "var(--font-fraunces, serif)" }}>
+            <div className="max-w-full px-4">
+              <p className={`text-xl font-semibold truncate text-center ${name ? "" : "text-muted-foreground/50"}`} style={{ fontFamily: "var(--font-fraunces, serif)" }}>
                 {name || "Nombre de la categoría"}
               </p>
             </div>
