@@ -1,7 +1,7 @@
 "use client"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { ChevronLeft, Plus, Check } from "lucide-react"
+import { ChevronLeft, Pencil, Check } from "lucide-react"
 import { EmojiPickerSheet } from "@/components/ui/emoji-picker-sheet"
 
 interface Member { id: string; name: string | null; email: string | null }
@@ -256,14 +256,6 @@ export function CategoryFormV2({ mode, initialData, organizationId, spaceName, r
     setColor(pastelForEmoji(emoji))
   }, [name, emojiTouched])
 
-  function pickEmoji(e: string) {
-    setEmojiTouched(true)
-    setSelectedEmoji(e)
-    setColor(pastelForEmoji(e))
-    setCustomMode(false)
-    setCustomEmoji("")
-  }
-
   // Picked from the in-app emoji sheet → treat as a custom icon
   function handleCustomEmoji(e: string) {
     setEmojiTouched(true)
@@ -336,15 +328,21 @@ export function CategoryFormV2({ mode, initialData, organizationId, spaceName, r
             </div>
           )}
 
-          {/* Preview — hero */}
+          {/* Preview — hero. Tap the icon to override the auto-picked emoji. */}
           <div className="pt-1 pb-2 flex flex-col items-center gap-3">
-            <div className="size-20 rounded-3xl flex items-center justify-center flex-shrink-0 transition-colors"
+            <button type="button" onClick={() => setPickerOpen(true)}
+              aria-label="Cambiar emoji"
+              className="relative size-20 rounded-3xl flex items-center justify-center flex-shrink-0 transition-all active:scale-95"
               style={{ backgroundColor: `${color}22` }}>
               {displayEmoji
                 ? <span className="text-4xl leading-none">{displayEmoji}</span>
                 : <span className="size-7 rounded-full" style={{ backgroundColor: color }} />
               }
-            </div>
+              {/* Edit badge */}
+              <span className="absolute -bottom-1 -right-1 size-7 rounded-full bg-background border border-border/60 flex items-center justify-center shadow-sm">
+                <Pencil className="size-3.5 text-muted-foreground" />
+              </span>
+            </button>
             <div className="flex items-center gap-2 max-w-full px-4">
               {displayEmoji && <span className="text-xl leading-none">{displayEmoji}</span>}
               <p className={`text-xl font-semibold truncate ${name ? "" : "text-muted-foreground/50"}`} style={{ fontFamily: "var(--font-fraunces, serif)" }}>
@@ -359,35 +357,6 @@ export function CategoryFormV2({ mode, initialData, organizationId, spaceName, r
             <input type="text" value={name} onChange={(e) => setName(e.target.value)} autoFocus
               placeholder="ej. Alquiler, Netflix, Gimnasio…"
               className={fieldClass} />
-          </div>
-
-          {/* Ícono */}
-          <div className="space-y-2">
-            <label className={labelClass}>Ícono <span className="normal-case font-normal">(se elige solo · podés cambiarlo)</span></label>
-
-            {/* Fixed-size tiles so they don't stretch on wide screens */}
-            <div className="flex flex-wrap gap-2">
-              {EMOJI_BASICS.map((p) => {
-                const selected = !customMode && selectedEmoji === p.emoji
-                return (
-                  <button key={p.emoji} type="button" onClick={() => pickEmoji(p.emoji)}
-                    className={`h-14 w-14 shrink-0 rounded-2xl flex items-center justify-center text-2xl transition-all active:scale-90
-                      ${selected ? "ring-2 ring-primary bg-primary/10" : "bg-muted/40 hover:bg-muted/70"}`}>
-                    {p.emoji}
-                  </button>
-                )
-              })}
-
-              {/* Open the in-app emoji picker — shows the chosen custom emoji here */}
-              <button type="button" onClick={() => setPickerOpen(true)}
-                className={`h-14 w-14 shrink-0 rounded-2xl flex items-center justify-center transition-all active:scale-90
-                  ${customMode && customEmoji ? "ring-2 ring-primary bg-primary/10" : "bg-muted/40 hover:bg-muted/70"}`}>
-                {customMode && customEmoji
-                  ? <span className="text-2xl leading-none">{customEmoji}</span>
-                  : <Plus className="size-5 text-muted-foreground" />}
-              </button>
-            </div>
-            <p className="text-xs text-muted-foreground">Tocá <span className="font-medium">+</span> para elegir cualquier emoji.</p>
           </div>
 
           {/* Default assignments — only for shared spaces */}
