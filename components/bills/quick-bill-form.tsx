@@ -363,6 +363,11 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
   // Amount hero scales down as the number grows so it never clips the prefix or edges
   const amtChars = amountDisplay.length || 1
   const amtFontPx = amtChars <= 6 ? 48 : amtChars <= 8 ? 40 : amtChars <= 10 ? 33 : amtChars <= 13 ? 27 : 22
+  // Width tracking the *actual* glyph widths (digits ≈ 1ch, separators ≈ 0.5ch)
+  // so the input hugs its content and the prefix stays right next to the number.
+  const amtDigits = (amountDisplay.match(/\d/g) || []).length
+  const amtSeps = amountDisplay.length - amtDigits
+  const amtWidthCh = Math.max(1, amtDigits + amtSeps * 0.5 + 0.35)
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col min-h-[calc(100dvh-7rem)]">
@@ -414,7 +419,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
                 placeholder="0"
                 autoFocus={!isEdit}
                 className="bg-transparent text-center font-semibold focus:outline-none placeholder:text-muted-foreground/20"
-                style={{ fontFamily: "var(--font-fraunces, serif)", fontSize: amtFontPx, width: `${amtChars + 0.5}ch` }}
+                style={{ fontFamily: "var(--font-fraunces, serif)", fontSize: amtFontPx, width: `${amtWidthCh}ch` }}
               />
             </div>
             {/* USD → exchange rate (only when Dólares) */}
