@@ -41,10 +41,12 @@ const ALL_EMOJIS = [...EMOJI_BASICS, ...EMOJI_MORE]
 const DEFAULT_EMOJI = "🏷️"
 
 // Soft pastel palette, on-brand. The category color is derived from the emoji
-// (deterministic) so the user never has to pick one — always pastel, with variety.
+// (deterministic) so the user never picks one — always pastel, lots of variety.
 const PASTEL_PALETTE = [
-  "#F4ACB7", "#FFCAD4", "#FFE5D9", "#D8E2DC", "#BBD0E5", "#C9E4CA",
-  "#FCE1A8", "#E0C3FC", "#FFD6A5", "#B5EAD7", "#C7CEEA", "#FFB7B2",
+  "#F4ACB7", "#FFCAD4", "#FFB7B2", "#FAD2E1", "#FFE5D9", "#FFD6A5",
+  "#FBD49C", "#FCE1A8", "#FFF1B6", "#D0E8C5", "#C9E4CA", "#B5EAD7",
+  "#B8E0D2", "#A8DADC", "#BEE1E6", "#BBD0E5", "#C7CEEA", "#CDDAFD",
+  "#DAE2F2", "#E0C3FC", "#E8DFF5", "#D6CDEA", "#D8E2DC", "#E8D7DB",
 ]
 
 function pastelForEmoji(emoji: string): string {
@@ -238,8 +240,6 @@ export function CategoryFormV2({ mode, initialData, organizationId, spaceName, r
   const [customEmoji, setCustomEmoji] = useState(!initialIsPreset ? initialData?.icon || "" : "")
   // Once the user picks an icon manually, stop auto-suggesting from the name.
   const [emojiTouched, setEmojiTouched] = useState(mode === "edit" && !!initialData?.icon)
-  // Once the user picks a color swatch, stop deriving it from the emoji.
-  const [colorTouched, setColorTouched] = useState(mode === "edit" && !!initialData?.color)
   const [pickerOpen, setPickerOpen] = useState(false)
 
   // Auto-suggest emoji from the typed name (until the user picks manually).
@@ -253,13 +253,13 @@ export function CategoryFormV2({ mode, initialData, organizationId, spaceName, r
     const m = matchEmojiFromName(name)
     const emoji = m?.emoji ?? DEFAULT_EMOJI
     setSelectedEmoji(emoji)
-    if (!colorTouched) setColor(pastelForEmoji(emoji))
-  }, [name, emojiTouched, colorTouched])
+    setColor(pastelForEmoji(emoji))
+  }, [name, emojiTouched])
 
   function pickEmoji(e: string) {
     setEmojiTouched(true)
     setSelectedEmoji(e)
-    if (!colorTouched) setColor(pastelForEmoji(e))
+    setColor(pastelForEmoji(e))
     setCustomMode(false)
     setCustomEmoji("")
   }
@@ -270,7 +270,7 @@ export function CategoryFormV2({ mode, initialData, organizationId, spaceName, r
     setSelectedEmoji("")
     setCustomMode(true)
     setCustomEmoji(e)
-    if (!colorTouched) setColor(pastelForEmoji(e))
+    setColor(pastelForEmoji(e))
   }
 
   const displayEmoji = customMode ? customEmoji : selectedEmoji
@@ -388,22 +388,6 @@ export function CategoryFormV2({ mode, initialData, organizationId, spaceName, r
               </button>
             </div>
             <p className="text-xs text-muted-foreground">Tocá <span className="font-medium">+</span> para elegir cualquier emoji.</p>
-          </div>
-
-          {/* Color — pastel swatches (auto from emoji, o elegí uno) */}
-          <div className="space-y-2">
-            <label className={labelClass}>Color</label>
-            <div className="flex flex-wrap gap-2.5">
-              {PASTEL_PALETTE.map((c) => {
-                const isSel = color.toLowerCase() === c.toLowerCase()
-                return (
-                  <button key={c} type="button" aria-label={`Color ${c}`}
-                    onClick={() => { setColor(c); setColorTouched(true) }}
-                    className={`size-9 rounded-full transition-all active:scale-90 ${isSel ? "ring-2 ring-offset-2 ring-foreground/40" : "hover:scale-105"}`}
-                    style={{ backgroundColor: c }} />
-                )
-              })}
-            </div>
           </div>
 
           {/* Default assignments — only for shared spaces */}
