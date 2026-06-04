@@ -128,6 +128,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
       ? formatDisplay(Math.round((initialData.amount / initialData.amountUSD) * 100) / 100)
       : ""
   )
+  const [rateIsLive, setRateIsLive] = useState(false)
   const [notes, setNotes] = useState(initialData?.notes ?? "")
   // For non-CC: categoryId maps to billTypeId. For CC: categoryId maps to the new categoryId field.
   const [categoryId, setCategoryId] = useState(
@@ -192,6 +193,21 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
     } catch {}
   }, [label, amountDisplay, currency, usdRate, notes, categoryId, paymentMethod, cardId, installments, splitMode, soloMemberId, paymentDate, selectedOrgId, isEdit])
   // ─────────────────────────────────────────────────────────────────────────
+
+  // Prefill the official USD→ARS rate (same source as card imports). Only fills
+  // when the field is still empty, so it never clobbers an edit or a manual rate.
+  useEffect(() => {
+    let active = true
+    fetch("/api/exchange-rate")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!active || !d?.rate) return
+        setUsdRate((prev) => (prev ? prev : formatDisplay(d.rate)))
+        setRateIsLive(true)
+      })
+      .catch(() => {})
+    return () => { active = false }
+  }, [])
 
   const isCreditCard = paymentMethod === "credit"
   // rawAmount = value typed in the selected currency; amount is always ARS (for budget math)
@@ -348,6 +364,11 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
     return null
   })()
 
+  // Shared modern field style — soft filled, rounded, subtle focus ring
+  const fieldClass =
+    "w-full rounded-2xl border border-border/40 bg-muted/30 px-4 py-3.5 text-sm transition-all placeholder:text-muted-foreground/50 focus:outline-none focus:bg-background focus:border-primary/40 focus:ring-2 focus:ring-primary/15"
+  const labelClass = "text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+
   return (
     <form onSubmit={handleSubmit} className="flex flex-col min-h-[calc(100dvh-7rem)]">
       {/* Header */}
@@ -369,16 +390,16 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
           )}
 
           {/* ── Monto (hero) ── */}
-          <div className="pt-2 pb-1">
+          <div className="pt-1 pb-2">
             {/* Currency toggle */}
-            <div className="flex justify-center mb-4">
-              <div className="inline-flex rounded-full bg-muted/60 p-0.5">
+            <div className="flex justify-center mb-5">
+              <div className="inline-flex rounded-full bg-muted/50 p-[3px]">
                 {(["ARS", "USD"] as const).map((c) => (
                   <button
                     key={c}
                     type="button"
                     onClick={() => { if (c !== currency) { setCurrency(c); setAmountDisplay("") } }}
-                    className={`px-4 py-1 rounded-full text-xs font-semibold transition-all ${
+                    className={`px-3.5 py-1 rounded-full text-[11px] font-semibold tracking-wide transition-all ${
                       currency === c ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"
                     }`}
                   >
@@ -387,9 +408,9 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
                 ))}
               </div>
             </div>
-            {/* Big serif amount */}
-            <div className="flex items-baseline justify-center gap-1.5">
-              <span className="text-2xl text-muted-foreground" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
+            {/* Big serif amount with small prefix */}
+            <div className="flex items-baseline justify-center gap-1">
+              <span className="text-lg text-muted-foreground/60 font-medium" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
                 {currency === "ARS" ? "$" : "U$S"}
               </span>
               <input
@@ -400,41 +421,46 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
                 onBlur={() => { const n = parseAmount(amountDisplay); if (n > 0) setAmountDisplay(formatDisplay(n)) }}
                 placeholder="0"
                 autoFocus={!isEdit}
-                className="w-full max-w-[15rem] bg-transparent text-center text-5xl font-semibold focus:outline-none placeholder:text-muted-foreground/25"
+                className="w-full max-w-[13rem] bg-transparent text-center text-5xl font-semibold focus:outline-none placeholder:text-muted-foreground/20"
                 style={{ fontFamily: "var(--font-fraunces, serif)" }}
               />
             </div>
             {/* USD → exchange rate (only when Dólares) */}
             {currency === "USD" && (
-              <div className="mt-4 flex items-center justify-center gap-2">
-                <span className="text-xs text-muted-foreground">Cotización</span>
-                <div className="flex items-center gap-1 rounded-lg border bg-background px-2.5 py-1.5">
-                  <span className="text-muted-foreground text-xs">$</span>
-                  <input
-                    type="text"
-                    inputMode="decimal"
-                    value={usdRate}
-                    onChange={(e) => {
-                      const stripped = e.target.value.replace(/\./g, "").replace(/[^0-9,]/g, "")
-                      const commaIdx = stripped.indexOf(",")
-                      const intPart = commaIdx >= 0 ? stripped.slice(0, commaIdx) : stripped
-                      const decPart = commaIdx >= 0 ? stripped.slice(commaIdx + 1) : null
-                      const formattedInt = intPart ? intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ".") : ""
-                      setUsdRate(decPart !== null ? `${formattedInt},${decPart}` : formattedInt)
-                    }}
-                    placeholder="1.000"
-                    className="w-20 bg-transparent text-sm focus:outline-none"
-                  />
+              <div className="mt-5 flex flex-col items-center gap-1.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">Cotización</span>
+                  <div className="flex items-center gap-1 rounded-xl border border-border/40 bg-muted/30 px-2.5 py-1.5 transition-colors focus-within:bg-background focus-within:border-primary/40">
+                    <span className="text-muted-foreground text-xs">$</span>
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      value={usdRate}
+                      onChange={(e) => {
+                        const stripped = e.target.value.replace(/\./g, "").replace(/[^0-9,]/g, "")
+                        const commaIdx = stripped.indexOf(",")
+                        const intPart = commaIdx >= 0 ? stripped.slice(0, commaIdx) : stripped
+                        const decPart = commaIdx >= 0 ? stripped.slice(commaIdx + 1) : null
+                        const formattedInt = intPart ? intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ".") : ""
+                        setUsdRate(decPart !== null ? `${formattedInt},${decPart}` : formattedInt)
+                      }}
+                      placeholder="1.000"
+                      className="w-16 bg-transparent text-sm text-center focus:outline-none"
+                    />
+                  </div>
+                  {amount > 0 && <span className="text-xs font-medium text-foreground/70">= {formatARS(amount)}</span>}
                 </div>
-                {amount > 0 && <span className="text-xs text-muted-foreground">= {formatARS(amount)}</span>}
+                <span className="text-[10px] text-muted-foreground/60">
+                  {rateIsLive ? "Dólar oficial · podés editarlo" : "Ingresá la cotización"}
+                </span>
               </div>
             )}
           </div>
 
           {/* Título del gasto */}
           <div className="space-y-1.5">
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Título del gasto</p>
-            <input type="text" value={label} onChange={(e) => setLabel(e.target.value)} placeholder="ej. Supermercado, alquiler, nafta…" className="w-full rounded-xl border bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
+            <p className={labelClass}>Título del gasto</p>
+            <input type="text" value={label} onChange={(e) => setLabel(e.target.value)} placeholder="ej. Supermercado, alquiler, nafta…" className={fieldClass} />
           </div>
 
           {/* Espacio — oculto para CC (el espacio se deriva de la categoría elegida) */}
@@ -452,7 +478,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
                       className={`flex items-center gap-3 px-4 py-3.5 rounded-2xl border-2 text-sm font-medium transition-all active:scale-[0.97] ${
                         isSelected
                           ? "border-primary bg-primary/8 dark:bg-primary/25 text-foreground shadow-sm"
-                          : "border-border bg-background text-muted-foreground hover:border-foreground/20"
+                          : "border-transparent bg-muted/40 text-muted-foreground hover:bg-muted/60"
                       }`}
                     >
                       <div
@@ -507,7 +533,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
                 const sel = allNormalCats.find(c => c.id === categoryId)
                 return (
                   <button type="button" onClick={() => setCatSheetOpen(true)}
-                    className="w-full flex items-center gap-2 rounded-xl border bg-background px-3 py-2.5 text-sm text-left transition-colors border-border hover:border-foreground/30">
+                    className="w-full flex items-center gap-2 rounded-2xl border border-border/40 bg-muted/30 px-4 py-3 text-sm text-left transition-all hover:bg-muted/50 focus:outline-none focus:border-primary/40">
                     {sel ? (
                       <>
                         {sel.icon
@@ -539,7 +565,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
                     if (pm.value !== "credit") { setCardId(""); setInstallments(1); setCustomInstallments("") }
                     // categoryId se mantiene al cambiar medio de pago para no perder la selección
                   }}
-                  className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 text-sm text-left transition-colors ${paymentMethod === pm.value ? "border-primary bg-primary/5 dark:bg-primary/20 font-medium text-foreground" : "border-border bg-background text-muted-foreground hover:border-foreground/30"}`}>
+                  className={`flex items-center gap-2 rounded-2xl border px-4 py-3 text-sm text-left transition-all ${paymentMethod === pm.value ? "border-primary bg-primary/5 dark:bg-primary/20 font-medium text-foreground" : "border-border/40 bg-muted/30 text-muted-foreground hover:bg-muted/50"}`}>
                   {pm.icon}
                   <span>{pm.label}</span>
                   {paymentMethod === pm.value && <Check className="h-3.5 w-3.5 ml-auto text-primary flex-shrink-0" />}
@@ -570,7 +596,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
               <div className="grid grid-cols-2 gap-2">
                 {ccCards.map((cat) => (
                   <button key={cat.id} type="button" onClick={() => setCardId(cat.id)}
-                    className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 text-sm text-left transition-colors ${cardId === cat.id ? "border-primary bg-primary/5 dark:bg-primary/20 font-medium text-foreground" : "border-border bg-background text-muted-foreground hover:border-foreground/30"}`}>
+                    className={`flex items-center gap-2 rounded-2xl border px-4 py-3 text-sm text-left transition-all ${cardId === cat.id ? "border-primary bg-primary/5 dark:bg-primary/20 font-medium text-foreground" : "border-border/40 bg-muted/30 text-muted-foreground hover:bg-muted/50"}`}>
                     <CardIcon bankId={BANKS.find(b => b.color === cat.color)?.id ?? null} bankColor={cat.color || "#9D8189"} bankName={cat.name} network={isNetworkId(cat.icon) ? cat.icon as NetworkId : null} size="sm" />
                     <span className="truncate">{cat.name}</span>
                     {cardId === cat.id && <Check className="h-3.5 w-3.5 ml-auto text-primary flex-shrink-0" />}
@@ -591,7 +617,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
                 return (
                   <div className="flex gap-2">
                     <button type="button" onClick={() => setCatSheetOpen(true)}
-                      className="flex-1 flex items-center gap-2 rounded-xl border bg-background px-3 py-2.5 text-sm text-left transition-colors border-border hover:border-foreground/30">
+                      className="flex-1 flex items-center gap-2 rounded-2xl border border-border/40 bg-muted/30 px-4 py-3 text-sm text-left transition-all hover:bg-muted/50 focus:outline-none focus:border-primary/40">
                       {sel ? (
                         <>
                           {sel.icon
@@ -609,7 +635,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
                     </button>
                     {categoryId && (
                       <button type="button" onClick={() => setCategoryId("")}
-                        className="w-11 rounded-xl border border-border bg-background flex items-center justify-center text-muted-foreground hover:border-foreground/30 transition-colors">
+                        className="w-12 rounded-2xl border border-border/40 bg-muted/30 flex items-center justify-center text-muted-foreground hover:bg-muted/50 transition-all">
                         <X className="size-4" />
                       </button>
                     )}
@@ -621,8 +647,8 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
 
           {/* Fecha */}
           <div className="space-y-1.5">
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{isCreditCard ? "Fecha de compra" : "Fecha"}</p>
-            <div className="relative w-full rounded-xl border bg-background px-4 py-3 text-sm cursor-pointer">
+            <p className={labelClass}>{isCreditCard ? "Fecha de compra" : "Fecha"}</p>
+            <div className="relative w-full rounded-2xl border border-border/40 bg-muted/30 px-4 py-3.5 text-sm cursor-pointer transition-all hover:bg-muted/50">
               <span className={paymentDate ? "text-foreground" : "text-muted-foreground"}>
                 {paymentDate ? formatDateDisplay(paymentDate) : "DD/MM/AA"}
               </span>
@@ -707,13 +733,13 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
 
           {/* Detalle (notas opcionales) */}
           <div className="space-y-1.5">
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Detalle <span className="normal-case font-normal">(opcional)</span></p>
+            <p className={labelClass}>Detalle <span className="normal-case font-normal">(opcional)</span></p>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Descripción adicional, observaciones..."
               rows={2}
-              className="w-full rounded-xl border bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
+              className={`${fieldClass} resize-none`}
             />
           </div>
 
@@ -728,7 +754,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
                   { value: "mine",   label: "Solo mío",          desc: "100% a mi cargo" },
                 ].map((opt) => (
                   <button key={opt.value} type="button" onClick={() => setSplitMode(opt.value)}
-                    className={`w-full flex items-center justify-between rounded-xl border px-4 py-3 text-left transition-colors ${splitMode === opt.value ? "border-primary bg-primary/5 dark:bg-primary/20" : "border-border bg-background hover:border-foreground/30"}`}>
+                    className={`w-full flex items-center justify-between rounded-2xl border px-4 py-3.5 text-left transition-all ${splitMode === opt.value ? "border-primary bg-primary/5 dark:bg-primary/20" : "border-border/40 bg-muted/30 hover:bg-muted/50"}`}>
                     <div><p className="text-sm font-medium">{opt.label}</p><p className="text-xs text-muted-foreground">{opt.desc}</p></div>
                     {splitMode === opt.value && <Check className="size-4 text-primary flex-shrink-0" />}
                   </button>
@@ -738,7 +764,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
                   const isSolo = otherMembers.some(m => m.id === splitMode)
                   const selectedSolo = otherMembers.find(m => m.id === splitMode) ?? otherMembers.find(m => m.id === soloMemberId) ?? otherMembers[0]
                   return (
-                    <div className={`rounded-xl border transition-colors ${isSolo ? "border-primary bg-primary/5 dark:bg-primary/20" : "border-border bg-background"}`}>
+                    <div className={`rounded-2xl border transition-all ${isSolo ? "border-primary bg-primary/5 dark:bg-primary/20" : "border-border/40 bg-muted/30"}`}>
                       <button type="button"
                         onClick={() => { const target = soloMemberId || otherMembers[0]?.id || ""; setSoloMemberId(target); setSplitMode(target) }}
                         className="w-full flex items-center justify-between px-4 py-3 text-left">
