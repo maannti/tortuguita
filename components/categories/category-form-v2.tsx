@@ -1,8 +1,9 @@
 "use client"
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { ChevronLeft, Plus, Check } from "lucide-react"
 import { ColorInputWithPicker } from "@/components/ui/color-picker-dialog"
+import { EmojiPickerSheet } from "@/components/ui/emoji-picker-sheet"
 
 interface Member { id: string; name: string | null; email: string | null }
 interface DefaultAssignment { userId: string; percentage: number }
@@ -88,7 +89,6 @@ export function CategoryFormV2({ mode, initialData, organizationId, spaceName, r
   const [error, setError] = useState<string | null>(null)
   const [name, setName] = useState(initialData?.name || "")
   const [color, setColor] = useState(initialData?.color || "#9D8189")
-  const [expanded, setExpanded] = useState(false)
 
   // Default assignments: null = no preference, or array of { userId, percentage }
   const [defaultAssignments, setDefaultAssignments] = useState<DefaultAssignment[] | null>(
@@ -123,7 +123,7 @@ export function CategoryFormV2({ mode, initialData, organizationId, spaceName, r
   // Once the user picks an icon/color manually, stop auto-suggesting from the name.
   const [emojiTouched, setEmojiTouched] = useState(mode === "edit" && !!initialData?.icon)
   const [colorTouched, setColorTouched] = useState(mode === "edit" && !!initialData?.color)
-  const customInputRef = useRef<HTMLInputElement>(null)
+  const [pickerOpen, setPickerOpen] = useState(false)
 
   // Auto-suggest emoji + color from the typed name (until the user picks manually)
   useEffect(() => {
@@ -144,13 +144,12 @@ export function CategoryFormV2({ mode, initialData, organizationId, spaceName, r
     setCustomEmoji("")
   }
 
-  function openCustom() {
+  // Picked from the in-app emoji sheet → treat as a custom icon
+  function handleCustomEmoji(e: string) {
     setEmojiTouched(true)
-    setCustomMode(true)
     setSelectedEmoji("")
-    setCustomEmoji("")
-    // Open the keyboard right away (the emoji panel is one tap from here)
-    requestAnimationFrame(() => customInputRef.current?.focus())
+    setCustomMode(true)
+    setCustomEmoji(e)
   }
 
   const displayEmoji = customMode ? customEmoji : selectedEmoji
@@ -246,7 +245,7 @@ export function CategoryFormV2({ mode, initialData, organizationId, spaceName, r
 
             {/* Fixed-size tiles so they don't stretch on wide screens */}
             <div className="flex flex-wrap gap-2">
-              {(expanded ? ALL_EMOJIS : EMOJI_BASICS).map((p) => {
+              {EMOJI_BASICS.map((p) => {
                 const selected = !customMode && selectedEmoji === p.emoji
                 return (
                   <button key={p.emoji} type="button" onClick={() => pickEmoji(p.emoji, p.color)}
@@ -257,33 +256,16 @@ export function CategoryFormV2({ mode, initialData, organizationId, spaceName, r
                 )
               })}
 
-              {/* Expand / collapse */}
-              <button type="button" onClick={() => setExpanded(o => !o)}
-                className="h-14 w-14 shrink-0 rounded-2xl flex items-center justify-center bg-muted/40 hover:bg-muted/70 transition-all active:scale-90">
-                <Plus className={`size-5 text-muted-foreground transition-transform ${expanded ? "rotate-45" : ""}`} />
-              </button>
-
-              {/* Custom emoji — opens keyboard, then shows the chosen emoji here */}
-              <button type="button" onClick={openCustom}
+              {/* Open the in-app emoji picker — shows the chosen custom emoji here */}
+              <button type="button" onClick={() => setPickerOpen(true)}
                 className={`h-14 w-14 shrink-0 rounded-2xl flex items-center justify-center transition-all active:scale-90
-                  ${customMode ? "ring-2 ring-primary bg-primary/10" : "bg-muted/40 hover:bg-muted/70"}`}>
-                {customEmoji
+                  ${customMode && customEmoji ? "ring-2 ring-primary bg-primary/10" : "bg-muted/40 hover:bg-muted/70"}`}>
+                {customMode && customEmoji
                   ? <span className="text-2xl leading-none">{customEmoji}</span>
-                  : <span className="text-xl leading-none opacity-50">😀</span>}
+                  : <Plus className="size-5 text-muted-foreground" />}
               </button>
             </div>
-
-            {/* Capture field — only while choosing a custom emoji; vanishes once picked */}
-            {customMode && !customEmoji && (
-              <input
-                ref={customInputRef}
-                type="text"
-                value={customEmoji}
-                onChange={(e) => { setCustomEmoji(e.target.value); setEmojiTouched(true) }}
-                placeholder="Tocá un emoji del teclado 😀"
-                className={fieldClass}
-              />
-            )}
+            <p className="text-xs text-muted-foreground">Tocá <span className="font-medium">+</span> para elegir cualquier emoji.</p>
           </div>
 
           {/* Color */}
@@ -328,6 +310,9 @@ export function CategoryFormV2({ mode, initialData, organizationId, spaceName, r
           )}
         </div>
       </div>
+
+      {/* In-app emoji picker */}
+      <EmojiPickerSheet open={pickerOpen} onClose={() => setPickerOpen(false)} onSelect={handleCustomEmoji} />
     </form>
   )
 }
