@@ -121,16 +121,16 @@ export function CardForm({ mode, initialData }: Props) {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col min-h-[calc(100dvh-3.5rem)]">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b sticky top-0 bg-background/95 backdrop-blur-sm z-10">
+      <div className="grid grid-cols-[1fr_auto_1fr] items-center px-4 py-3 border-b sticky top-0 bg-background/95 backdrop-blur-sm z-10">
         <button type="button" onClick={() => replace("/cards")}
-          className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
+          className="justify-self-start flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
           <ChevronLeft className="size-4" />Volver
         </button>
-        <h1 className="text-base font-semibold" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
+        <h1 className="justify-self-center text-base font-semibold whitespace-nowrap">
           {mode === "create" ? "Nueva tarjeta" : "Editar tarjeta"}
         </h1>
         <button type="submit" disabled={isLoading || !name.trim()}
-          className="px-4 py-1.5 rounded-full bg-primary text-primary-foreground text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 transition-all">
+          className="justify-self-end px-4 py-1.5 rounded-full bg-primary text-primary-foreground text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 transition-all">
           {isLoading ? "…" : "Guardar"}
         </button>
       </div>
