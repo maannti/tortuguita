@@ -794,7 +794,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
                     <span className="truncate max-w-[200px]">{drillOrg.name}</span>
                   </button>
                 ) : (
-                  <p className="text-sm font-semibold">Categoría</p>
+                  <p className="text-sm font-semibold">{singleOrg ? "Categoría" : "Espacio"}</p>
                 )}
                 <div className="flex items-center gap-2">
                   {/* + Nueva — dentro de un espacio crea directo; en la lista abre el picker de espacio */}
