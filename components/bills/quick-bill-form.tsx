@@ -1,7 +1,7 @@
 "use client"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { ChevronLeft, Check, CreditCard, Banknote, Wallet, Ellipsis, ChevronDown, Plus, User, Home, X } from "lucide-react"
+import { ChevronLeft, ChevronRight, Check, CreditCard, Banknote, Wallet, Ellipsis, ChevronDown, Plus, User, Home, X } from "lucide-react"
 import { CardIcon, isNetworkId, BANKS, NetworkId } from "@/components/ui/card-network"
 
 interface DefaultAssignment { userId: string; percentage: number }
@@ -154,6 +154,8 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
   )
   const [catSheetOpen, setCatSheetOpen] = useState(false)
   const [catSpacePicker, setCatSpacePicker] = useState(false)
+  // Drill-down del sheet de categorías: null = lista de espacios; id = viendo categorías de ese espacio
+  const [catDrillOrgId, setCatDrillOrgId] = useState<string | null>(null)
 
   // ── Draft persistence (create mode only) ────────────────────────────────
   const DRAFT_KEY = "new-bill-draft"
@@ -460,40 +462,8 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
             <input type="text" value={label} onChange={(e) => setLabel(e.target.value)} placeholder="ej. Supermercado, alquiler, nafta…" className={fieldClass} />
           </div>
 
-          {/* Espacio — oculto para CC (el espacio se deriva de la categoría elegida) */}
-          {organizations.length > 1 && !isCreditCard && (
-            <div className="space-y-1.5">
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Espacio</p>
-              <div className="grid grid-cols-2 gap-2">
-                {organizations.map((org) => {
-                  const isSelected = selectedOrgId === org.id
-                  return (
-                    <button
-                      key={org.id}
-                      type="button"
-                      onClick={() => { setSelectedOrgId(org.id); setCategoryId(""); setCardId("") }}
-                      className={`flex items-center gap-3 px-4 py-3.5 rounded-2xl border-2 text-sm font-medium transition-all active:scale-[0.97] ${
-                        isSelected
-                          ? "border-primary bg-primary/8 dark:bg-primary/25 text-foreground shadow-sm"
-                          : "border-transparent bg-muted/40 text-muted-foreground hover:bg-muted/60"
-                      }`}
-                    >
-                      <div
-                        className="size-8 rounded-xl flex items-center justify-center flex-shrink-0 transition-all"
-                        style={{ backgroundColor: isSelected ? "#9D8189" : "#9D818920" }}
-                      >
-                        {org.isPersonal
-                          ? <User className="size-4" style={{ color: isSelected ? "#fff" : "#9D8189" }} />
-                          : <Home className="size-4" style={{ color: isSelected ? "#fff" : "#9D8189" }} />}
-                      </div>
-                      <span className="flex-1 text-left leading-tight">{org.name}</span>
-                      {isSelected && <Check className="size-4 text-primary flex-shrink-0" />}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-          )}
+          {/* Espacio: ya no se elige por separado — se deriva de la categoría
+             seleccionada (mismo patrón que el flujo de crédito). */}
 
           {/* "Aplicar de acá en adelante" — solo al editar bills generados por recurrentes */}
           {isEdit && initialData?.recurringBillId && (
@@ -528,6 +498,8 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Categoría{reqMark}</p>
               {(() => {
                 const sel = allNormalCats.find(c => c.id === categoryId)
+                const selOrg = sel ? organizations.find(o => o.id === sel.organizationId) : undefined
+                const MAUVE = "#9D8189"
                 return (
                   <button type="button" onClick={() => setCatSheetOpen(true)}
                     className="w-full flex items-center gap-2 rounded-2xl border border-border/40 bg-muted/30 px-4 py-3 text-sm text-left transition-all hover:bg-muted/50 focus:outline-none focus:border-primary/40">
@@ -537,8 +509,12 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
                           ? <span className="text-base leading-none flex-shrink-0">{sel.icon}</span>
                           : <span className="size-2 rounded-full flex-shrink-0" style={{ backgroundColor: sel.color || "#6b7280" }} />}
                         <span className="flex-1 font-medium text-foreground">{sel.name}</span>
-                        {organizations.length > 1 && (
-                          <span className="text-xs text-muted-foreground/60">{organizations.find(o => o.id === sel.organizationId)?.name}</span>
+                        {organizations.length > 1 && selOrg && (
+                          <span className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold flex-shrink-0"
+                            style={{ backgroundColor: `${MAUVE}1f`, color: MAUVE }}>
+                            {selOrg.isPersonal ? <User className="size-3" /> : <Home className="size-3" />}
+                            {selOrg.name}
+                          </span>
                         )}
                       </>
                     ) : (
@@ -801,21 +777,32 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
       {catSheetOpen && (() => {
         const MAUVE = "#9D8189"
         const returnPath = isEdit ? `/bills/${initialData?.id}/edit` : "/bills/new"
+        const closeSheet = () => { setCatSheetOpen(false); setCatSpacePicker(false); setCatDrillOrgId(null) }
+        // Con un solo espacio no tiene sentido el primer nivel: vamos directo a sus categorías
+        const singleOrg = organizations.length === 1
+        const drillOrg = singleOrg ? organizations[0] : organizations.find(o => o.id === catDrillOrgId) || null
+        const drillCats = drillOrg ? allNormalCats.filter(c => c.organizationId === drillOrg.id) : []
         return (
           <div className="fixed inset-0 z-50 flex flex-col justify-end">
-            <div className="absolute inset-0 bg-black/40" onClick={() => { setCatSheetOpen(false); setCatSpacePicker(false) }} />
+            <div className="absolute inset-0 bg-black/40" onClick={closeSheet} />
             <div className="relative bg-background rounded-t-3xl max-h-[75vh] flex flex-col">
               {/* Header */}
               <div className="flex-shrink-0 flex items-center justify-between px-5 pt-5 pb-3 border-b border-border/50">
-                <p className="text-sm font-semibold">Categoría</p>
+                {drillOrg && !singleOrg ? (
+                  <button onClick={() => setCatDrillOrgId(null)} className="flex items-center gap-1 -ml-1 text-sm font-semibold active:scale-95 transition-all">
+                    <ChevronLeft className="size-5" />
+                    <span className="truncate max-w-[200px]">{drillOrg.name}</span>
+                  </button>
+                ) : (
+                  <p className="text-sm font-semibold">Categoría</p>
+                )}
                 <div className="flex items-center gap-2">
-                  {/* + Nueva with space picker */}
+                  {/* + Nueva — dentro de un espacio crea directo; en la lista abre el picker de espacio */}
                   <div className="relative">
                     <button
                       onClick={() => {
-                        if (organizations.length === 1) {
-                          const org = organizations[0]
-                          push(`/categories/new?spaceId=${org.id}&spaceName=${encodeURIComponent(org.name)}&returnTo=${encodeURIComponent(returnPath)}`)
+                        if (drillOrg) {
+                          push(`/categories/new?spaceId=${drillOrg.id}&spaceName=${encodeURIComponent(drillOrg.name)}&returnTo=${encodeURIComponent(returnPath)}`)
                         } else {
                           setCatSpacePicker(v => !v)
                         }
@@ -823,9 +810,9 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
                       className="flex items-center gap-1 text-xs font-medium text-primary bg-primary/10 hover:bg-primary/15 px-2.5 py-1.5 rounded-full transition-colors active:scale-95"
                     >
                       <Plus className="size-3" /> Nueva
-                      {organizations.length > 1 && <ChevronDown className={`size-3 transition-transform ${catSpacePicker ? "rotate-180" : ""}`} />}
+                      {!drillOrg && <ChevronDown className={`size-3 transition-transform ${catSpacePicker ? "rotate-180" : ""}`} />}
                     </button>
-                    {catSpacePicker && (
+                    {catSpacePicker && !drillOrg && (
                       <div className="absolute right-0 top-full mt-1.5 z-10 bg-background border border-border rounded-2xl shadow-lg overflow-hidden min-w-[160px]">
                         {organizations.map(org => (
                           <button key={org.id} type="button"
@@ -843,70 +830,72 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
                       </div>
                     )}
                   </div>
-                  <button onClick={() => { setCatSheetOpen(false); setCatSpacePicker(false) }} className="text-muted-foreground active:scale-90 transition-all">
+                  <button onClick={closeSheet} className="text-muted-foreground active:scale-90 transition-all">
                     <X className="size-5" />
                   </button>
                 </div>
               </div>
 
-              <div className="overflow-y-auto flex-1 px-4 py-3 space-y-4">
-                {/* Sin categoría (only for CC bills) */}
+              <div className="overflow-y-auto flex-1 px-4 py-3 space-y-1">
+                {/* Sin categoría (only for CC bills) — siempre accesible */}
                 {isCreditCard && (
                   <button type="button"
-                    onClick={() => { setCategoryId(""); setCatSheetOpen(false) }}
+                    onClick={() => { setCategoryId(""); closeSheet() }}
                     className={`w-full flex items-center px-3 py-2.5 rounded-xl text-sm transition-colors ${!categoryId ? "bg-primary/10 dark:bg-primary/25 text-primary font-medium" : "text-muted-foreground hover:bg-muted/60"}`}>
                     Sin categoría
                   </button>
                 )}
 
-                {/* Categories grouped by space */}
-                {organizations.map(org => {
-                  const orgCats = allNormalCats.filter(c => c.organizationId === org.id)
-                  if (orgCats.length === 0) return null
-                  return (
-                    <div key={org.id}>
-                      <div className="flex items-center justify-between mb-1.5 px-1">
-                        <div className="flex items-center gap-2">
-                          <div className="size-5 rounded-md flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${MAUVE}25` }}>
-                            {org.isPersonal ? <User className="size-3" style={{ color: MAUVE }} /> : <Home className="size-3" style={{ color: MAUVE }} />}
-                          </div>
-                          <p className="text-xs font-bold uppercase tracking-wider" style={{ color: MAUVE }}>{org.name}</p>
+                {!drillOrg ? (
+                  /* Nivel 1 — lista de espacios */
+                  organizations.map(org => {
+                    const count = allNormalCats.filter(c => c.organizationId === org.id).length
+                    const hasSelected = !!categoryId && allNormalCats.some(c => c.id === categoryId && c.organizationId === org.id)
+                    return (
+                      <button key={org.id} type="button"
+                        onClick={() => setCatDrillOrgId(org.id)}
+                        className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm transition-colors ${hasSelected ? "bg-primary/10 dark:bg-primary/25" : "hover:bg-muted/60"}`}>
+                        <div className="size-8 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${MAUVE}20` }}>
+                          {org.isPersonal ? <User className="size-4" style={{ color: MAUVE }} /> : <Home className="size-4" style={{ color: MAUVE }} />}
                         </div>
-                        <button type="button"
+                        <div className="flex-1 text-left leading-tight">
+                          <p className={`font-medium ${hasSelected ? "text-primary" : "text-foreground"}`}>{org.name}</p>
+                          <p className="text-xs text-muted-foreground">{count} {count === 1 ? "categoría" : "categorías"}</p>
+                        </div>
+                        <ChevronRight className="size-4 text-muted-foreground flex-shrink-0" />
+                      </button>
+                    )
+                  })
+                ) : (
+                  /* Nivel 2 — categorías del espacio elegido */
+                  drillCats.length === 0 ? (
+                    <p className="px-3 py-8 text-center text-sm text-muted-foreground">
+                      Este espacio todavía no tiene categorías.
+                    </p>
+                  ) : (
+                    drillCats.map(cat => {
+                      const isSelected = cat.id === categoryId
+                      return (
+                        <button key={cat.id} type="button"
                           onClick={() => {
-                            setCatSpacePicker(false)
-                            push(`/categories/new?spaceId=${org.id}&spaceName=${encodeURIComponent(org.name)}&returnTo=${encodeURIComponent(returnPath)}`)
+                            setCategoryId(cat.id)
+                            setSelectedOrgId(cat.organizationId)
+                            closeSheet()
+                            applyDefaultAssignments(cat.id)
                           }}
-                          className="text-xs text-muted-foreground hover:text-primary flex items-center gap-0.5 transition-colors">
-                          <Plus className="size-3" /> agregar
+                          className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition-colors ${isSelected ? "bg-primary/10 dark:bg-primary/25 text-primary font-medium" : "hover:bg-muted/60 text-foreground"}`}>
+                          <span className="flex items-center gap-2.5">
+                            {cat.icon
+                              ? <span className="text-base leading-none">{cat.icon}</span>
+                              : <span className="size-2 rounded-full" style={{ backgroundColor: cat.color || "#6b7280" }} />}
+                            {cat.name}
+                          </span>
+                          {isSelected && <Check className="size-4 text-primary flex-shrink-0" />}
                         </button>
-                      </div>
-                      <div className="space-y-0.5">
-                        {orgCats.map(cat => {
-                          const isSelected = cat.id === categoryId
-                          return (
-                            <button key={cat.id} type="button"
-                              onClick={() => {
-                                setCategoryId(cat.id)
-                                setSelectedOrgId(cat.organizationId)
-                                setCatSheetOpen(false)
-                                applyDefaultAssignments(cat.id)
-                              }}
-                              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition-colors ${isSelected ? "bg-primary/10 dark:bg-primary/25 text-primary font-medium" : "hover:bg-muted/60 text-foreground"}`}>
-                              <span className="flex items-center gap-2.5">
-                                {cat.icon
-                                  ? <span className="text-base leading-none">{cat.icon}</span>
-                                  : <span className="size-2 rounded-full" style={{ backgroundColor: cat.color || "#6b7280" }} />}
-                                {cat.name}
-                              </span>
-                              {isSelected && <Check className="size-4 text-primary flex-shrink-0" />}
-                            </button>
-                          )
-                        })}
-                      </div>
-                    </div>
+                      )
+                    })
                   )
-                })}
+                )}
               </div>
             </div>
           </div>
