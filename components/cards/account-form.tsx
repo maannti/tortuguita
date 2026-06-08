@@ -17,6 +17,8 @@ const ACCOUNT_TYPES: { value: AccountType; label: string; icon: React.ReactNode 
 const TYPE_LABEL: Record<AccountType, string> = {
   debit: "Débito", transfer: "Transferencia", qr: "QR", wallet: "Billetera",
 }
+// Para "billetera" solo mostramos billeteras/neobancos (no bancos tradicionales)
+const WALLET_IDS = ["mercadopago", "uala", "brubank", "naranjax", "otro"]
 
 interface Organization { id: string; name: string; isPersonal: boolean }
 interface Props {
@@ -55,6 +57,11 @@ export function AccountForm({ organizations, spaceId, returnTo, mode = "create",
   const selectedBank = BANKS.find(b => b.id === bankId)
   const color = selectedBank?.color || BANKS[0].color
 
+  // La red (Visa/Master/…) solo aplica a tarjeta de débito
+  const needsNetwork = accountType === "debit"
+  // Para billetera, limitar el grid a billeteras/neobancos
+  const visibleBanks = accountType === "wallet" ? BANKS.filter(b => WALLET_IDS.includes(b.id)) : BANKS
+
   function autoFillName(bankName: string, type: AccountType) {
     setName(`${bankName} ${TYPE_LABEL[type]}`)
   }
@@ -65,6 +72,12 @@ export function AccountForm({ organizations, spaceId, returnTo, mode = "create",
   }
   function handleTypeSelect(t: AccountType) {
     setAccountType(t)
+    // la red solo aplica a débito
+    if (t !== "debit") setNetwork(null)
+    // si paso a billetera y el banco actual no es billetera, limpio la selección
+    if (t === "wallet" && bankId && !WALLET_IDS.includes(bankId)) {
+      setBankId(null); setName(""); return
+    }
     if (selectedBank) autoFillName(selectedBank.name, t)
   }
 
@@ -72,6 +85,7 @@ export function AccountForm({ organizations, spaceId, returnTo, mode = "create",
     e.preventDefault()
     if (!name.trim()) { setError("Ingresá un nombre"); return }
     if (!bankId) { setError("Seleccioná un banco o billetera"); return }
+    if (needsNetwork && !network) { setError("Seleccioná la red de la tarjeta (Visa, Mastercard…)"); return }
     setError(null); setIsLoading(true)
     try {
       const url = mode === "create" ? "/api/bill-types" : `/api/bill-types/${initialData?.id}`
@@ -81,7 +95,7 @@ export function AccountForm({ organizations, spaceId, returnTo, mode = "create",
         body: JSON.stringify({
           name: name.trim(),
           color,
-          icon: network || undefined,
+          icon: needsNetwork ? (network || undefined) : undefined,
           bank: bankId,
           isCreditCard: false,
           accountType,
@@ -153,13 +167,15 @@ export function AccountForm({ organizations, spaceId, returnTo, mode = "create",
 
           {/* Banco / billetera */}
           <div className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Banco / billetera</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              {accountType === "wallet" ? "Billetera" : "Banco"}
+            </p>
             <div className="grid grid-cols-4 gap-2">
-              {BANKS.map((bank) => {
+              {visibleBanks.map((bank) => {
                 const selected = bankId === bank.id
                 return (
                   <button key={bank.id} type="button" onClick={() => handleBankSelect(bank.id)}
-                    className={`flex flex-col items-center gap-1.5 py-2.5 rounded-2xl transition-all ${selected ? "bg-[#F4ACB7]" : "bg-black/[0.04] dark:bg-white/[0.08]"}`}>
+                    className={`flex flex-col items-center gap-1.5 py-2.5 rounded-2xl border transition-all ${selected ? "bg-[#F4ACB7] border-transparent" : "bg-muted border-border/50 hover:bg-muted/70"}`}>
                     <BankLogo bankId={bank.id} size={36} />
                     <span className="text-[10px] font-semibold text-center leading-tight px-0.5"
                       style={{ color: selected ? "#7a3a47" : undefined }}>
@@ -171,17 +187,16 @@ export function AccountForm({ organizations, spaceId, returnTo, mode = "create",
             </div>
           </div>
 
-          {/* Red (opcional, p. ej. débito Visa/Maestro) */}
+          {/* Red — solo para tarjeta de débito (obligatoria) */}
+          {needsNetwork && (
           <div className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Red <span className="normal-case font-normal text-muted-foreground/70">(opcional)</span>
-            </p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Red</p>
             <div className="grid grid-cols-4 gap-2">
               {NETWORKS.map((n) => {
                 const selected = network === n.id
                 return (
                   <button key={n.id} type="button" onClick={() => setNetwork(selected ? null : n.id)}
-                    className={`flex flex-col items-center gap-2 py-3 rounded-2xl transition-all ${selected ? "bg-[#F4ACB7]" : "bg-black/[0.04] dark:bg-white/[0.08]"}`}>
+                    className={`flex flex-col items-center gap-2 py-3 rounded-2xl border transition-all ${selected ? "bg-[#F4ACB7] border-transparent" : "bg-muted border-border/50 hover:bg-muted/70"}`}>
                     <NetworkLogo network={n.id} size={34} />
                     <span className="text-[10px] font-semibold text-center leading-tight"
                       style={{ color: selected ? "#7a3a47" : undefined }}>
@@ -192,6 +207,7 @@ export function AccountForm({ organizations, spaceId, returnTo, mode = "create",
               })}
             </div>
           </div>
+          )}
 
           {/* Preview */}
           {bankId && (
