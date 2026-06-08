@@ -20,16 +20,16 @@ export function CardsList({ cards, alertCardIds = [] }: CardsListProps) {
 
   return (
     <div className="pb-28">
-      <div className="flex items-center justify-between px-4 py-3 border-b sticky top-0 bg-background/95 backdrop-blur-sm z-10">
+      <div className="grid grid-cols-[1fr_auto_1fr] items-center px-4 py-3 border-b sticky top-0 bg-background/95 backdrop-blur-sm z-10">
         <button onClick={() => push("/settings")}
-          className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
+          className="justify-self-start flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
           <ChevronLeft className="size-4" />Volver
         </button>
-        <h1 className="text-base font-semibold" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
+        <h1 className="justify-self-center text-base font-semibold whitespace-nowrap">
           Mis tarjetas
         </h1>
         <button onClick={() => push(newHref)}
-          className="flex items-center gap-1 text-sm font-semibold text-primary">
+          className="justify-self-end flex items-center gap-1 text-sm font-semibold text-primary">
           <Plus className="size-4" />Nueva
         </button>
       </div>
