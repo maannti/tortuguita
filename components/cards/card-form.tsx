@@ -147,7 +147,7 @@ export function CardForm({ mode, initialData }: Props) {
                 const selected = network === n.id
                 return (
                   <button key={n.id} type="button" onClick={() => handleNetworkSelect(n.id)}
-                    className={`flex flex-col items-center gap-2 py-3 rounded-2xl transition-all ${selected ? "bg-[#F4ACB7]" : "bg-black/[0.04] dark:bg-white/[0.08]"}`}>
+                    className={`flex flex-col items-center gap-2 py-3 rounded-2xl border transition-all ${selected ? "bg-[#F4ACB7] border-transparent" : "bg-muted border-border/50 hover:bg-muted/70"}`}>
                     <NetworkLogo network={n.id} size={34} />
                     <span className="text-[10px] font-semibold text-center leading-tight"
                       style={{ color: selected ? "#7a3a47" : undefined }}>
@@ -167,7 +167,7 @@ export function CardForm({ mode, initialData }: Props) {
                 const selected = bankId === bank.id
                 return (
                   <button key={bank.id} type="button" onClick={() => handleBankSelect(bank.id)}
-                    className={`flex flex-col items-center gap-1.5 py-2.5 rounded-2xl transition-all ${selected ? "bg-[#F4ACB7]" : "bg-black/[0.04] dark:bg-white/[0.08]"}`}>
+                    className={`flex flex-col items-center gap-1.5 py-2.5 rounded-2xl border transition-all ${selected ? "bg-[#F4ACB7] border-transparent" : "bg-muted border-border/50 hover:bg-muted/70"}`}>
                     <BankLogo bankId={bank.id} size={36} />
                     <span className="text-[10px] font-semibold text-center leading-tight px-0.5"
                       style={{ color: selected ? "#7a3a47" : undefined }}>
