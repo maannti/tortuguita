@@ -1,9 +1,9 @@
 "use client"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { ChevronLeft, Wallet, ArrowLeftRight, QrCode, Smartphone } from "lucide-react"
+import { ChevronLeft, Wallet, ArrowLeftRight, QrCode, Smartphone, Search } from "lucide-react"
 import {
-  NETWORKS, BANKS, NetworkId, CardIcon, NetworkLogo, BankLogo, isNetworkId
+  NETWORKS, BANKS, BankKind, NetworkId, CardIcon, NetworkLogo, BankLogo, isNetworkId
 } from "@/components/ui/card-network"
 
 type AccountType = "debit" | "transfer" | "qr" | "wallet"
@@ -17,8 +17,10 @@ const ACCOUNT_TYPES: { value: AccountType; label: string; icon: React.ReactNode 
 const TYPE_LABEL: Record<AccountType, string> = {
   debit: "Débito", transfer: "Transferencia", qr: "QR", wallet: "Billetera",
 }
-// Para "billetera" solo mostramos billeteras/neobancos (no bancos tradicionales)
-const WALLET_IDS = ["mercadopago", "uala", "brubank", "naranjax", "otro"]
+const KIND_LABEL: Record<BankKind, string> = {
+  bank: "Bancos", wallet: "Billeteras", crypto: "Cripto", intl: "Internac.",
+}
+const KIND_ORDER: BankKind[] = ["bank", "wallet", "crypto", "intl"]
 
 interface Props {
   returnTo?: string
@@ -46,14 +48,25 @@ export function AccountForm({ returnTo, mode = "create", initialData }: Props) {
   const [network, setNetwork] = useState<NetworkId | null>(initialNetwork)
   const [bankId, setBankId] = useState<string | null>(initialData?.bank ?? null)
   const [name, setName] = useState(initialData?.name || "")
+  // Filtrado del grid de bancos/billeteras
+  const [query, setQuery] = useState("")
+  const [kindFilter, setKindFilter] = useState<BankKind | null>(null)
 
   const selectedBank = BANKS.find(b => b.id === bankId)
   const color = selectedBank?.color || BANKS[0].color
 
   // La red (Visa/Master/…) solo aplica a tarjeta de débito
   const needsNetwork = accountType === "debit"
-  // Para billetera, limitar el grid a billeteras/neobancos
-  const visibleBanks = accountType === "wallet" ? BANKS.filter(b => WALLET_IDS.includes(b.id)) : BANKS
+  // "billetera" excluye bancos tradicionales (salvo "Otro" como comodín)
+  const eligibleBanks = accountType === "wallet"
+    ? BANKS.filter(b => b.kind !== "bank" || b.id === "otro")
+    : BANKS
+  // chips de categoría según lo elegible (en orden, solo las que existen)
+  const availableKinds = KIND_ORDER.filter(k => eligibleBanks.some(b => b.kind === k))
+  const q = query.trim().toLowerCase()
+  const shownBanks = eligibleBanks.filter(b =>
+    (!kindFilter || b.kind === kindFilter) && (!q || b.name.toLowerCase().includes(q))
+  )
 
   function autoFillName(bankName: string, type: AccountType) {
     setName(`${bankName} ${TYPE_LABEL[type]}`)
@@ -67,8 +80,8 @@ export function AccountForm({ returnTo, mode = "create", initialData }: Props) {
     setAccountType(t)
     // la red solo aplica a débito
     if (t !== "debit") setNetwork(null)
-    // si paso a billetera y el banco actual no es billetera, limpio la selección
-    if (t === "wallet" && bankId && !WALLET_IDS.includes(bankId)) {
+    // billetera no admite bancos tradicionales: limpio si el actual no aplica
+    if (t === "wallet" && selectedBank && selectedBank.kind === "bank" && selectedBank.id !== "otro") {
       setBankId(null); setName(""); return
     }
     if (selectedBank) autoFillName(selectedBank.name, t)
@@ -143,21 +156,52 @@ export function AccountForm({ returnTo, mode = "create", initialData }: Props) {
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               {accountType === "wallet" ? "Billetera" : "Banco"}
             </p>
-            <div className="grid grid-cols-4 gap-2">
-              {visibleBanks.map((bank) => {
-                const selected = bankId === bank.id
-                return (
-                  <button key={bank.id} type="button" onClick={() => handleBankSelect(bank.id)}
-                    className={`flex flex-col items-center gap-1.5 py-2.5 rounded-2xl border transition-all ${selected ? "bg-[#F4ACB7] border-transparent" : "bg-muted border-border/50 hover:bg-muted/70"}`}>
-                    <BankLogo bankId={bank.id} size={36} />
-                    <span className="text-[10px] font-semibold text-center leading-tight px-0.5"
-                      style={{ color: selected ? "#7a3a47" : undefined }}>
-                      {bank.name}
-                    </span>
-                  </button>
-                )
-              })}
+
+            {/* Buscador */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+              <input
+                type="text" value={query} onChange={(e) => setQuery(e.target.value)}
+                placeholder="Buscar banco o billetera…"
+                className="w-full rounded-xl border bg-background pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+              />
             </div>
+
+            {/* Chips de categoría (solo si hay más de una) */}
+            {availableKinds.length > 1 && (
+              <div className="flex flex-wrap gap-1.5">
+                <button type="button" onClick={() => setKindFilter(null)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${!kindFilter ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground hover:bg-muted/70"}`}>
+                  Todos
+                </button>
+                {availableKinds.map((k) => (
+                  <button key={k} type="button" onClick={() => setKindFilter(kindFilter === k ? null : k)}
+                    className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${kindFilter === k ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground hover:bg-muted/70"}`}>
+                    {KIND_LABEL[k]}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {shownBanks.length === 0 ? (
+              <p className="py-6 text-center text-sm text-muted-foreground">Sin resultados.</p>
+            ) : (
+              <div className="grid grid-cols-4 gap-2">
+                {shownBanks.map((bank) => {
+                  const selected = bankId === bank.id
+                  return (
+                    <button key={bank.id} type="button" onClick={() => handleBankSelect(bank.id)}
+                      className={`flex flex-col items-center gap-1.5 py-2.5 rounded-2xl border transition-all ${selected ? "bg-[#F4ACB7] border-transparent" : "bg-muted border-border/50 hover:bg-muted/70"}`}>
+                      <BankLogo bankId={bank.id} size={36} />
+                      <span className="text-[10px] font-semibold text-center leading-tight px-0.5"
+                        style={{ color: selected ? "#7a3a47" : undefined }}>
+                        {bank.name}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
           </div>
 
           {/* Red — solo para tarjeta de débito (obligatoria) */}
