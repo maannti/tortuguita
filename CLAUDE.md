@@ -2,7 +2,7 @@
 
 ## 🚀 Al iniciar cada sesión
 
-**Leer primero:** [`ROADMAP.md`](./ROADMAP.md) — contiene:
+**Leer primero:** `planning/ROADMAP.md` (local, gitignored — fuera del repo público) — contiene:
 - Checklist de mejoras con estado actual
 - Plan detallado de cada feature
 - Log de sesiones anteriores

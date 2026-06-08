@@ -58,3 +58,6 @@ next-env.d.ts
 # Local-only credentials and instructions for AI assistants (test users,
 # personal notes that we don't want in the public repo).
 /CLAUDE.local.md
+
+# Documentos internos de estrategia/producto (privados)
+planning/
