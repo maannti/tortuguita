@@ -42,23 +42,25 @@ const NETWORK_FILES: Record<NetworkId, string> = {
   cabal:      "cabal.png",
 }
 
-export const BANKS = [
-  { id: "icbc",        name: "ICBC",         color: "#C41230" },
-  { id: "santander",   name: "Santander",    color: "#EC0000" },
-  { id: "galicia",     name: "Galicia",      color: "#E40613" },
-  { id: "bbva",        name: "BBVA",         color: "#004481" },
-  { id: "brubank",     name: "Brubank",      color: "#7B2FBE" },
-  { id: "naranjax",    name: "Naranja X",    color: "#FF6200" },
-  { id: "macro",       name: "Macro",        color: "#F5841F" },
-  { id: "mercadopago", name: "Mercado Pago", color: "#009EE3" },
-  { id: "uala",        name: "Ualá",         color: "#5C2D91" },
-  { id: "nacion",      name: "Nación",       color: "#004990" },
-  { id: "provincia",   name: "Provincia",    color: "#00539B" },
-  { id: "ciudad",      name: "Ciudad",       color: "#003087" },
-  { id: "supervielle", name: "Supervielle",  color: "#E05C00" },
-  { id: "patagonia",   name: "Patagonia",    color: "#005B8E" },
-  { id: "amexprop",   name: "Amex Propietaria", color: "#016FD0" },
-  { id: "otro",       name: "Otro",         color: "#9D8189" },
+// kind: "bank" (banco tradicional) | "wallet" (billetera/neobanco) | "crypto" | "intl" (internacional)
+export type BankKind = "bank" | "wallet" | "crypto" | "intl"
+export const BANKS: { id: string; name: string; color: string; kind: BankKind }[] = [
+  { id: "icbc",        name: "ICBC",         color: "#C41230", kind: "bank" },
+  { id: "santander",   name: "Santander",    color: "#EC0000", kind: "bank" },
+  { id: "galicia",     name: "Galicia",      color: "#E40613", kind: "bank" },
+  { id: "bbva",        name: "BBVA",         color: "#004481", kind: "bank" },
+  { id: "brubank",     name: "Brubank",      color: "#7B2FBE", kind: "wallet" },
+  { id: "naranjax",    name: "Naranja X",    color: "#FF6200", kind: "wallet" },
+  { id: "macro",       name: "Macro",        color: "#F5841F", kind: "bank" },
+  { id: "mercadopago", name: "Mercado Pago", color: "#009EE3", kind: "wallet" },
+  { id: "uala",        name: "Ualá",         color: "#5C2D91", kind: "wallet" },
+  { id: "nacion",      name: "Nación",       color: "#004990", kind: "bank" },
+  { id: "provincia",   name: "Provincia",    color: "#00539B", kind: "bank" },
+  { id: "ciudad",      name: "Ciudad",       color: "#003087", kind: "bank" },
+  { id: "supervielle", name: "Supervielle",  color: "#E05C00", kind: "bank" },
+  { id: "patagonia",   name: "Patagonia",    color: "#005B8E", kind: "bank" },
+  { id: "amexprop",   name: "Amex Propietaria", color: "#016FD0", kind: "bank" },
+  { id: "otro",       name: "Otro",         color: "#9D8189", kind: "bank" },
 ]
 
 // ── Network logo ─────────────────────────────────────────────────────────────
