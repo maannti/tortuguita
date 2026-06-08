@@ -49,14 +49,14 @@ export default async function CategoriesPage({ searchParams }: PageProps) {
 
   return (
     <div className="pb-28">
-      <div className="flex items-center justify-between px-4 py-3 border-b sticky top-0 bg-background/95 backdrop-blur-sm z-10">
-        <Link href="/settings" className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
+      <div className="grid grid-cols-[1fr_auto_1fr] items-center px-4 py-3 border-b sticky top-0 bg-background/95 backdrop-blur-sm z-10">
+        <Link href="/settings" className="justify-self-start flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
           <ChevronLeft className="size-4" />Volver
         </Link>
-        <h1 className="text-base font-semibold" style={{ fontFamily: "var(--font-fraunces, serif)" }}>
+        <h1 className="justify-self-center text-base font-semibold whitespace-nowrap">
           Categorías de gastos
         </h1>
-        <div className="w-16" />
+        <div />
       </div>
       <div className="px-4 pt-4">
         <div className="glass rounded-2xl divide-y divide-white/60 overflow-hidden">
