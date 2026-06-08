@@ -12,6 +12,7 @@ export const billTypeSchema = z.object({
   icon: z.string().optional(),   // Network: visa, mastercard, amex, cabal
   bank: z.string().optional(),   // Bank ID: icbc, galicia, bbva, etc.
   isCreditCard: z.boolean(),
+  accountType: z.enum(["debit", "transfer", "qr", "wallet"]).nullable().optional(), // si != null, es cuenta/medio de pago
   defaultAssignments: z.array(defaultAssignmentItem).nullable().optional(),
 })
 
