@@ -140,6 +140,7 @@ model BillType {
   icon               String?      // Network: visa, mastercard, amex, cabal
   bank               String?      // Bank ID: icbc, galicia, bbva, etc.
   isCreditCard       Boolean      @default(false)
+  accountType        String?      // si != null, es una cuenta/medio de pago: debit|transfer|qr|wallet
   defaultAssignments Json?        // [{ userId: string, percentage: number }] — pre-filled when creating a bill
   currentClosingDate DateTime?    // Closing date for current billing period
   currentDueDate     DateTime?    // Due date for current billing period
@@ -152,6 +153,7 @@ model BillType {
   organization          Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   bills                 Bill[]          @relation("BillType")
   billsAsCategory       Bill[]          @relation("BillCategory")
+  billsAsPaymentSource  Bill[]          @relation("BillPaymentSource")
   recurringBills        RecurringBill[] @relation("RecurringBillType")
   recurringBillsAsCategory RecurringBill[] @relation("RecurringBillCategory")
 
@@ -180,6 +182,8 @@ model Bill {
   sourceDescription   String?      // raw bank description (hidden from user, used for duplicate detection)
   isPaid              Boolean      @default(false)
   recurringBillId     String?      // trazabilidad: qué plantilla generó este gasto
+  paymentMethod       String?      // medio de pago: debit|credit|cash|transfer|qr|wallet|other
+  paymentSourceId     String?      // cuenta/medio específico (BillType con accountType != null)
   createdAt           DateTime     @default(now())
   updatedAt           DateTime     @updatedAt
 
@@ -188,6 +192,7 @@ model Bill {
   organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   user           User             @relation(fields: [userId], references: [id], onDelete: Restrict)
   paidByUser     User?            @relation("BillPaidBy", fields: [paidByUserId], references: [id], onDelete: SetNull)
+  paymentSource  BillType?        @relation("BillPaymentSource", fields: [paymentSourceId], references: [id], onDelete: SetNull)
   assignments    BillAssignment[]
   recurringBill  RecurringBill?   @relation(fields: [recurringBillId], references: [id], onDelete: SetNull)
 
@@ -202,6 +207,7 @@ model Bill {
   @@index([externalRef])
   @@index([recurringBillId])
   @@index([paidByUserId])
+  @@index([paymentSourceId])
   // Prevent duplicate installments within the same group
   @@unique([installmentGroupId, currentInstallment])
   // Prevent re-importing the same bank transaction (billTypeId scopes it per card)
