@@ -33,8 +33,8 @@ A modern expense tracking application with multi-user organization support, buil
 
 Your `.env` file needs (no pegar valores reales en este archivo, es público):
 - `DATABASE_URL` — PostgreSQL connection string (e.g. Neon.tech)
-- `NEXTAUTH_SECRET` — generar con `openssl rand -base64 32`
-- `NEXTAUTH_URL` — `http://localhost:3000` en local
+- `AUTH_SECRET` — secreto de NextAuth v5; generar con `openssl rand -base64 32`
+- `AUTH_URL` — `http://localhost:3000` en local (opcional; v5 lo autodetecta)
 
 ### Optional: Google OAuth
 
