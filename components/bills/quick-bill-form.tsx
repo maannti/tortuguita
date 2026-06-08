@@ -1,12 +1,13 @@
 "use client"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { ChevronLeft, ChevronRight, Check, CreditCard, Banknote, Wallet, Ellipsis, ChevronDown, Plus, User, Home, X } from "lucide-react"
+import { ChevronLeft, ChevronRight, Check, CreditCard, Banknote, Wallet, Ellipsis, ChevronDown, Plus, User, Home, X, QrCode, ArrowLeftRight, Smartphone } from "lucide-react"
 import { CardIcon, isNetworkId, BANKS, NetworkId } from "@/components/ui/card-network"
 
 interface DefaultAssignment { userId: string; percentage: number }
 interface Category {
   id: string; name: string; color: string | null; icon: string | null; isCreditCard: boolean; organizationId: string
+  accountType?: string | null; bank?: string | null
   currentClosingDate?: Date | string | null
   currentDueDate?: Date | string | null
   nextClosingDate?: Date | string | null
@@ -23,6 +24,8 @@ interface InitialData {
   billTypeId: string
   categoryId?: string | null
   isCreditCard: boolean
+  paymentMethod?: string | null
+  paymentSourceId?: string | null
   paymentDate: string  // yyyy-MM-dd
   totalInstallments: number | null
   notes: string | null
@@ -42,14 +45,20 @@ interface Props {
   initialData?: InitialData
 }
 
-type PaymentMethod = "debit" | "credit" | "cash" | "other"
+type PaymentMethod = "debit" | "credit" | "cash" | "transfer" | "qr" | "wallet" | "other"
 
 const PAYMENT_METHODS: { value: PaymentMethod; label: string; icon: React.ReactNode }[] = [
-  { value: "debit",  label: "Débito",   icon: <Wallet     className="size-4" /> },
-  { value: "credit", label: "Crédito",  icon: <CreditCard className="size-4" /> },
-  { value: "cash",   label: "Efectivo", icon: <Banknote   className="size-4" /> },
-  { value: "other",  label: "Otro",     icon: <Ellipsis   className="size-4" /> },
+  { value: "debit",    label: "Débito",        icon: <Wallet         className="size-4" /> },
+  { value: "credit",   label: "Crédito",       icon: <CreditCard     className="size-4" /> },
+  { value: "transfer", label: "Transferencia", icon: <ArrowLeftRight className="size-4" /> },
+  { value: "qr",       label: "QR",            icon: <QrCode         className="size-4" /> },
+  { value: "wallet",   label: "Billetera",     icon: <Smartphone     className="size-4" /> },
+  { value: "cash",     label: "Efectivo",      icon: <Banknote       className="size-4" /> },
+  { value: "other",    label: "Otro",          icon: <Ellipsis       className="size-4" /> },
 ]
+
+// Medios que pueden estar atados a una cuenta/banco (los que tienen origen de fondos)
+const METHODS_WITH_ACCOUNT: PaymentMethod[] = ["debit", "transfer", "qr", "wallet"]
 
 const INSTALLMENT_OPTIONS = [1, 3, 6, 9, 12]
 
@@ -107,7 +116,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
 
   // Derive initial payment method from initialData
   const initPaymentMethod: PaymentMethod | "" = initialData
-    ? (initialData.isCreditCard ? "credit" : "debit")
+    ? ((initialData.paymentMethod as PaymentMethod | undefined) ?? (initialData.isCreditCard ? "credit" : "debit"))
     : ""
   const initSplitMode = initialData
     ? inferSplitMode(initialData.assignments, currentUserId, members)
@@ -137,6 +146,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
       : ""
   )
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | "">(initPaymentMethod)
+  const [paymentSourceId, setPaymentSourceId] = useState<string>(initialData?.paymentSourceId ?? "")
   const [cardId, setCardId] = useState(initialData?.isCreditCard ? initialData.billTypeId : "")
   const [installments, setInstallments] = useState(initialData?.totalInstallments ?? defaultInstallments ?? 1)
   const [customInstallments, setCustomInstallments] = useState("")
@@ -174,6 +184,7 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
       if (d.notes)             setNotes(d.notes)
       if (d.categoryId)    setCategoryId(d.categoryId)
       if (d.paymentMethod) setPaymentMethod(d.paymentMethod)
+      if (d.paymentSourceId && categories.some(c => c.id === d.paymentSourceId && c.accountType)) setPaymentSourceId(d.paymentSourceId)
       // Only restore cardId if the card still exists in the available list
       // (covers the case where you navigate away to create a card and return)
       if (d.cardId && categories.some(c => c.id === d.cardId && c.isCreditCard)) setCardId(d.cardId)
@@ -189,11 +200,11 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
     if (isEdit) return
     try {
       sessionStorage.setItem(DRAFT_KEY, JSON.stringify({
-        label, amountDisplay, currency, usdRate, notes, categoryId, paymentMethod, cardId,
+        label, amountDisplay, currency, usdRate, notes, categoryId, paymentMethod, paymentSourceId, cardId,
         installments, splitMode, soloMemberId, paymentDate, selectedOrgId,
       }))
     } catch {}
-  }, [label, amountDisplay, currency, usdRate, notes, categoryId, paymentMethod, cardId, installments, splitMode, soloMemberId, paymentDate, selectedOrgId, isEdit])
+  }, [label, amountDisplay, currency, usdRate, notes, categoryId, paymentMethod, paymentSourceId, cardId, installments, splitMode, soloMemberId, paymentDate, selectedOrgId, isEdit])
   // ─────────────────────────────────────────────────────────────────────────
 
   // Prefill the official USD→ARS rate (same source as card imports). Only fills
@@ -232,11 +243,11 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
   const hasIncomes = totalIncome > 0
 
   const orgCategories = categories.filter(c => c.organizationId === selectedOrgId)
-  const normalCats = orgCategories.filter(c => !c.isCreditCard)
+  const normalCats = orgCategories.filter(c => !c.isCreditCard && !c.accountType)
   // CC cards are user-level, not space-level — show all regardless of selected org
   const ccCards = categories.filter(c => c.isCreditCard)
   // For CC bills: show ALL expense categories from ALL spaces (org is derived from chosen category)
-  const allNormalCats = categories.filter(c => !c.isCreditCard)
+  const allNormalCats = categories.filter(c => !c.isCreditCard && !c.accountType)
   const orgMembers = members.filter(m => m.organizationId === selectedOrgId)
 
   // Auto-apply default assignments when category changes (create mode only)
@@ -292,6 +303,8 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
           paymentDate: new Date(paymentDate + "T12:00:00").toISOString(),
           billTypeId,
           categoryId: isCreditCard ? (categoryId || null) : null,
+          paymentMethod: paymentMethod || null,
+          paymentSourceId: (!isCreditCard && METHODS_WITH_ACCOUNT.includes(paymentMethod as PaymentMethod) && paymentSourceId) ? paymentSourceId : null,
           ...(isCreditCard && installments > 1 ? { totalInstallments: installments } : {}),
           assignments: buildAssignments(),
           notes: notes.trim() || "",
@@ -536,6 +549,8 @@ export function QuickBillForm({ categories, members, memberIncomes, currentUserI
                   onClick={() => {
                     setPaymentMethod(pm.value)
                     if (pm.value !== "credit") { setCardId(""); setInstallments(1); setCustomInstallments("") }
+                    // limpiar la cuenta si el nuevo medio no admite cuenta (efectivo/otro/crédito)
+                    if (!METHODS_WITH_ACCOUNT.includes(pm.value)) setPaymentSourceId("")
                     // categoryId se mantiene al cambiar medio de pago para no perder la selección
                   }}
                   className={`flex items-center gap-2 rounded-2xl border px-4 py-3 text-sm text-left transition-all ${paymentMethod === pm.value ? "border-primary bg-primary/5 dark:bg-primary/20 font-medium text-foreground" : "border-border/40 bg-muted/30 text-muted-foreground hover:bg-muted/50"}`}>
