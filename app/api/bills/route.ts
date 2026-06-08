@@ -51,6 +51,9 @@ export async function GET(request: NextRequest) {
       where,
       include: {
         billType: true,
+        paymentSource: {
+          select: { id: true, name: true, color: true, icon: true, bank: true, accountType: true },
+        },
         user: {
           select: {
             id: true,
@@ -118,6 +121,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "La categoría seleccionada no es válida" }, { status: 400 })
     }
 
+    // Verify payment source (account) belongs to org and is actually an account
+    if (data.paymentSourceId) {
+      const source = await prisma.billType.findFirst({
+        where: { id: data.paymentSourceId, organizationId },
+      })
+      if (!source || (!source.accountType && !source.isCreditCard)) {
+        return NextResponse.json({ error: "El medio de pago seleccionado no es válido" }, { status: 400 })
+      }
+    }
+
     // Verify all assigned users belong to organization via UserOrganization
     if (data.assignments && data.assignments.length > 0) {
       const userIds = data.assignments.map((a) => a.userId)
@@ -170,6 +183,8 @@ export async function POST(request: NextRequest) {
               dueDate: data.dueDate || null,
               billTypeId: data.billTypeId,
               categoryId: data.categoryId || null,
+              paymentMethod: data.paymentMethod || null,
+              paymentSourceId: data.paymentSourceId || null,
               notes: data.notes,
               organizationId,
               userId,
@@ -245,6 +260,8 @@ export async function POST(request: NextRequest) {
         dueDate: data.dueDate || null,
         billTypeId: data.billTypeId,
         categoryId: data.categoryId || null,
+        paymentMethod: data.paymentMethod || null,
+        paymentSourceId: data.paymentSourceId || null,
         notes: data.notes,
         organizationId,
         userId,

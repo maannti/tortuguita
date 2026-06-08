@@ -21,6 +21,11 @@ export const billSchema = z
     dueDate: z.union([z.coerce.date(), z.null()]).optional(),
     billTypeId: z.string().min(1, "Category is required"),
     categoryId: z.string().optional().nullable(),
+    paymentMethod: z
+      .enum(["debit", "credit", "cash", "transfer", "qr", "wallet", "other"])
+      .optional()
+      .nullable(),
+    paymentSourceId: z.string().optional().nullable(),
     notes: z.string().optional(),
     assignments: z.array(billAssignmentSchema).default([]),
     organizationId: z.string().min(1).optional(),
