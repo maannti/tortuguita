@@ -1,7 +1,7 @@
 "use client"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { ChevronLeft, Wallet, ArrowLeftRight, QrCode, Smartphone, User, Home } from "lucide-react"
+import { ChevronLeft, Wallet, ArrowLeftRight, QrCode, Smartphone } from "lucide-react"
 import {
   NETWORKS, BANKS, NetworkId, CardIcon, NetworkLogo, BankLogo, isNetworkId
 } from "@/components/ui/card-network"
@@ -20,10 +20,7 @@ const TYPE_LABEL: Record<AccountType, string> = {
 // Para "billetera" solo mostramos billeteras/neobancos (no bancos tradicionales)
 const WALLET_IDS = ["mercadopago", "uala", "brubank", "naranjax", "otro"]
 
-interface Organization { id: string; name: string; isPersonal: boolean }
 interface Props {
-  organizations: Organization[]
-  spaceId?: string
   returnTo?: string
   mode?: "create" | "edit"
   initialData?: {
@@ -33,11 +30,10 @@ interface Props {
     icon: string | null
     bank: string | null
     accountType: string | null
-    organizationId: string
   }
 }
 
-export function AccountForm({ organizations, spaceId, returnTo, mode = "create", initialData }: Props) {
+export function AccountForm({ returnTo, mode = "create", initialData }: Props) {
   const { push, replace, refresh } = useRouter()
   const back = returnTo || "/cards"
   const [isLoading, setIsLoading] = useState(false)
@@ -50,9 +46,6 @@ export function AccountForm({ organizations, spaceId, returnTo, mode = "create",
   const [network, setNetwork] = useState<NetworkId | null>(initialNetwork)
   const [bankId, setBankId] = useState<string | null>(initialData?.bank ?? null)
   const [name, setName] = useState(initialData?.name || "")
-  const [selectedOrgId, setSelectedOrgId] = useState<string>(
-    initialData?.organizationId || spaceId || organizations[0]?.id || ""
-  )
 
   const selectedBank = BANKS.find(b => b.id === bankId)
   const color = selectedBank?.color || BANKS[0].color
@@ -99,7 +92,6 @@ export function AccountForm({ organizations, spaceId, returnTo, mode = "create",
           bank: bankId,
           isCreditCard: false,
           accountType,
-          organizationId: selectedOrgId,
         }),
       })
       if (!res.ok) { const err = await res.json(); throw new Error(err.error || "Error al guardar") }
@@ -145,25 +137,6 @@ export function AccountForm({ organizations, spaceId, returnTo, mode = "create",
               })}
             </div>
           </div>
-
-          {/* Espacio (si hay más de uno) */}
-          {organizations.length > 1 && (
-            <div className="space-y-2">
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Espacio</p>
-              <div className="grid grid-cols-2 gap-2">
-                {organizations.map((org) => {
-                  const selected = selectedOrgId === org.id
-                  return (
-                    <button key={org.id} type="button" onClick={() => setSelectedOrgId(org.id)}
-                      className={`flex items-center gap-2 rounded-2xl border px-4 py-3 text-sm transition-all ${selected ? "border-primary bg-primary/5 dark:bg-primary/20 font-medium text-foreground" : "border-border/40 bg-muted/30 text-muted-foreground hover:bg-muted/50"}`}>
-                      {org.isPersonal ? <User className="size-4" /> : <Home className="size-4" />}
-                      <span className="truncate">{org.name}</span>
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-          )}
 
           {/* Banco / billetera */}
           <div className="space-y-2">

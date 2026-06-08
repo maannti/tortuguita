@@ -121,10 +121,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "La categoría seleccionada no es válida" }, { status: 400 })
     }
 
-    // Verify payment source (account) belongs to org and is actually an account
+    // Verify payment source (account) belongs to the user (global, any of their orgs)
     if (data.paymentSourceId) {
       const source = await prisma.billType.findFirst({
-        where: { id: data.paymentSourceId, organizationId },
+        where: { id: data.paymentSourceId, organizationId: { in: userOrgs.map(o => o.id) } },
       })
       if (!source || (!source.accountType && !source.isCreditCard)) {
         return NextResponse.json({ error: "El medio de pago seleccionado no es válido" }, { status: 400 })
